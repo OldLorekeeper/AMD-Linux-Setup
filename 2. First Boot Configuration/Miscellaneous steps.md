@@ -58,4 +58,35 @@ compression-algorithm = zstd
 swap-priority = 100
 ```
 
+---
+### 5. Add pacman hooks
+
+Create executable script:
+
+```
+sudo tee /usr/local/bin/update-init-grub > /dev/null <<EOF && sudo chmod +x /usr/local/bin/update-init-grub
+#!/bin/bash
+# Replace the below commands with the actual commands that your aliases refer to.
+sudo mkinitcpio -P
+sudo grub-mkconfig -o /boot/grub/grub.cfg
+EOF
+```
+
+Create hook:
+
+```
+sudo tee /etc/pacman.d/hooks/99-update-init-grub.hook > /dev/null <<EOF
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = *
+
+[Action]
+Description = Updating initramfs and GRUB configurations
+When = PostTransaction
+Exec = /usr/local/bin/update-init-grub
+EOF
+```
+
 
