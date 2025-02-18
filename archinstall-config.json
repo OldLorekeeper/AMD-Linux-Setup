@@ -72,7 +72,7 @@
         "wayland-protocols",
         "zsh"
     ],
-    "parallel downloads": 50,
+    "parallel_downloads": 50,
     "profile_config": {
         "gfx_driver": "AMD / ATI (open-source)",
         "greeter": "sddm",
