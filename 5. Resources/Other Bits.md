@@ -47,3 +47,16 @@ solaar --window=hide
 ### List  of Packages For Complete KDE Plasma Experience
 
 [https://github.com/shvedes/awesome-kde](https://github.com/shvedes/awesome-kde)**
+
+---
+
+### ChatGPT integration
+
+https://github.com/samirgaire10/com.samirgaire10.chatgpt-plasma6?tab=readme-ov-file
+
+Useful command when not working:
+
+```
+systemctl --user restart plasma-plasmashell.service
+
+```
