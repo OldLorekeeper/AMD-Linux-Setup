@@ -1,7 +1,8 @@
 #!/bin/bash
 #
 # This script automates the initial Arch ISO setup steps
-# (keyboard, pacman config, mirrors, and archinstall update).
+# and immediately launches the archinstall process.
+#
 # It should be run *after* connecting to the internet.
 #
 
@@ -20,4 +21,5 @@ reflector --latest 20 --age 12 --protocol https --country GB,IE,NL,DE,FR,EU --so
 echo "--- Syncing pacman and updating archinstall ---"
 pacman -Sy archinstall
 
-echo "--- Initial ISO setup complete. You may now proceed. ---"
+echo "--- Preparation complete. Launching archinstall... ---"
+archinstall --config-url https://raw.githubusercontent.com/OldLorekeeper/AMD-Linux-Setup/main/Scripts/archinstall_config.json
