@@ -1,20 +1,16 @@
 #!/bin/bash
 #
-# This script automates the desktop-specific setup from
-# "3. Device Specific Configuration/3.1 - Desktop.md"
-#
-# It installs packages, creates hooks, and sets up services.
+# This script installs packages, creates hooks, and sets up services.
 # Manual configuration for API keys and hardware-specific
 # settings will be required after this script completes.
-#
 
 set -e # Exit immediately if a command exits with a non-zero status.
-echo "--- Starting Automated Desktop Setup (3.1) ---"
+echo "--- Starting Automated Desktop Setup ---"
 
 #
-# 3.1.1 (Original) - Additional packages
+# Additional packages
 #
-echo "--- 3.1.1: Installing additional packages... ---"
+echo "--- Installing additional packages... ---"
 # Assuming yay is already installed and sudo access is available
 yay -S --needed --noconfirm jellyfin-web jellyfin-server lutris prowlarr-bin radarr-bin solaar solidity-bin sonarr-bin lidarr-bin slskd-bin
 
@@ -26,11 +22,11 @@ sudo wget -O /etc/udev/rules.d/42-solaar-uinput.rules https://raw.githubusercont
 sudo udevadm control --reload-rules && sudo udevadm trigger
 
 #
-# 3.1.5 (Original) - Replace sunshine tray icons following update
+# Replace sunshine tray icons following update
 # This is run *before* installation so the hook is active
 # for the initial 'pacman -S sunshine' command.
 #
-echo "--- 3.1.5: Creating script and hook to replace Sunshine icons... ---"
+echo "--- Creating script and hook to replace Sunshine icons... ---"
 # Create replacement script
 sudo tee /usr/local/bin/replace-sunshine-icons.sh > /dev/null << 'EOF'
 #!/bin/bash
@@ -71,9 +67,9 @@ Exec = /usr/local/bin/replace-sunshine-icons.sh
 EOF
 
 #
-# 3.1.2 (Original) - Install sunshine
+# Install sunshine
 #
-echo "--- 3.1.2: Installing Sunshine... ---"
+echo "--- Installing Sunshine... ---"
 echo "Adding [lizardbyte] repo to /etc/pacman.conf..."
 # Add repo if it doesn't already exist to prevent duplicates
 if ! grep -q "\[lizardbyte\]" /etc/pacman.conf; then
@@ -91,9 +87,9 @@ sudo setcap cap_sys_admin+p $(readlink -f $(which sunshine))
 systemctl --user enable --now sunshine
 
 #
-# 3.1.6 (Original) - Jellyfin HideMe tag automation
+# Jellyfin HideMe tag automation
 #
-echo "--- 3.1.6: Setting up Jellyfin HideMe script... ---"
+echo "--- Setting up Jellyfin HideMe script... ---"
 # Create the python script
 tee ~/Make/hideme_tag.py > /dev/null << 'EOF'
 #!/usr/bin/env python3
@@ -180,9 +176,9 @@ systemctl --user daemon-reload
 systemctl --user enable --now hideme_tag.timer
 
 #
-# 3.1.7 (Original) - Setup lidarr, slskd and soularr
+# Setup lidarr, slskd and soularr
 #
-echo "--- 3.1.7: Setting up slskd and Soularr... ---"
+echo "--- Setting up slskd and Soularr... ---"
 
 echo "Creating slskd systemd override..."
 sudo mkdir -p /etc/systemd/system/slskd.service.d
@@ -288,7 +284,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now soularr.timer
 
 
-echo "--- Automated Desktop Setup (3.1) Finished ---"
+echo "--- Automated Desktop Setup Finished ---"
 echo "---"
 echo "--- MANUAL CONFIGURATION REQUIRED ---"
-echo "Please complete the manual steps in the following sections."
+echo "Please complete the manual steps as per guide."
