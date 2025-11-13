@@ -1,0 +1,17 @@
+jellyfin-web
+jellyfin-server
+lidarr-bin
+lutris
+prowlarr-bin
+python-dotenv
+python-pydantic
+python-requests
+python-schedule
+python-setuptools
+python-wheel
+radarr-bin
+slskd-bin
+solaar
+solidity-bin
+sonarr-bin
+sunshine
