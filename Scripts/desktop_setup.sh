@@ -67,7 +67,7 @@ fi
 #
 echo "--- Installing additional desktop packages from desktop_pkg.txt... ---"
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-# This will now install sunshine, jellyfin, arrs, etc.
+# This will now install sunshine, jellyfin, arrs, python deps, etc.
 yay -S --needed --noconfirm - < "$SCRIPT_DIR/desktop_pkg.txt"
 
 #
@@ -281,8 +281,17 @@ echo "Enabling Soularr timer..."
 sudo systemctl daemon-reload
 sudo systemctl enable --now soularr.timer
 
+#
+# --- Apply Desktop Kernel Parameters ---
+#
+echo "--- Applying desktop-specific kernel parameters ---"
+sudo sed -i '/^GRUB_CMDLINE_LINUX_DEFAULT=/ s/"$/ amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=2560x1600@60 amd_pstate=guided"/' /etc/default/grub
+
+echo "--- Rebuilding GRUB configuration ---"
+sudo grub-mkconfig -o /boot/grub/grub.cfg
+
 
 echo "--- Automated Desktop Setup Finished ---"
 echo "---"
 echo "--- MANUAL CONFIGURATION REQUIRED ---"
-echo "Please complete the manual steps as per guide."
+echo "Please complete the manual steps as per guide, then REBOOT."
