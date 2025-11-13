@@ -1,30 +1,19 @@
 #!/bin/bash
 #
-# This script installs packages, creates hooks, and sets up services.
-# Manual configuration for API keys and hardware-specific
+# This script configures the Desktop, installing packages from
+# desktop_pkg.txt and setting up services.
+# Run this *after* core_setup.sh
+#
+# MANUAL configuration for API keys and hardware-specific
 # settings will be required after this script completes.
 
 set -e # Exit immediately if a command exits with a non-zero status.
 echo "--- Starting Automated Desktop Setup ---"
 
 #
-# Additional packages
-#
-echo "--- Installing additional packages... ---"
-# Assuming yay is already installed and sudo access is available
-yay -S --needed --noconfirm jellyfin-web jellyfin-server lutris prowlarr-bin radarr-bin solaar solidity-bin sonarr-bin lidarr-bin slskd-bin
-
-echo "Enabling services: sonarr, radarr, lidarr, prowlarr, jellyfin"
-sudo systemctl enable --now sonarr radarr lidarr prowlarr jellyfin
-
-echo "Adding solaar udev rules..."
-sudo wget -O /etc/udev/rules.d/42-solaar-uinput.rules https://raw.githubusercontent.com/pwr-Solaar/Solaar/master/rules.d-uinput/42-solaar-uinput.rules
-sudo udevadm control --reload-rules && sudo udevadm trigger
-
-#
-# Replace sunshine tray icons following update
-# This is run *before* installation so the hook is active
-# for the initial 'pacman -S sunshine' command.
+# PRE-INSTALL: Setup Sunshine Hook and Repo
+# This must run *before* yay install, so the hook
+# and repo are active for the 'sunshine' package.
 #
 echo "--- Creating script and hook to replace Sunshine icons... ---"
 # Create replacement script
@@ -49,7 +38,6 @@ for icon in "${ICONS[@]}"; do
     fi
 done
 EOF
-
 sudo chmod +x /usr/local/bin/replace-sunshine-icons.sh
 
 # Create pacman hook
@@ -66,12 +54,7 @@ When = PostTransaction
 Exec = /usr/local/bin/replace-sunshine-icons.sh
 EOF
 
-#
-# Install sunshine
-#
-echo "--- Installing Sunshine... ---"
-echo "Adding [lizardbyte] repo to /etc/pacman.conf..."
-# Add repo if it doesn't already exist to prevent duplicates
+echo "--- Adding [lizardbyte] repo for Sunshine... ---"
 if ! grep -q "\[lizardbyte\]" /etc/pacman.conf; then
     echo -e "\n[lizardbyte]\nSigLevel = Optional\nServer = https://github.com/LizardByte/pacman-repo/releases/latest/download" | sudo tee -a /etc/pacman.conf
     sudo pacman -Sy
@@ -79,18 +62,34 @@ else
     echo "[lizardbyte] repo already found in /etc/pacman.conf."
 fi
 
-echo "Installing sunshine..."
-sudo pacman -S --needed --noconfirm sunshine
+#
+# Install Desktop Packages
+#
+echo "--- Installing additional desktop packages from desktop_pkg.txt... ---"
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+# This will now install sunshine, jellyfin, arrs, etc.
+yay -S --needed --noconfirm - < "$SCRIPT_DIR/desktop_pkg.txt"
+
+#
+# Post-install Configuration
+#
+
+echo "--- Enabling desktop services ---"
+echo "Enabling services: sonarr, radarr, lidarr, prowlarr, jellyfin"
+sudo systemctl enable --now sonarr radarr lidarr prowlarr jellyfin
 
 echo "Configuring Sunshine permissions and enabling service..."
 sudo setcap cap_sys_admin+p $(readlink -f $(which sunshine))
 systemctl --user enable --now sunshine
 
+echo "Adding solaar udev rules..."
+sudo wget -O /etc/udev/rules.d/42-solaar-uinput.rules https://raw.githubusercontent.com/pwr-Solaar/Solaar/master/rules.d-uinput/42-solaar-uinput.rules
+sudo udevadm control --reload-rules && sudo udevadm trigger
+
 #
 # Jellyfin HideMe tag automation
 #
 echo "--- Setting up Jellyfin HideMe script... ---"
-# Create the python script
 tee ~/Make/hideme_tag.py > /dev/null << 'EOF'
 #!/usr/bin/env python3
 import requests
@@ -229,8 +228,7 @@ else
     sudo chown -R $USER:$(id -gn $USER) /opt/soularr
 fi
 
-echo "Installing Soularr Python dependencies..."
-sudo pacman -S --needed --noconfirm python-pip python-setuptools python-wheel python-schedule python-requests python-pydantic python-dotenv
+echo "Installing Soularr Python dependencies (pip)..."
 sudo pip install --break-system-packages -r /opt/soularr/requirements.txt
 
 echo "Creating Soularr config directory..."
