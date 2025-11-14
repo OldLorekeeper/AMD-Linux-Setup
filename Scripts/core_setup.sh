@@ -196,7 +196,7 @@ chmod +x ~/Make/steam-delay.sh
 echo "--- Core System Setup Complete ---"
 echo "---"
 echo "--- MANUAL STEPS REQUIRED ---"
-echo "Please reboot, then review the *new* '2.5 - Miscellaneous steps' file for manual tasks."
+echo "Please reboot, then review '2.4 - Core setup and manual config' for further instruction."
 
 # Restart plasma shell to apply plasmoid and icon changes
 echo "Restarting Plasma shell in 5 seconds..."
