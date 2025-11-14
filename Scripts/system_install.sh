@@ -16,7 +16,7 @@ echo "--- Enabling parallel downloads in pacman.conf ---"
 sed -i 's/^#*\(ParallelDownloads = \).*/\1100/' /etc/pacman.conf
 
 echo "--- Updating mirrorlist (UK/EU) ---"
-reflector --country GB,IE,NL,DE,FR,EU --age 12 --protocol https --sort rate --fastest 10 --save /etc/pacman.d/mirrorlist --download-timeout 10
+reflector --country GB,IE,NL,DE,FR,EU --age 12 --protocol https --sort rate --fastest 10 --save /etc/pacman.d/mirrorlist
 
 echo "--- Downloading archinstall configuration... ---"
 curl -sL -o /root/archinstall_config.json "https://raw.githubusercontent.com/OldLorekeeper/AMD-Linux-Setup/main/Scripts/archinstall_config.json"
