@@ -21,7 +21,7 @@ echo "--- Optimising /etc/makepkg.conf for native builds ---"
 # ROBUST: This command will work even if CFLAGS is commented out or if you run the script more than once.
 sudo sed -i 's/^#*\(CFLAGS=".*-march=\)x86-64 -mtune=generic/\1native/' /etc/makepkg.conf
 # ROBUST: This command will work if MAKEFLAGS is commented or uncommented.
-sudo sed -i "s/^#*\(MAKEFLAGS=\).*/\1=\"-j$(nproc)\"/" /etc/makepkg.conf
+sudo sed -i "s/^#*MAKEFLAGS=.*/MAKEFLAGS=\"-j$(nproc)\"/" /etc/makepkg.conf
 echo "makepkg.conf optimised."
 
 echo "--- Updating mirror list ---"
