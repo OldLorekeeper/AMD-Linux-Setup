@@ -13,7 +13,7 @@ loadkeys uk
 
 echo "--- Enabling parallel downloads in pacman.conf ---"
 # Note: sudo is not needed as we are root on the ISO
-sed -i 's/^#\(ParallelDownloads = \).*/\1100/' /etc/pacman.conf
+sed -i 's/^#*\(ParallelDownloads = \).*/\1100/' /etc/pacman.conf
 
 echo "--- Updating mirrorlist (UK/EU) ---"
 reflector --latest 20 --age 12 --protocol https --country GB,IE,NL,DE,FR,EU --sort rate --save /etc/pacman.d/mirrorlist
