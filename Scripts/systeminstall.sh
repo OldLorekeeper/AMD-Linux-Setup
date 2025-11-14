@@ -5,9 +5,6 @@
 #
 # It should be run *after* connecting to the internet.
 #
-
-set -e # Exit immediately if a command exits with a non-zero status.
-
 echo "--- Setting keyboard layout to UK ---"
 loadkeys uk
 
