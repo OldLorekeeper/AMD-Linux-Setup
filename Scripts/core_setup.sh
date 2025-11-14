@@ -75,6 +75,7 @@ EOF
 
 # 2.5.5 - Add pacman hooks
 echo "--- Adding pacman hooks for initramfs and GRUB ---"
+sudo mkdir -p /etc/pacman.d/hooks
 sudo tee /etc/pacman.d/hooks/98-rebuild-initramfs.hook > /dev/null << 'EOF'
 [Trigger]
 Operation = Install
