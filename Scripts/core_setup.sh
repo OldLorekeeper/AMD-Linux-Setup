@@ -23,7 +23,7 @@ sudo sed -i 's/^#\(MAKEFLAGS=\).*/\1="-j$(nproc)"/' /etc/makepkg.conf
 echo "makepkg.conf optimised."
 
 echo "--- Updating mirror list ---"
-sudo reflector -c GB -p https --download-timeout 2 --age 6 --fastest 10 --sort rate --save /etc/pacman.d/mirrorlist
+reflector --country GB,IE,NL,DE,FR,EU --age 12 --protocol https --sort rate --fastest 10 --save /etc/pacman.d/mirrorlist --download-timeout 10
 
 #
 # --- 2. Install yay and Core Packages ---
@@ -113,12 +113,13 @@ yay -R --noconfirm plasma-meta discover
 echo "--- Configuring and enabling Reflector timer ---"
 sudo tee /etc/xdg/reflector/reflector.conf > /dev/null << 'EOF'
 # Added by core_setup.sh
---latest 20
+--country GB,IE,NL,DE,FR,EU
 --age 12
 --protocol https
---country GB,IE,NL,DE,FR,EU
 --sort rate
+--fastest 10
 --save /etc/pacman.d/mirrorlist
+--download-timeout 10
 EOF
 
 # Create the systemd timer override
