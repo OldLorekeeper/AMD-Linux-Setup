@@ -110,9 +110,9 @@ echo "--- Enabling experimental Bluetooth features ---"
 # ROBUST: This command will work if the line is commented or uncommented.
 sudo sed -i 's/^#*\(Experimental = \).*/\1true/' /etc/bluetooth/main.conf
 
-# 2.5.9 - Remove KDE discover and plasma-meta
-echo "--- Removing Discover and plasma-meta packages ---"
-yay -R --noconfirm plasma-meta discover
+# 2.5.9 - Remove KDE discover
+echo "--- Removing Discover ---"
+sudo pacman -Rdd --noconfirm discover
 
 # 2.5.14 - Configure Reflector Service and Timer
 echo "--- Configuring and enabling Reflector timer ---"
