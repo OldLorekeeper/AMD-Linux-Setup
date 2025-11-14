@@ -118,12 +118,11 @@ echo "--- Configuring and enabling Reflector timer ---"
 sudo tee /etc/xdg/reflector/reflector.conf > /dev/null << 'EOF'
 # Added by core_setup.sh
 --country GB,IE,NL,DE,FR,EU
---age 12
+--age 6
 --protocol https
 --sort rate
 --fastest 10
 --save /etc/pacman.d/mirrorlist
---download-timeout 10
 EOF
 
 # Create the systemd timer override
