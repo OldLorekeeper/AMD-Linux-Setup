@@ -18,8 +18,11 @@ sed -i 's/^#*\(ParallelDownloads = \).*/\1100/' /etc/pacman.conf
 echo "--- Updating mirrorlist (UK/EU) ---"
 reflector --latest 20 --age 12 --protocol https --country GB,IE,NL,DE,FR,EU --sort rate --save /etc/pacman.d/mirrorlist
 
+echo "--- Downloading archinstall configuration... ---"
+curl -sL -o /root/archinstall_config.json "https://raw.githubusercontent.com/OldLorekeeper/AMD-Linux-Setup/main/Scripts/archinstall_config.json"
+
 echo "--- Syncing pacman and updating archinstall ---"
 pacman -Sy archinstall
 
 echo "--- Preparation complete. Launching archinstall... ---"
-archinstall --config-url https://raw.githubusercontent.com/OldLorekeeper/AMD-Linux-Setup/main/Scripts/archinstall_config.json
+archinstall --config /root/archinstall_config.json
