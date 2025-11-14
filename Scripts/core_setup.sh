@@ -150,20 +150,6 @@ echo "--- Applying user-specific configurations ---"
 echo "--- Setting Papirus folder colours ---"
 papirus-folders -C breeze --theme Papirus-Dark
 
-# 2.5.11 - Create krunner icon
-echo "--- Creating KRunner desktop entry for panel ---"
-mkdir -p ~/.local/share/plasma_icons
-tee ~/.local/share/plasma_icons/krunner.desktop > /dev/null << 'EOF'
-[Desktop Entry]
-Exec=krunner
-Icon=search
-Name=KRunner
-StartupNotify=false
-Terminal=false
-Type=Application
-EOF
-curl -s -L -o ~/.local/share/icons/search.svg "https://raw.githubusercontent.com/OldLorekeeper/AMD-Linux-Setup/refs/heads/main/5.%20Resources/Icons/Miscellaneous/search.svg"
-
 # 2.5.12 - Add Gemini plasmoid
 echo "--- Installing and patching Gemini plasmoid ---"
 if [ ! -d "$HOME/.local/share/plasma/plasmoids/com.samirgaire10.google_gemini-plasma6" ]; then
