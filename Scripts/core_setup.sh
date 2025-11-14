@@ -25,7 +25,7 @@ sudo sed -i 's/^#*\(MAKEFLAGS=\).*/\1="-j$(nproc)"/' /etc/makepkg.conf
 echo "makepkg.conf optimised."
 
 echo "--- Updating mirror list ---"
-reflector --country GB,IE,NL,DE,FR,EU --age 12 --protocol https --sort rate --fastest 10 --save /etc/pacman.d/mirrorlist --download-timeout 10
+sudo reflector --country GB,IE,NL,DE,FR,EU --age 6 --protocol https --sort rate --fastest 10 --save /etc/pacman.d/mirrorlist
 
 #
 # --- 2. Install yay and Core Packages ---
