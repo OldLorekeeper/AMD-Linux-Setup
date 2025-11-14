@@ -18,8 +18,10 @@ echo "--- Starting Core System Setup ---"
 # --- 1. Package Compilation and Mirrors ---
 #
 echo "--- Optimising /etc/makepkg.conf for native builds ---"
-sudo sed -i 's/^\(CFLAGS="-march=\)x86-64 -mtune=generic/\1native/' /etc/makepkg.conf
-sudo sed -i 's/^#\(MAKEFLAGS=\).*/\1="-j$(nproc)"/' /etc/makepkg.conf
+# ROBUST: This command will work even if CFLAGS is commented out or if you run the script more than once.
+sudo sed -i 's/^#*\(CFLAGS=".*-march=\)x86-64 -mtune=generic/\1native/' /etc/makepkg.conf
+# ROBUST: This command will work if MAKEFLAGS is commented or uncommented.
+sudo sed -i 's/^#*\(MAKEFLAGS=\).*/\1="-j$(nproc)"/' /etc/makepkg.conf
 echo "makepkg.conf optimised."
 
 echo "--- Updating mirror list ---"
@@ -54,7 +56,8 @@ echo "--- Applying system-wide configurations ---"
 
 # 2.5.1 - Add US locale
 echo "--- Setting up en_US locale ---"
-sudo sed -i 's/^#\(en_US.UTF-8\)/\1/' /etc/locale.gen
+# ROBUST: This command will work if the locale is commented or uncommented.
+sudo sed -i 's/^#*\(en_US.UTF-8\)/\1/' /etc/locale.gen
 sudo locale-gen
 
 # 2.5.2 - Add environment variables
@@ -103,7 +106,8 @@ EOF
 
 # 2.5.8 - Enable experimental Bluetooth features
 echo "--- Enabling experimental Bluetooth features ---"
-sudo sed -i 's/^#\(Experimental = \).*/\1true/' /etc/bluetooth/main.conf
+# ROBUST: This command will work if the line is commented or uncommented.
+sudo sed -i 's/^#*\(Experimental = \).*/\1true/' /etc/bluetooth/main.conf
 
 # 2.5.9 - Remove KDE discover and plasma-meta
 echo "--- Removing Discover and plasma-meta packages ---"
