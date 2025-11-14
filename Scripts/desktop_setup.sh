@@ -83,7 +83,7 @@ sudo setcap cap_sys_admin+p $(readlink -f $(which sunshine))
 systemctl --user enable --now sunshine
 
 echo "Adding solaar udev rules..."
-sudo wget -O /etc/udev/rules.d/42-solaar-uinput.rules https://raw.githubusercontent.com/pwr-Solaar/Solaar/master/rules.d-uinput/42-solaar-uinput.rules
+sudo wget -O /etc/udev/rules.d/42-solaar-uinput.rules https://raw.githubusercontent.com/pwr-Solaar/Solaar/refs/heads/master/rules.d-uinput/42-logitech-unify-permissions.rules
 sudo udevadm control --reload-rules && sudo udevadm trigger
 
 #
