@@ -8,7 +8,8 @@
 # 5. Enables core services
 # 6. Applies miscellaneous system-wide configurations
 #
-# Run this script first, then run a device-specific script.
+# Run this script first. It will ask for device type and automatically
+# chain into desktop_setup.sh or laptop_setup.sh at the end.
 #
 
 set -e
@@ -16,9 +17,35 @@ set -e
 # Colour Codes
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+# Define script directory early to locate other scripts
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
 echo -e "${GREEN}--- Starting Core System Setup ---${NC}"
+
+# 0. Select Device Type
+# We ask this upfront so the user can walk away while the script runs.
+echo -e "${YELLOW}--- Select Installation Type ---${NC}"
+echo "1) Desktop"
+echo "2) Laptop"
+read -p "Enter choice [1-2]: " device_choice
+
+case $device_choice in
+    1)
+        DEVICE_SCRIPT="$SCRIPT_DIR/desktop_setup.sh"
+        DEVICE_NAME="Desktop"
+        ;;
+    2)
+        DEVICE_SCRIPT="$SCRIPT_DIR/laptop_setup.sh"
+        DEVICE_NAME="Laptop"
+        ;;
+    *)
+        echo -e "${RED}Invalid selection. Proceeding with Core Setup only.${NC}"
+        DEVICE_SCRIPT=""
+        ;;
+esac
 
 # 1. Optimise makepkg
 echo -e "${GREEN}--- Optimising /etc/makepkg.conf for native builds ---${NC}"
@@ -51,7 +78,7 @@ fi
 
 # 4. Install core packages
 echo -e "${GREEN}--- Installing core packages from core_pkg.txt ---${NC}"
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+# SCRIPT_DIR is already defined at top
 yay -S --needed --noconfirm - < "$SCRIPT_DIR/core_pkg.txt"
 
 # 5. Enable core services
@@ -198,9 +225,19 @@ echo -e '#!/bin/bash\nsleep 15\n/usr/bin/steam -silent "$@"' > ~/Make/steam-dela
 chmod +x ~/Make/steam-delay.sh
 
 echo -e "${GREEN}--- Core System Setup Complete ---${NC}"
-echo -e "${GREEN}---${NC}"
+
+# 18. Run Device Specific Script
+if [[ -n "$DEVICE_SCRIPT" && -f "$DEVICE_SCRIPT" ]]; then
+    echo -e "${GREEN}--- Launching $DEVICE_NAME Setup Script ---${NC}"
+    chmod +x "$DEVICE_SCRIPT"
+    "$DEVICE_SCRIPT"
+elif [[ -n "$DEVICE_SCRIPT" ]]; then
+    echo -e "${RED}Warning: Could not find $DEVICE_SCRIPT. Skipping $DEVICE_NAME setup.${NC}"
+fi
+
+# 19. Final Reboot/Restart
 echo -e "${YELLOW}--- MANUAL STEPS REQUIRED ---${NC}"
-echo "Please reboot, then review '2.4 - Core setup and manual config' for further instruction."
+echo "Review '2.3-Manual-Config' for further instruction."
 
 # Restart plasma shell to apply plasmoid and icon changes
 echo -e "${YELLOW}Restarting Plasma shell in 5 seconds...${NC}"
