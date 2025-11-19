@@ -2,7 +2,7 @@
 
 This repository contains my personal setup scripts and configurations for installing and configuring Arch Linux on my all-AMD desktop and laptop. The scripts and settings are tailored to my specific hardware and preferences, aiming to streamline the installation and post-installation process.
 
-### [Get Started](1-Install/1.1-USB.md)
+### [Get Started ⇢](1-Install/1.1-USB.md)
 
 ## Purpose
 
