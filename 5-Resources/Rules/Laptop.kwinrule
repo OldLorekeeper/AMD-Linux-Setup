@@ -1,0 +1,38 @@
+[Start Small]
+Description=Start Small
+ignoregeometry=true
+ignoregeometryrule=2
+placementrule=2
+size=900,600
+sizerule=3
+title=(.* — Konsole$)|(.* — System Settings$)|(^(?!Create|Configure|Properties|Confirmation|Confirm|Save|Edit|Delete Permanently|File Already Exists|Apply Settings).*$)
+titlematch=3
+types=1
+wmclass=(konsole|systemsettings|dolphin)
+wmclassmatch=3
+
+[Start Tall]
+Description=Start Tall
+ignoregeometry=true
+ignoregeometryrule=2
+placementrule=2
+size=890,1100
+sizerule=3
+title=^(?!Close|Configure|Save File|Specify).*$
+titlematch=3
+types=1
+wmclass=(kate)
+wmclassmatch=3
+
+[Start Wide]
+Description=Start Wide
+ignoregeometry=true
+ignoregeometryrule=2
+placementrule=2
+size=1730,1130
+sizerule=3
+title=(.* - Google Chrome$)|(^Steam$)|(.*)
+titlematch=3
+types=1
+wmclass=(google-chrome|steam|chrome-[a-z0-9]+-Default|obsidian)
+wmclassmatch=3
