@@ -26,9 +26,8 @@ echo -e "${GREEN}--- Creating script and hook to replace Sunshine icons... ---${
 sudo tee /usr/local/bin/replace-sunshine-icons.sh > /dev/null << EOF
 #!/bin/bash
 DEST_DIR="/usr/share/icons/hicolor/scalable/status"
-# Calculate the repo root relative to this generated script's original location
 REPO_ROOT="\$(dirname "$SCRIPT_DIR")"
-SOURCE_DIR="\$REPO_ROOT/5. Resources/Icons/Sunshine Tray Icons"
+SOURCE_DIR="\$REPO_ROOT/5-Resources/Icons/Sunshine-Tray-Icons"
 
 if [[ -d "\$SOURCE_DIR" ]]; then
     cp "\$SOURCE_DIR"/*.svg "\$DEST_DIR/"
