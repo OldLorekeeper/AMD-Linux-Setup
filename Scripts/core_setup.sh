@@ -26,7 +26,6 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 echo -e "${GREEN}--- Starting Core System Setup ---${NC}"
 
 # 0. Select Device Type
-# We ask this upfront so the user can walk away while the script runs.
 echo -e "${YELLOW}--- Select Installation Type ---${NC}"
 echo "1) Desktop"
 echo "2) Laptop"
@@ -107,7 +106,15 @@ compression-algorithm = zstd
 swap-priority = 100
 EOF
 
-# 10. Pacman hooks
+# 10. Configure Swappiness
+echo -e "${GREEN}--- Configuring swappiness to 10 (optimal for zram) ---${NC}"
+sudo tee /etc/sysctl.d/99-swappiness.conf > /dev/null <<'EOF'
+vm.swappiness = 10
+EOF
+# Apply immediately so it's active for the rest of the setup
+sudo sysctl --system
+
+# 11. Pacman hooks
 echo -e "${GREEN}--- Adding pacman hooks for initramfs and GRUB ---${NC}"
 sudo mkdir -p /etc/pacman.d/hooks
 sudo tee /etc/pacman.d/hooks/98-rebuild-initramfs.hook > /dev/null << 'EOF'
@@ -139,16 +146,16 @@ When = PostTransaction
 Exec = /usr/bin/grub-mkconfig -o /boot/grub/grub.cfg
 EOF
 
-# 11. Bluetooth features
+# 12. Bluetooth features
 echo -e "${GREEN}--- Enabling experimental Bluetooth features ---${NC}"
 # ROBUST: This command will work if the line is commented or uncommented.
 sudo sed -i 's/^#*\(Experimental = \).*/\1true/' /etc/bluetooth/main.conf
 
-# 12. Remove Discover
+# 13. Remove Discover
 echo -e "${GREEN}--- Removing Discover ---${NC}"
 sudo pacman -Rdd --noconfirm discover
 
-# 13. Reflector Timer
+# 14. Reflector Timer
 echo -e "${GREEN}--- Configuring and enabling Reflector timer ---${NC}"
 sudo tee /etc/xdg/reflector/reflector.conf > /dev/null << 'EOF'
 # Added by core_setup.sh
@@ -175,14 +182,14 @@ EOF
 sudo systemctl daemon-reload
 sudo systemctl enable --now reflector.timer
 
-# 14. User-specific configurations (Header)
+# 15. User-specific configurations (Header)
 echo -e "${GREEN}--- Applying user-specific configurations ---${NC}"
 
-# 15. Papirus folder colours
+# 16. Papirus folder colours
 echo -e "${GREEN}--- Setting Papirus folder colours ---${NC}"
 papirus-folders -C breeze --theme Papirus-Dark
 
-# 16. Gemini plasmoid
+# 17. Gemini plasmoid
 echo -e "${GREEN}--- Installing and patching Gemini plasmoid ---${NC}"
 if [ ! -d "$HOME/.local/share/plasma/plasmoids/com.samirgaire10.google_gemini-plasma6" ]; then
     git clone https://github.com/samirgaire10/com.samirgaire10.google_gemini-plasma6.git "$HOME/Make/com.samirgaire10.google_gemini-plasma6"
@@ -219,14 +226,14 @@ else
     echo "Gemini plasmoid already installed, skipping."
 fi
 
-# 17. Steam delay script
+# 18. Steam delay script
 echo -e "${GREEN}--- Creating Steam delay script ---${NC}"
 echo -e '#!/bin/bash\nsleep 15\n/usr/bin/steam -silent "$@"' > ~/Make/steam-delay.sh
 chmod +x ~/Make/steam-delay.sh
 
 echo -e "${GREEN}--- Core System Setup Complete ---${NC}"
 
-# 18. Run Device Specific Script
+# 19. Run Device Specific Script
 if [[ -n "$DEVICE_SCRIPT" && -f "$DEVICE_SCRIPT" ]]; then
     echo -e "${GREEN}--- Launching $DEVICE_NAME Setup Script ---${NC}"
     chmod +x "$DEVICE_SCRIPT"
@@ -235,7 +242,7 @@ elif [[ -n "$DEVICE_SCRIPT" ]]; then
     echo -e "${RED}Warning: Could not find $DEVICE_SCRIPT. Skipping $DEVICE_NAME setup.${NC}"
 fi
 
-# 19. Final Reboot/Restart
+# 20. Final steps
 echo -e "${YELLOW}--- MANUAL STEPS REQUIRED ---${NC}"
 echo "Review '2.3-Manual' for further instruction."
 
