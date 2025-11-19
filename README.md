@@ -42,7 +42,7 @@ The setup follows a tiered execution order:
 	
 4.  **Device Tuning:** Automatically branches to `desktop_setup.sh` or `laptop_setup.sh`.
 
-**NOTES**
+## Notes
 
 - **Clean Install Required:** The scripts assume a fresh Arch Linux environment.
     
