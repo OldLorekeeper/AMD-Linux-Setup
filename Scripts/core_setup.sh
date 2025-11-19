@@ -12,25 +12,28 @@
 #
 
 set -e
-echo "--- Starting Core System Setup ---"
 
-#
-# --- 1. Package Compilation and Mirrors ---
-#
-echo "--- Optimising /etc/makepkg.conf for native builds ---"
+# Colour Codes
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+echo -e "${GREEN}--- Starting Core System Setup ---${NC}"
+
+# 1. Optimise makepkg
+echo -e "${GREEN}--- Optimising /etc/makepkg.conf for native builds ---${NC}"
 # ROBUST: This command will work even if CFLAGS is commented out or if you run the script more than once.
 sudo sed -i 's/^#*\(CFLAGS=".*-march=\)x86-64 -mtune=generic/\1native/' /etc/makepkg.conf
 # ROBUST: This command will work if MAKEFLAGS is commented or uncommented.
 sudo sed -i "s/^#*MAKEFLAGS=.*/MAKEFLAGS=\"-j$(nproc)\"/" /etc/makepkg.conf
 echo "makepkg.conf optimised."
 
-echo "--- Updating mirror list ---"
+# 2. Update mirrors
+echo -e "${GREEN}--- Updating mirror list ---${NC}"
 sudo reflector --country GB,IE,NL,DE,FR,EU --age 6 --protocol https --sort rate --fastest 10 --save /etc/pacman.d/mirrorlist
 
-#
-# --- 2. Install yay and Core Packages ---
-#
-echo "--- Installing yay (AUR Helper) ---"
+# 3. Install yay
+echo -e "${GREEN}--- Installing yay (AUR Helper) ---${NC}"
 sudo pacman -S --needed --noconfirm git base-devel
 if [ ! -d "$HOME/Make/yay" ]; then
     git clone https://aur.archlinux.org/yay.git "$HOME/Make/yay"
@@ -39,33 +42,30 @@ else
 fi
 (cd "$HOME/Make/yay" && makepkg -si --noconfirm)
 
-echo "--- Installing core packages from core_pkg.txt ---"
+# 4. Install core packages
+echo -e "${GREEN}--- Installing core packages from core_pkg.txt ---${NC}"
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 yay -S --needed --noconfirm - < "$SCRIPT_DIR/core_pkg.txt"
 
-#
-# --- 3. Enable Core Services ---
-#
-echo "--- Enabling core services ---"
+# 5. Enable core services
+echo -e "${GREEN}--- Enabling core services ---${NC}"
 sudo systemctl enable --now transmission bluetooth timeshift-hourly.timer lactd btrfs-scrub@-.timer
 
-#
-# --- 4. NEW: Automated System Configurations (sudo) ---
-#
-echo "--- Applying system-wide configurations ---"
+# 6. System-wide configurations (Header)
+echo -e "${GREEN}--- Applying system-wide configurations ---${NC}"
 
-# 2.5.1 - Add US locale
-echo "--- Setting up en_US locale ---"
+# 7. Setup Locale
+echo -e "${GREEN}--- Setting up en_US locale ---${NC}"
 # ROBUST: This command will work if the locale is commented or uncommented.
 sudo sed -i 's/^#*\(en_US.UTF-8\)/\1/' /etc/locale.gen
 sudo locale-gen
 
-# 2.5.2 - Add environment variables
-echo "--- Setting environment variables for AMD VA-API and Wine ---"
+# 8. Environment variables
+echo -e "${GREEN}--- Setting environment variables for AMD VA-API and Wine ---${NC}"
 echo -e "\n# Added by core_setup.sh\nLIBVA_DRIVER_NAME=radeonsi\nVDPAU_DRIVER=radeonsi\nWINEFSYNC=1" | sudo tee -a /etc/environment
 
-# 2.5.4 - Configure zram swap
-echo "--- Configuring zram swap ---"
+# 9. Zram swap
+echo -e "${GREEN}--- Configuring zram swap ---${NC}"
 sudo tee /etc/systemd/zram-generator.conf > /dev/null << 'EOF'
 [zram0]
 zram-size = ram / 2
@@ -73,8 +73,8 @@ compression-algorithm = zstd
 swap-priority = 100
 EOF
 
-# 2.5.5 - Add pacman hooks
-echo "--- Adding pacman hooks for initramfs and GRUB ---"
+# 10. Pacman hooks
+echo -e "${GREEN}--- Adding pacman hooks for initramfs and GRUB ---${NC}"
 sudo mkdir -p /etc/pacman.d/hooks
 sudo tee /etc/pacman.d/hooks/98-rebuild-initramfs.hook > /dev/null << 'EOF'
 [Trigger]
@@ -105,17 +105,17 @@ When = PostTransaction
 Exec = /usr/bin/grub-mkconfig -o /boot/grub/grub.cfg
 EOF
 
-# 2.5.8 - Enable experimental Bluetooth features
-echo "--- Enabling experimental Bluetooth features ---"
+# 11. Bluetooth features
+echo -e "${GREEN}--- Enabling experimental Bluetooth features ---${NC}"
 # ROBUST: This command will work if the line is commented or uncommented.
 sudo sed -i 's/^#*\(Experimental = \).*/\1true/' /etc/bluetooth/main.conf
 
-# 2.5.9 - Remove KDE discover
-echo "--- Removing Discover ---"
+# 12. Remove Discover
+echo -e "${GREEN}--- Removing Discover ---${NC}"
 sudo pacman -Rdd --noconfirm discover
 
-# 2.5.14 - Configure Reflector Service and Timer
-echo "--- Configuring and enabling Reflector timer ---"
+# 13. Reflector Timer
+echo -e "${GREEN}--- Configuring and enabling Reflector timer ---${NC}"
 sudo tee /etc/xdg/reflector/reflector.conf > /dev/null << 'EOF'
 # Added by core_setup.sh
 --country GB,IE,NL,DE,FR,EU
@@ -141,17 +141,15 @@ EOF
 sudo systemctl daemon-reload
 sudo systemctl enable --now reflector.timer
 
-#
-# --- 5. NEW: Automated User Configurations (non-sudo) ---
-#
-echo "--- Applying user-specific configurations ---"
+# 14. User-specific configurations (Header)
+echo -e "${GREEN}--- Applying user-specific configurations ---${NC}"
 
-# 2.5.6 - Change papirus dark's folder colours
-echo "--- Setting Papirus folder colours ---"
+# 15. Papirus folder colours
+echo -e "${GREEN}--- Setting Papirus folder colours ---${NC}"
 papirus-folders -C breeze --theme Papirus-Dark
 
-# 2.5.12 - Add Gemini plasmoid
-echo "--- Installing and patching Gemini plasmoid ---"
+# 16. Gemini plasmoid
+echo -e "${GREEN}--- Installing and patching Gemini plasmoid ---${NC}"
 if [ ! -d "$HOME/.local/share/plasma/plasmoids/com.samirgaire10.google_gemini-plasma6" ]; then
     git clone https://github.com/samirgaire10/com.samirgaire10.google_gemini-plasma6.git "$HOME/Make/com.samirgaire10.google_gemini-plasma6"
     mkdir -p ~/.local/share/plasma/plasmoids/
@@ -187,18 +185,18 @@ else
     echo "Gemini plasmoid already installed, skipping."
 fi
 
-# 2.5.13 - Create Steam autostart script
-echo "--- Creating Steam delay script ---"
+# 17. Steam delay script
+echo -e "${GREEN}--- Creating Steam delay script ---${NC}"
 echo -e '#!/bin/bash\nsleep 15\n/usr/bin/steam -silent "$@"' > ~/Make/steam-delay.sh
 chmod +x ~/Make/steam-delay.sh
 
 
-echo "--- Core System Setup Complete ---"
-echo "---"
-echo "--- MANUAL STEPS REQUIRED ---"
+echo -e "${GREEN}--- Core System Setup Complete ---${NC}"
+echo -e "${GREEN}---${NC}"
+echo -e "${YELLOW}--- MANUAL STEPS REQUIRED ---${NC}"
 echo "Please reboot, then review '2.4 - Core setup and manual config' for further instruction."
 
 # Restart plasma shell to apply plasmoid and icon changes
-echo "Restarting Plasma shell in 5 seconds..."
+echo -e "${YELLOW}Restarting Plasma shell in 5 seconds...${NC}"
 sleep 5
 kquitapp6 plasmashell && kstart plasmashell
