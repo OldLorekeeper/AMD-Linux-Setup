@@ -190,7 +190,6 @@ echo -e "${GREEN}--- Creating Steam delay script ---${NC}"
 echo -e '#!/bin/bash\nsleep 15\n/usr/bin/steam -silent "$@"' > ~/Make/steam-delay.sh
 chmod +x ~/Make/steam-delay.sh
 
-
 echo -e "${GREEN}--- Core System Setup Complete ---${NC}"
 echo -e "${GREEN}---${NC}"
 echo -e "${YELLOW}--- MANUAL STEPS REQUIRED ---${NC}"
