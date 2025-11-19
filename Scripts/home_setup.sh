@@ -11,7 +11,18 @@ set -e
 # Colour Codes
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+RED='\033[0;31m'
 NC='\033[0m' # No Color
+
+# --- Root User Check ---
+if [[ $EUID -eq 0 ]]; then
+   echo -e "${RED}Error: This script must NOT be run as root/sudo.${NC}"
+   echo "It relies on \$HOME and \$USER to configure your personal environment."
+   echo "Please run it as your normal user:"
+   echo "  ./home_setup.sh"
+   exit 1
+fi
+# -----------------------
 
 echo -e "${GREEN}--- Starting Home Folder Setup ---${NC}"
 
@@ -47,6 +58,7 @@ fi
 # We use a temporary directory to avoid messing with /mnt if it's in use
 TEMP_MNT=$(mktemp -d)
 echo "Mounting Btrfs root ($ROOT_DEVICE) to temporary path..."
+# We use sudo here specifically for the privileged commands
 sudo mount -o subvolid=5 "$ROOT_DEVICE" "$TEMP_MNT"
 
 # Create @games Subvolume
@@ -80,4 +92,4 @@ sudo mount "$MOUNT_POINT"
 echo "Setting ownership of $MOUNT_POINT to $USER..."
 sudo chown -R "$USER:$(id -gn "$USER")" "$MOUNT_POINT"
 
-echo -e "${YELLOW}--- Home Folder Setup Complete ---${NC}"
+echo -e "${GREEN}--- Home Folder Setup Complete ---${NC}"
