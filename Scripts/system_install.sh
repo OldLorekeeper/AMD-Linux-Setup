@@ -10,6 +10,7 @@ set -e
 
 # Colour Codes
 GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # 1. Set Keyboard
@@ -29,9 +30,11 @@ echo -e "${GREEN}--- Downloading archinstall configuration... ---${NC}"
 curl -sL -o /root/archinstall_config.json "https://raw.githubusercontent.com/OldLorekeeper/AMD-Linux-Setup/main/Scripts/archinstall_config.json"
 
 # 5. Sync & Update
-echo -e "${GREEN}--- Syncing pacman and updating archinstall ---${NC}"
-pacman -Sy archinstall
+echo -e "${GREEN}--- Updating keyring and installing archinstall ---${NC}"
+# Update keyring first to prevent signature errors on older ISOs
+pacman -Sy --noconfirm archlinux-keyring
+pacman -S --noconfirm archinstall
 
 # 6. Launch Installer
-echo -e "${GREEN}--- Preparation complete. Launching archinstall... ---${NC}"
+echo -e "${YELLOW}--- Preparation complete. Launching archinstall... ---${NC}"
 archinstall --config /root/archinstall_config.json
