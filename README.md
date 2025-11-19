@@ -38,7 +38,7 @@ The setup follows a tiered execution order:
 3.  **Core Configuration:** `core_setup.sh` (installs base packages, yay, and optimises makepkg).
 4.  **Device Tuning:** Automatically branches to `desktop_setup.sh` or `laptop_setup.sh`.
 
-### Notes
+**NOTES**
 
 - **Clean Install Required:** The scripts assume a fresh Arch Linux environment.
     
