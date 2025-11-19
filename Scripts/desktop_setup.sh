@@ -7,7 +7,7 @@
 # MANUAL configuration for API keys and hardware-specific
 # settings will be required after this script completes.
 
-set -e # Exit immediately if a command exits with a non-zero status.
+set -e
 
 # Colour Codes
 GREEN='\033[0;32m'
@@ -16,27 +16,20 @@ NC='\033[0m' # No Color
 
 echo -e "${GREEN}--- Starting Automated Desktop Setup ---${NC}"
 
-# We define SCRIPT_DIR early to ensure path consistency for icons
+# Define paths for consistency
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-#
-# PRE-INSTALL: Setup Sunshine Hook and Repo
-# This must run *before* yay install, so the hook
-# and repo are active for the 'sunshine' package.
-#
+# 1. Pre-install: Sunshine Hook and Repo
 echo -e "${GREEN}--- Creating script and hook to replace Sunshine icons... ---${NC}"
 
-# Create replacement script
-# Uses local icons from: ../5. Resources/Icons/Sunshine Tray Icons
+# Create replacement script using local repo path
 sudo tee /usr/local/bin/replace-sunshine-icons.sh > /dev/null << EOF
 #!/bin/bash
-
 DEST_DIR="/usr/share/icons/hicolor/scalable/status"
 # Calculate the repo root relative to this generated script's original location
 REPO_ROOT="\$(dirname "$SCRIPT_DIR")"
 SOURCE_DIR="\$REPO_ROOT/5. Resources/Icons/Sunshine Tray Icons"
 
-# Check if source exists and copy
 if [[ -d "\$SOURCE_DIR" ]]; then
     cp "\$SOURCE_DIR"/*.svg "\$DEST_DIR/"
     echo "Sunshine icons updated from local repo."
@@ -63,24 +56,19 @@ EOF
 echo -e "${GREEN}--- Adding [lizardbyte] repo for Sunshine... ---${NC}"
 if ! grep -q "\[lizardbyte\]" /etc/pacman.conf; then
     echo -e "\n[lizardbyte]\nSigLevel = Optional\nServer = https://github.com/LizardByte/pacman-repo/releases/latest/download" | sudo tee -a /etc/pacman.conf
-    # Fixed: Use -Syu to prevent partial upgrade issues
+    
+    # FIX: Use -Syu to prevent partial upgrade issues
     echo -e "${YELLOW}Syncing repositories...${NC}"
     sudo pacman -Syu
 else
     echo "[lizardbyte] repo already found in /etc/pacman.conf."
 fi
 
-#
-# Install Desktop Packages
-#
+# 2. Install Desktop Packages
 echo -e "${GREEN}--- Installing additional desktop packages from desktop_pkg.txt... ---${NC}"
-# SCRIPT_DIR is already defined at the top
 yay -S --needed --noconfirm - < "$SCRIPT_DIR/desktop_pkg.txt"
 
-#
-# Post-install Configuration
-#
-
+# 3. Enable Desktop Services
 echo -e "${GREEN}--- Enabling desktop services ---${NC}"
 echo "Enabling services: sonarr, radarr, lidarr, prowlarr, jellyfin"
 sudo systemctl enable --now sonarr radarr lidarr prowlarr jellyfin
@@ -93,9 +81,7 @@ echo "Adding solaar udev rules..."
 sudo wget -O /etc/udev/rules.d/42-solaar-uinput.rules https://raw.githubusercontent.com/pwr-Solaar/Solaar/refs/heads/master/rules.d-uinput/42-logitech-unify-permissions.rules
 sudo udevadm control --reload-rules && sudo udevadm trigger
 
-#
-# Jellyfin HideMe tag automation
-#
+# 4. Jellyfin HideMe Script
 echo -e "${GREEN}--- Setting up Jellyfin HideMe script... ---${NC}"
 tee ~/Make/hideme_tag.py > /dev/null << 'EOF'
 #!/usr/bin/env python3
@@ -181,9 +167,7 @@ echo "Enabling Jellyfin HideMe timer (user service)..."
 systemctl --user daemon-reload
 systemctl --user enable --now hideme_tag.timer
 
-#
-# Setup lidarr, slskd and soularr
-#
+# 5. Setup Slskd and Soularr
 echo -e "${GREEN}--- Setting up slskd and Soularr... ---${NC}"
 
 echo "Creating slskd systemd override..."
@@ -288,19 +272,14 @@ echo "Enabling Soularr timer..."
 sudo systemctl daemon-reload
 sudo systemctl enable --now soularr.timer
 
-#
-# --- Apply Desktop Kernel Parameters ---
-#
+# 6. Desktop Kernel Parameters
 echo -e "${GREEN}--- Applying desktop-specific kernel parameters ---${NC}"
-# --- ROBUST SED COMMAND ---
-# This command captures the existing parameters and appends the new ones before the final quote
 sudo sed -i 's/^\(GRUB_CMDLINE_LINUX_DEFAULT=".*\)"$/\1 amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=2560x1600@60 amd_pstate=guided"/' /etc/default/grub
 
 echo -e "${GREEN}--- Rebuilding GRUB configuration ---${NC}"
 sudo grub-mkconfig -o /boot/grub/grub.cfg
 
-
 echo -e "${GREEN}--- Automated Desktop Setup Finished ---${NC}"
-echo -e "${GREEN}---${NC}"
+
 echo -e "${YELLOW}--- MANUAL CONFIGURATION REQUIRED ---${NC}"
 echo "Please complete the manual steps as per guide, then REBOOT."
