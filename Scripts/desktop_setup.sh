@@ -8,35 +8,41 @@
 # settings will be required after this script completes.
 
 set -e # Exit immediately if a command exits with a non-zero status.
-echo "--- Starting Automated Desktop Setup ---"
+
+# Colour Codes
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+echo -e "${GREEN}--- Starting Automated Desktop Setup ---${NC}"
+
+# We define SCRIPT_DIR early to ensure path consistency for icons
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 #
 # PRE-INSTALL: Setup Sunshine Hook and Repo
 # This must run *before* yay install, so the hook
 # and repo are active for the 'sunshine' package.
 #
-echo "--- Creating script and hook to replace Sunshine icons... ---"
+echo -e "${GREEN}--- Creating script and hook to replace Sunshine icons... ---${NC}"
+
 # Create replacement script
-sudo tee /usr/local/bin/replace-sunshine-icons.sh > /dev/null << 'EOF'
+# Uses local icons from: ../5. Resources/Icons/Sunshine Tray Icons
+sudo tee /usr/local/bin/replace-sunshine-icons.sh > /dev/null << EOF
 #!/bin/bash
 
 DEST_DIR="/usr/share/icons/hicolor/scalable/status"
-BASE_URL="https://raw.githubusercontent.com/OldLorekeeper/AMD-Linux-Setup/main/5.%20Resources/Icons/Sunshine%20Tray%20Icons"
-ICONS=("sunshine-locked.svg" "sunshine-pausing.svg" "sunshine-playing.svg" "sunshine-tray.svg")
+# Calculate the repo root relative to this generated script's original location
+REPO_ROOT="\$(dirname "$SCRIPT_DIR")"
+SOURCE_DIR="\$REPO_ROOT/5. Resources/Icons/Sunshine Tray Icons"
 
-for icon in "${ICONS[@]}"; do
-    ICON_URL="$BASE_URL/$icon"
-    TEMP_ICON="/tmp/$icon"
-
-    # Download the latest version from the GitHub raw content
-    curl -s -L -o "$TEMP_ICON" "$ICON_URL"
-
-    # If the download is successful, replace the system icon
-    if [[ -f "$TEMP_ICON" ]]; then
-        sudo cp "$TEMP_ICON" "$DEST_DIR/$icon"
-        rm "$TEMP_ICON"  # Clean up the temp file
-    fi
-done
+# Check if source exists and copy
+if [[ -d "\$SOURCE_DIR" ]]; then
+    cp "\$SOURCE_DIR"/*.svg "\$DEST_DIR/"
+    echo "Sunshine icons updated from local repo."
+else
+    echo "Warning: Icon source directory not found at \$SOURCE_DIR"
+fi
 EOF
 sudo chmod +x /usr/local/bin/replace-sunshine-icons.sh
 
@@ -54,10 +60,12 @@ When = PostTransaction
 Exec = /usr/local/bin/replace-sunshine-icons.sh
 EOF
 
-echo "--- Adding [lizardbyte] repo for Sunshine... ---"
+echo -e "${GREEN}--- Adding [lizardbyte] repo for Sunshine... ---${NC}"
 if ! grep -q "\[lizardbyte\]" /etc/pacman.conf; then
     echo -e "\n[lizardbyte]\nSigLevel = Optional\nServer = https://github.com/LizardByte/pacman-repo/releases/latest/download" | sudo tee -a /etc/pacman.conf
-    sudo pacman -Sy
+    # Fixed: Use -Syu to prevent partial upgrade issues
+    echo -e "${YELLOW}Syncing repositories...${NC}"
+    sudo pacman -Syu
 else
     echo "[lizardbyte] repo already found in /etc/pacman.conf."
 fi
@@ -65,16 +73,15 @@ fi
 #
 # Install Desktop Packages
 #
-echo "--- Installing additional desktop packages from desktop_pkg.txt... ---"
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-# This will now install sunshine, jellyfin, arrs, python deps, etc.
+echo -e "${GREEN}--- Installing additional desktop packages from desktop_pkg.txt... ---${NC}"
+# SCRIPT_DIR is already defined at the top
 yay -S --needed --noconfirm - < "$SCRIPT_DIR/desktop_pkg.txt"
 
 #
 # Post-install Configuration
 #
 
-echo "--- Enabling desktop services ---"
+echo -e "${GREEN}--- Enabling desktop services ---${NC}"
 echo "Enabling services: sonarr, radarr, lidarr, prowlarr, jellyfin"
 sudo systemctl enable --now sonarr radarr lidarr prowlarr jellyfin
 
@@ -89,7 +96,7 @@ sudo udevadm control --reload-rules && sudo udevadm trigger
 #
 # Jellyfin HideMe tag automation
 #
-echo "--- Setting up Jellyfin HideMe script... ---"
+echo -e "${GREEN}--- Setting up Jellyfin HideMe script... ---${NC}"
 tee ~/Make/hideme_tag.py > /dev/null << 'EOF'
 #!/usr/bin/env python3
 import requests
@@ -177,7 +184,7 @@ systemctl --user enable --now hideme_tag.timer
 #
 # Setup lidarr, slskd and soularr
 #
-echo "--- Setting up slskd and Soularr... ---"
+echo -e "${GREEN}--- Setting up slskd and Soularr... ---${NC}"
 
 echo "Creating slskd systemd override..."
 sudo mkdir -p /etc/systemd/system/slskd.service.d
@@ -284,16 +291,16 @@ sudo systemctl enable --now soularr.timer
 #
 # --- Apply Desktop Kernel Parameters ---
 #
-echo "--- Applying desktop-specific kernel parameters ---"
+echo -e "${GREEN}--- Applying desktop-specific kernel parameters ---${NC}"
 # --- ROBUST SED COMMAND ---
 # This command captures the existing parameters and appends the new ones before the final quote
 sudo sed -i 's/^\(GRUB_CMDLINE_LINUX_DEFAULT=".*\)"$/\1 amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=2560x1600@60 amd_pstate=guided"/' /etc/default/grub
 
-echo "--- Rebuilding GRUB configuration ---"
+echo -e "${GREEN}--- Rebuilding GRUB configuration ---${NC}"
 sudo grub-mkconfig -o /boot/grub/grub.cfg
 
 
-echo "--- Automated Desktop Setup Finished ---"
-echo "---"
-echo "--- MANUAL CONFIGURATION REQUIRED ---"
+echo -e "${GREEN}--- Automated Desktop Setup Finished ---${NC}"
+echo -e "${GREEN}---${NC}"
+echo -e "${YELLOW}--- MANUAL CONFIGURATION REQUIRED ---${NC}"
 echo "Please complete the manual steps as per guide, then REBOOT."
