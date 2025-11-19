@@ -237,7 +237,7 @@ fi
 
 # 19. Final Reboot/Restart
 echo -e "${YELLOW}--- MANUAL STEPS REQUIRED ---${NC}"
-echo "Review '2.3-Manual-Config' for further instruction."
+echo "Review '2.3-Manual' for further instruction."
 
 # Restart plasma shell to apply plasmoid and icon changes
 echo -e "${YELLOW}Restarting Plasma shell in 5 seconds...${NC}"
