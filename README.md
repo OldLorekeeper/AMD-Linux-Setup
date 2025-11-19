@@ -33,9 +33,13 @@ These scripts are highly opinionated and include hardcoded hardware configuratio
 This repository is **intended for personal use**. However, others are welcome to explore the scripts and adapt them for their own systems.
 
 The setup follows a tiered execution order:
+
 1.  **Bootstrap:** `system_install.sh` (runs `archinstall`).
+	 
 2.  **User Environment:** `home_setup.sh` (configures Zsh, dotfiles, and directories).
+	
 3.  **Core Configuration:** `core_setup.sh` (installs base packages, yay, and optimises makepkg).
+	
 4.  **Device Tuning:** Automatically branches to `desktop_setup.sh` or `laptop_setup.sh`.
 
 **NOTES**
