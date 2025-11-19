@@ -26,6 +26,13 @@ echo -e "${GREEN}--- Optimising /etc/makepkg.conf for native builds ---${NC}"
 sudo sed -i 's/^#*\(CFLAGS=".*-march=\)x86-64 -mtune=generic/\1native/' /etc/makepkg.conf
 # ROBUST: This command will work if MAKEFLAGS is commented or uncommented.
 sudo sed -i "s/^#*MAKEFLAGS=.*/MAKEFLAGS=\"-j$(nproc)\"/" /etc/makepkg.conf
+# OPTIMISATION: Build in RAM if /tmp is tmpfs
+if [[ "$(findmnt -n -o FSTYPE /tmp)" == "tmpfs" ]]; then
+    echo -e "${GREEN}--- /tmp is tmpfs. Enabling memory-based builds... ---${NC}"
+    sudo sed -i 's/^#*\(BUILDDIR=\/tmp\/makepkg\)/\1/' /etc/makepkg.conf
+else
+    echo -e "${YELLOW}--- /tmp is not tmpfs. Skipping BUILDDIR optimization. ---${NC}"
+fi
 echo "makepkg.conf optimised."
 
 # 2. Update mirrors
