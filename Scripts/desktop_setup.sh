@@ -72,6 +72,17 @@ echo -e "${GREEN}--- Enabling desktop services ---${NC}"
 echo "Enabling services: sonarr, radarr, lidarr, prowlarr, jellyfin"
 sudo systemctl enable --now sonarr radarr lidarr prowlarr jellyfin
 
+# Prevent shutdown hangs by ensuring services stop before /mnt/Media unmounts
+echo -e "${GREEN}--- Applying Shutdown Safety Overrides ---${NC}"
+SAFETY_SERVICES=("jellyfin" "sonarr" "radarr" "lidarr" "transmission")
+
+for SERVICE in "${SAFETY_SERVICES[@]}"; do
+    echo "Securing $SERVICE..."
+    sudo mkdir -p "/etc/systemd/system/$SERVICE.service.d"
+    echo -e "[Unit]\nRequiresMountsFor=/mnt/Media" | sudo tee "/etc/systemd/system/$SERVICE.service.d/media-mount.conf" > /dev/null
+done
+sudo systemctl daemon-reload
+
 echo "Configuring Sunshine permissions and enabling service..."
 sudo setcap cap_sys_admin+p $(readlink -f $(which sunshine))
 systemctl --user enable --now sunshine
@@ -172,6 +183,9 @@ echo -e "${GREEN}--- Setting up slskd and Soularr... ---${NC}"
 echo "Creating slskd systemd override..."
 sudo mkdir -p /etc/systemd/system/slskd.service.d
 sudo tee /etc/systemd/system/slskd.service.d/override.conf > /dev/null << 'EOF'
+[Unit]
+RequiresMountsFor=/mnt/Media
+
 [Service]  
 ExecStart=  
 ExecStart=/usr/lib/slskd/slskd --config /etc/slskd/slskd.yml
@@ -236,6 +250,7 @@ Description=Soularr (Lidarr ↔ Slskd automation)
 Wants=network-online.target lidarr.service slskd.service
 After=network-online.target lidarr.service slskd.service
 Requires=lidarr.service slskd.service
+RequiresMountsFor=/mnt/Media
 
 [Service]
 Type=oneshot
@@ -273,7 +288,7 @@ sudo systemctl enable --now soularr.timer
 
 # 6. Desktop Kernel Parameters
 echo -e "${GREEN}--- Applying desktop-specific kernel parameters ---${NC}"
-sudo sed -i 's/^\(GRUB_CMDLINE_LINUX_DEFAULT=".*\)"$/\1 amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=2560x1600@60 amd_pstate=guided"/' /etc/default/grub
+sudo sed -i 's/^\(GRUB_CMDLINE_LINUX_DEFAULT=".*\)"$/\1 amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=3440x1440@60 amd_pstate=guided"/' /etc/default/grub
 
 echo -e "${GREEN}--- Rebuilding GRUB configuration ---${NC}"
 sudo grub-mkconfig -o /boot/grub/grub.cfg
