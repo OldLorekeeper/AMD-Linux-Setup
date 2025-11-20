@@ -286,6 +286,15 @@ echo "Enabling Soularr timer..."
 sudo systemctl daemon-reload
 sudo systemctl enable --now soularr.timer
 
+# 5.1 Hardware Fixes
+echo -e "${GREEN}--- Applying AMD Chipset USB Fix ---${NC}"
+echo "Disabling runtime power management for AMD 600 Series USB 3.2 Controller (1022:43f7)..."
+sudo tee /etc/udev/rules.d/99-xhci-fix.rules > /dev/null << 'EOF'
+# Disable runtime power management for AMD 600 Series USB 3.2 Controller (1022:43f7)
+SUBSYSTEM=="pci", ATTR{vendor}=="0x1022", ATTR{device}=="0x43f7", ATTR{power/control}="on"
+EOF
+sudo udevadm control --reload-rules && sudo udevadm trigger
+
 # 6. Desktop Kernel Parameters
 echo -e "${GREEN}--- Applying desktop-specific kernel parameters ---${NC}"
 sudo sed -i 's/^\(GRUB_CMDLINE_LINUX_DEFAULT=".*\)"$/\1 amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=3440x1440@60 amd_pstate=guided"/' /etc/default/grub
