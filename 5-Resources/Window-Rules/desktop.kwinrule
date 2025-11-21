@@ -1,3 +1,11 @@
+# SIZES:
+# Small: 1000,650
+# Tall: 1200,1200
+# Wide: 2000,1250
+
+# -------------------
+# UNIQUE DESKTOP RULES
+
 [Start Boxy]
 Description=Start Boxy
 placementrule=2
@@ -7,39 +15,4 @@ title=^Lutris$
 titlematch=3
 types=1
 wmclass=(net.lutris.Lutris)
-wmclassmatch=3
-
-[Start Small]
-Description=Start Small
-ignoregeometry=true
-ignoregeometryrule=2
-placementrule=2
-size=1000,650
-sizerule=3
-title=(^(?!Create|Configure|Properties|Save|Edit|Delete|File|Apply|Confirm|Error).*$)
-titlematch=3
-types=1
-wmclass=(konsole|systemsettings|dolphin|xdg-desktop-portal-kde org.freedesktop.impl.portal.desktop.kde)
-wmclassmatch=3
-
-[Start Tall]
-Description=Start Tall
-placementrule=2
-size=1200,1200
-sizerule=3
-title=^(?!Close|Configure|Save|Specify|Open).*$
-titlematch=3
-types=1
-wmclass=(kate)
-wmclassmatch=3
-
-[Start Wide]
-Description=Start Wide
-placementrule=2
-size=2000,1250
-sizerule=3
-title=(.* - Google Chrome$)|(^Steam$)|(.*)
-titlematch=3
-types=1
-wmclass=(google-chrome|steam|chrome-[a-z0-9]+-Default|obsidian)
 wmclassmatch=3

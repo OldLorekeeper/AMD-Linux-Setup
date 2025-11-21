@@ -43,8 +43,10 @@ sudo grub-mkconfig -o /boot/grub/grub.cfg
 
 # 4. Import KWin Rules & Install Alias
 echo -e "${GREEN}--- Importing Laptop Window Rules ---${NC}"
-if [[ -f "$SCRIPT_DIR/update_kwin_rules.sh" ]]; then
-    # 1. Run immediately
+if [[ -f "$SCRIPT_DIR/update_kwin_rules.sh" && -f "$SCRIPT_DIR/sync_kwin_rules.sh" ]]; then
+    # 1a. SYNCHRONISE: Generate the final kwinrule file from the common fragment
+    bash "$SCRIPT_DIR/sync_kwin_rules.sh" laptop
+    # 1b. UPDATE: Convert the generated file and apply to kwinrulesrc
     bash "$SCRIPT_DIR/update_kwin_rules.sh" laptop
 
     # 2. Install 'update-kwin' function into .zshrc
@@ -53,14 +55,28 @@ if [[ -f "$SCRIPT_DIR/update_kwin_rules.sh" ]]; then
         cat << 'EOF' >> "$HOME/.zshrc"
 
 # --- Added by laptop_setup.sh ---
-# Syncs repo and reapplies Laptop rules
+# Syncs repo, generates final rules, and reapplies Laptop rules
 function update-kwin() {
-    echo -e "\033[0;32m--- Syncing AMD-Linux-Setup Repository ---\033[0m"
+    echo -e "\033[0;32m--- Entering Git Synchronization Phase ---\033[0m"
     current_dir=$(pwd)
     cd ~/Obsidian/AMD-Linux-Setup || return
-    git pull
 
-    echo -e "\033[0;32m--- Applying Laptop Window Rules ---\033[0m"
+    # Check for modified common fragment and automatically commit it
+    if git status --porcelain 5-Resources/Window-Rules/common.kwinrule.fragment | grep -q '^ M'; then
+        echo -e "\033[1;33mUncommitted changes detected in common.kwinrule.fragment. Committing automatically...\033[0m"
+        git add 5-Resources/Window-Rules/common.kwinrule.fragment
+        git commit -m "AUTOSYNC: KWin common fragment update from $(hostname)"
+    fi
+
+    echo -e "\033[0;32m--- Pulling latest changes from remote ---\033[0m"
+    if ! git pull; then
+        echo -e "\033[0;31mError: Git pull failed. Cannot continue.\033[0m"
+        cd "$current_dir"
+        return 1
+    fi
+
+    echo -e "\033[0;32m--- Generating and Applying Laptop Window Rules ---\033[0m"
+    ./Scripts/sync_kwin_rules.sh laptop
     ./Scripts/update_kwin_rules.sh laptop
 
     cd "$current_dir"
@@ -71,7 +87,7 @@ EOF
         echo "Command 'update-kwin' already exists in .zshrc."
     fi
 else
-    echo -e "${YELLOW}Warning: update_kwin_rules.sh not found. Skipping rules import.${NC}"
+    echo -e "${YELLOW}Warning: Required rule utilities not found. Skipping rules import.${NC}"
 fi
 
 # ------------------------------------------------------------------------------
