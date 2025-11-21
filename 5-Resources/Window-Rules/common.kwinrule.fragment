@@ -33,3 +33,15 @@ titlematch=3
 types=1
 wmclass=(google-chrome|steam|chrome-[a-z0-9]+-Default|obsidian)
 wmclassmatch=3
+
+# -------------------
+
+[Start Boxy]
+Description=Start Boxy
+placementrule=2
+sizerule=3
+title=^Lutris$
+titlematch=3
+types=1
+wmclass=(net.lutris.Lutris)
+wmclassmatch=3

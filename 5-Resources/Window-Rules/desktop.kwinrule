@@ -2,17 +2,7 @@
 # Small: 1000,650
 # Tall: 1200,1200
 # Wide: 2000,1250
+# Boxy: 1500,950
 
 # -------------------
-# UNIQUE DESKTOP RULES
-
-[Start Boxy]
-Description=Start Boxy
-placementrule=2
-size=1500,950
-sizerule=3
-title=^Lutris$
-titlematch=3
-types=1
-wmclass=(net.lutris.Lutris)
-wmclassmatch=3
+# UNIQUE DESKTOP RULES (None defined after refactor)
