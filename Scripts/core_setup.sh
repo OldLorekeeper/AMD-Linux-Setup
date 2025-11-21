@@ -25,12 +25,14 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 echo -e "${GREEN}--- Starting Core System Setup ---${NC}"
 
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
 # 0. Select Device Type
 echo -e "${YELLOW}--- Select Installation Type ---${NC}"
 echo "1) Desktop"
 echo "2) Laptop"
 read -p "Enter choice [1-2]: " device_choice
-
 case $device_choice in
     1)
         DEVICE_SCRIPT="$SCRIPT_DIR/desktop_setup.sh"
@@ -45,6 +47,9 @@ case $device_choice in
         DEVICE_SCRIPT=""
         ;;
 esac
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 # 1. Optimise makepkg
 echo -e "${GREEN}--- Optimising /etc/makepkg.conf for native builds ---${NC}"
@@ -61,9 +66,15 @@ else
 fi
 echo "makepkg.conf optimised."
 
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
 # 2. Update mirrors
 echo -e "${GREEN}--- Updating mirror list ---${NC}"
 sudo reflector --country GB,IE,NL,DE,FR,EU --age 6 --protocol https --sort rate --fastest 10 --save /etc/pacman.d/mirrorlist
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 # 3. Install yay
 echo -e "${GREEN}--- Installing yay (AUR Helper) ---${NC}"
@@ -75,15 +86,20 @@ else
 fi
 (cd "$HOME/Make/yay" && makepkg -si --noconfirm)
 
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
 # 4. Install core packages
 echo -e "${GREEN}--- Installing core packages from core_pkg.txt ---${NC}"
 # SCRIPT_DIR is already defined at top
 yay -S --needed --noconfirm - < "$SCRIPT_DIR/core_pkg.txt"
 
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
 # 5. Enable core services
 echo -e "${GREEN}--- Enabling core services ---${NC}"
 sudo systemctl enable --now transmission bluetooth timeshift-hourly.timer lactd btrfs-scrub@-.timer
-
 # 5a. Configure grub-btrfsd (Timeshift automation)
 echo -e "${GREEN}--- Configuring grub-btrfsd for Timeshift ---${NC}"
 # Install dependency required for the daemon to watch filesystem events
@@ -101,6 +117,9 @@ else
     echo -e "${YELLOW}Warning: grub-btrfsd.service not found. Is grub-btrfs installed?${NC}"
 fi
 
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
 # 6. System-wide configurations (Header)
 echo -e "${GREEN}--- Applying system-wide configurations ---${NC}"
 
@@ -110,9 +129,15 @@ echo -e "${GREEN}--- Setting up en_US locale ---${NC}"
 sudo sed -i 's/^#*\(en_US.UTF-8\)/\1/' /etc/locale.gen
 sudo locale-gen
 
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
 # 8. Environment variables
 echo -e "${GREEN}--- Setting environment variables for AMD VA-API and Wine ---${NC}"
 echo -e "\n# Added by core_setup.sh\nLIBVA_DRIVER_NAME=radeonsi\nVDPAU_DRIVER=radeonsi\nWINEFSYNC=1" | sudo tee -a /etc/environment
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 # 9. Zram swap
 echo -e "${GREEN}--- Configuring zram swap ---${NC}"
@@ -123,6 +148,9 @@ compression-algorithm = zstd
 swap-priority = 100
 EOF
 
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
 # 10. Configure Swappiness
 echo -e "${GREEN}--- Configuring swappiness to 10 (optimal for zram) ---${NC}"
 sudo tee /etc/sysctl.d/99-swappiness.conf > /dev/null <<'EOF'
@@ -130,6 +158,9 @@ vm.swappiness = 10
 EOF
 # Apply immediately so it's active for the rest of the setup
 sudo sysctl --system
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 # 11. Pacman hooks
 echo -e "${GREEN}--- Adding pacman hooks for initramfs and GRUB ---${NC}"
@@ -148,7 +179,6 @@ Description = Rebuilding initramfs for critical package updates...
 When = PostTransaction
 Exec = /usr/bin/mkinitcpio -P
 EOF
-
 sudo tee /etc/pacman.d/hooks/99-update-grub.hook > /dev/null << 'EOF'
 [Trigger]
 Operation = Install
@@ -163,14 +193,23 @@ When = PostTransaction
 Exec = /usr/bin/grub-mkconfig -o /boot/grub/grub.cfg
 EOF
 
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
 # 12. Bluetooth features
 echo -e "${GREEN}--- Enabling experimental Bluetooth features ---${NC}"
 # ROBUST: This command will work if the line is commented or uncommented.
 sudo sed -i 's/^#*\(Experimental = \).*/\1true/' /etc/bluetooth/main.conf
 
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
 # 13. Remove Discover
 echo -e "${GREEN}--- Removing Discover ---${NC}"
 sudo pacman -Rdd --noconfirm discover
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 # 14. Reflector Timer
 echo -e "${GREEN}--- Configuring and enabling Reflector timer ---${NC}"
@@ -183,7 +222,6 @@ sudo tee /etc/xdg/reflector/reflector.conf > /dev/null << 'EOF'
 --fastest 10
 --save /etc/pacman.d/mirrorlist
 EOF
-
 # Create the systemd timer override
 sudo mkdir -p /etc/systemd/system/reflector.timer.d
 sudo tee /etc/systemd/system/reflector.timer.d/override.conf > /dev/null << 'EOF'
@@ -195,9 +233,11 @@ OnCalendar=00/3:00:00
 Persistent=true
 RandomizedDelaySec=15m
 EOF
-
 sudo systemctl daemon-reload
 sudo systemctl enable --now reflector.timer
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 # 15. User-specific configurations (Header)
 echo -e "${GREEN}--- Applying user-specific configurations ---${NC}"
@@ -206,16 +246,17 @@ echo -e "${GREEN}--- Applying user-specific configurations ---${NC}"
 echo -e "${GREEN}--- Setting Papirus folder colours ---${NC}"
 papirus-folders -C breeze --theme Papirus-Dark
 
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
 # 17. Gemini plasmoid
 echo -e "${GREEN}--- Installing and patching Gemini plasmoid ---${NC}"
 if [ ! -d "$HOME/.local/share/plasma/plasmoids/com.samirgaire10.google_gemini-plasma6" ]; then
     git clone https://github.com/samirgaire10/com.samirgaire10.google_gemini-plasma6.git "$HOME/Make/com.samirgaire10.google_gemini-plasma6"
     mkdir -p ~/.local/share/plasma/plasmoids/
     mv "$HOME/Make/com.samirgaire10.google_gemini-plasma6" ~/.local/share/plasma/plasmoids/
-
     # Define file path
     QML_FILE="$HOME/.local/share/plasma/plasmoids/com.samirgaire10.google_gemini-plasma6/contents/ui/main.qml"
-
     # 1. Fix startup delay
     sed -i '/Component.onCompleted: url = plasmoid.configuration.url;/c\
                     Timer {\
@@ -226,7 +267,6 @@ if [ ! -d "$HOME/.local/share/plasma/plasmoids/com.samirgaire10.google_gemini-pl
                     }\
     \
                     Component.onCompleted: startupTimer.start()' "$QML_FILE"
-
     # 2. Fix clipboard access
     sed -i '/profile: geminiProfile/a \
     \
@@ -243,11 +283,13 @@ else
     echo "Gemini plasmoid already installed, skipping."
 fi
 
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
 # 18. Steam delay script
 echo -e "${GREEN}--- Creating Steam delay script ---${NC}"
 echo -e '#!/bin/bash\nsleep 15\n/usr/bin/steam -silent "$@"' > ~/Make/steam-delay.sh
 chmod +x ~/Make/steam-delay.sh
-
 echo -e "${GREEN}--- Core System Setup Complete ---${NC}"
 
 # 19. Run Device Specific Script
@@ -259,10 +301,12 @@ elif [[ -n "$DEVICE_SCRIPT" ]]; then
     echo -e "${RED}Warning: Could not find $DEVICE_SCRIPT. Skipping $DEVICE_NAME setup.${NC}"
 fi
 
-# 20. Final steps
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
+# 20. End
 echo -e "${YELLOW}--- MANUAL STEPS REQUIRED ---${NC}"
 echo "Review '2.3-Manual' for further instruction."
-
 # Restart plasma shell to apply plasmoid and icon changes
 echo -e "${YELLOW}Restarting Plasma shell in 5 seconds...${NC}"
 sleep 5
