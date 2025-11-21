@@ -322,6 +322,45 @@ sudo sed -i 's/^\(GRUB_CMDLINE_LINUX_DEFAULT=".*\)"$/\1 amdgpu.ppfeaturemask=0xf
 echo -e "${GREEN}--- Rebuilding GRUB configuration ---${NC}"
 sudo grub-mkconfig -o /boot/grub/grub.cfg
 
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
+# 7. Import KWin Rules & Install Alias
+echo -e "${GREEN}--- Importing Desktop Window Rules ---${NC}"
+if [[ -f "$SCRIPT_DIR/update_kwin_rules.sh" ]]; then
+    # 1. Run immediately
+    bash "$SCRIPT_DIR/update_kwin_rules.sh" desktop
+
+    # 2. Install 'update-kwin' function into .zshrc
+    echo -e "${GREEN}--- Installing 'update-kwin' auto-sync command to .zshrc ---${NC}"
+    if ! grep -q "function update-kwin" "$HOME/.zshrc"; then
+        cat << 'EOF' >> "$HOME/.zshrc"
+
+# --- Added by desktop_setup.sh ---
+# Syncs repo and reapplies Desktop rules
+function update-kwin() {
+    echo -e "\033[0;32m--- Syncing AMD-Linux-Setup Repository ---\033[0m"
+    current_dir=$(pwd)
+    cd ~/Obsidian/AMD-Linux-Setup || return
+    git pull
+
+    echo -e "\033[0;32m--- Applying Desktop Window Rules ---\033[0m"
+    ./Scripts/update_kwin_rules.sh desktop
+
+    cd "$current_dir"
+}
+EOF
+        echo "Command 'update-kwin' installed."
+    else
+        echo "Command 'update-kwin' already exists in .zshrc."
+    fi
+else
+    echo -e "${YELLOW}Warning: update_kwin_rules.sh not found. Skipping rules import.${NC}"
+fi
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
 echo -e "${GREEN}--- Automated Desktop Setup Finished ---${NC}"
 
 echo -e "${YELLOW}--- MANUAL CONFIGURATION REQUIRED ---${NC}"

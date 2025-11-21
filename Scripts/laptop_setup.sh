@@ -41,6 +41,42 @@ sudo grub-mkconfig -o /boot/grub/grub.cfg
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
+# 4. Import KWin Rules & Install Alias
+echo -e "${GREEN}--- Importing Laptop Window Rules ---${NC}"
+if [[ -f "$SCRIPT_DIR/update_kwin_rules.sh" ]]; then
+    # 1. Run immediately
+    bash "$SCRIPT_DIR/update_kwin_rules.sh" laptop
+
+    # 2. Install 'update-kwin' function into .zshrc
+    echo -e "${GREEN}--- Installing 'update-kwin' auto-sync command to .zshrc ---${NC}"
+    if ! grep -q "function update-kwin" "$HOME/.zshrc"; then
+        cat << 'EOF' >> "$HOME/.zshrc"
+
+# --- Added by laptop_setup.sh ---
+# Syncs repo and reapplies Laptop rules
+function update-kwin() {
+    echo -e "\033[0;32m--- Syncing AMD-Linux-Setup Repository ---\033[0m"
+    current_dir=$(pwd)
+    cd ~/Obsidian/AMD-Linux-Setup || return
+    git pull
+
+    echo -e "\033[0;32m--- Applying Laptop Window Rules ---\033[0m"
+    ./Scripts/update_kwin_rules.sh laptop
+
+    cd "$current_dir"
+}
+EOF
+        echo "Command 'update-kwin' installed."
+    else
+        echo "Command 'update-kwin' already exists in .zshrc."
+    fi
+else
+    echo -e "${YELLOW}Warning: update_kwin_rules.sh not found. Skipping rules import.${NC}"
+fi
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
 # 4. End
 echo -e "${YELLOW}--- Laptop-Specific Setup Complete ---${NC}"
 echo "Please complete any remaining manual steps, then REBOOT."
