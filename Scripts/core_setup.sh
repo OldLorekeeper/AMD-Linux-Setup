@@ -84,6 +84,23 @@ yay -S --needed --noconfirm - < "$SCRIPT_DIR/core_pkg.txt"
 echo -e "${GREEN}--- Enabling core services ---${NC}"
 sudo systemctl enable --now transmission bluetooth timeshift-hourly.timer lactd btrfs-scrub@-.timer
 
+# 5a. Configure grub-btrfsd (Timeshift automation)
+echo -e "${GREEN}--- Configuring grub-btrfsd for Timeshift ---${NC}"
+# Install dependency required for the daemon to watch filesystem events
+yay -S --needed --noconfirm inotify-tools
+# Edit the service to watch Timeshift (equivalent to systemctl edit --full)
+# We copy the default unit to /etc to create a persistent override
+if [ -f /usr/lib/systemd/system/grub-btrfsd.service ]; then
+    sudo cp /usr/lib/systemd/system/grub-btrfsd.service /etc/systemd/system/grub-btrfsd.service
+    # Modify the ExecStart command to use --timeshift-auto
+    sudo sed -i 's|^ExecStart=.*|ExecStart=/usr/bin/grub-btrfsd --syslog --timeshift-auto|' /etc/systemd/system/grub-btrfsd.service
+    # Reload daemon to pick up the new file in /etc and enable the service
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now grub-btrfsd
+else
+    echo -e "${YELLOW}Warning: grub-btrfsd.service not found. Is grub-btrfs installed?${NC}"
+fi
+
 # 6. System-wide configurations (Header)
 echo -e "${GREEN}--- Applying system-wide configurations ---${NC}"
 
