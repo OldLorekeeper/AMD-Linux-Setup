@@ -21,7 +21,6 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 # 1. Pre-install: Sunshine Hook and Repo
 echo -e "${GREEN}--- Creating script and hook to replace Sunshine icons... ---${NC}"
-
 # Create replacement script using local repo path
 sudo tee /usr/local/bin/replace-sunshine-icons.sh > /dev/null << EOF
 #!/bin/bash
@@ -294,6 +293,25 @@ sudo tee /etc/udev/rules.d/99-xhci-fix.rules > /dev/null << 'EOF'
 SUBSYSTEM=="pci", ATTR{vendor}=="0x1022", ATTR{device}=="0x43f7", ATTR{power/control}="on"
 EOF
 sudo udevadm control --reload-rules && sudo udevadm trigger
+
+# 5.2 Wi-Fi Power Management Fix (Asus ROG Strix X670E-I)
+echo -e "${GREEN}--- Applying Wi-Fi Power Save Fix ---${NC}"
+# Ensure iw is installed (required for the fix)
+yay -S --needed --noconfirm iw
+# Create NetworkManager Dispatcher Script
+sudo tee /etc/NetworkManager/dispatcher.d/disable-wifi-powersave > /dev/null << 'EOF'
+#!/bin/sh
+# Use $1 for the interface name (passed by NetworkManager)
+# Use $2 for the action (up, down, etc.)
+
+if [ "$1" = "wlan0" ] && [ "$2" = "up" ]; then
+    /usr/bin/iw dev "$1" set power_save off
+    /usr/bin/logger "Wifi Power Save disabled for $1"
+fi
+EOF
+# Set permissions (Root owned + Executable)
+sudo chown root:root /etc/NetworkManager/dispatcher.d/disable-wifi-powersave
+sudo chmod +x /etc/NetworkManager/dispatcher.d/disable-wifi-powersave
 
 # 6. Desktop Kernel Parameters
 echo -e "${GREEN}--- Applying desktop-specific kernel parameters ---${NC}"
