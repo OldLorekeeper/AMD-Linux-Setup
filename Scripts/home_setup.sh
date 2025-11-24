@@ -36,7 +36,37 @@ mkdir -p ~/{Games,Make,Obsidian}
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
-# 2. Clone Repo
+# 2. Git Identity Setup
+echo -e "${GREEN}--- Configuring Git Identity ---${NC}"
+if git config --global user.name > /dev/null; then
+    echo -e "${YELLOW}Git identity already configured. Skipping.${NC}"
+else
+    read -p "Enter GitHub Email: " git_email
+    read -s -p "Enter GitHub Personal Access Token (PAT): " git_pat
+    echo ""
+    read -p "Enter GitHub Username: " git_user
+
+    # Apply configuration in requested order
+    git config --global credential.helper libsecret
+    git config --global user.email "$git_email"
+    git config --global user.password "$git_pat"
+    git config --global user.name "$git_user"
+
+    echo "Git identity configured."
+fi
+
+# 2a. Clone Repo
+echo -e "${GREEN}--- Cloning AMD-Linux-Setup repository ---${NC}"
+if [ -d "$HOME/Obsidian/AMD-Linux-Setup" ]; then
+    echo -e "${YELLOW}Repo already exists. Skipping clone.${NC}"
+else
+    git clone https://github.com/OldLorekeeper/AMD-Linux-Setup "$HOME/Obsidian/AMD-Linux-Setup"
+fi
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
+# 2a. Clone Repo
 echo -e "${GREEN}--- Cloning AMD-Linux-Setup repository ---${NC}"
 if [ -d "$HOME/Obsidian/AMD-Linux-Setup" ]; then
     echo -e "${YELLOW}Repo already exists. Skipping clone.${NC}"
