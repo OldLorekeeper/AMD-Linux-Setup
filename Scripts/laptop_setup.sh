@@ -51,62 +51,73 @@ fi
 
 # 4. Import KWin Rules & Install Alias
 echo -e "${GREEN}--- Importing Laptop Window Rules ---${NC}"
-if [[ -f "$SCRIPT_DIR/update_kwin_rules.sh" && -f "$SCRIPT_DIR/sync_kwin_rules.sh" ]]; then
-    # 1a. SYNCHRONISE: Generate the final kwinrule file from the common fragment
-    bash "$SCRIPT_DIR/sync_kwin_rules.sh" laptop
-    # 1b. UPDATE: Convert the generated file and apply to kwinrulesrc
-    bash "$SCRIPT_DIR/update_kwin_rules.sh" laptop
+# A. Set Persistent Profile Variable
+echo -e "${GREEN}--- Setting KWIN_PROFILE to 'laptop' in .zshrc ---${NC}"
+if ! grep -q "export KWIN_PROFILE=" "$HOME/.zshrc"; then
+    echo 'export KWIN_PROFILE="laptop"' >> "$HOME/.zshrc"
+fi
+# B. Apply Rules Immediately
+if [[ -f "$SCRIPT_DIR/apply_kwin_rules.sh" ]]; then
+    chmod +x "$SCRIPT_DIR/apply_kwin_rules.sh"
+    "$SCRIPT_DIR/apply_kwin_rules.sh" laptop
+else
+    echo -e "${YELLOW}Warning: apply_kwin_rules.sh not found. Skipping immediate application.${NC}"
+fi
+# C. Install Smart Functions (Same logic as Desktop, uses $KWIN_PROFILE)
+echo -e "${GREEN}--- Installing smart KWin functions to .zshrc ---${NC}"
+if ! grep -q "function update-kwin" "$HOME/.zshrc"; then
+    cat << 'EOF' >> "$HOME/.zshrc"
 
-    # 2. Install 'update-kwin' function into .zshrc
-    echo -e "${GREEN}--- Installing 'update-kwin' auto-sync command to .zshrc ---${NC}"
-    if ! grep -q "function update-kwin" "$HOME/.zshrc"; then
-        cat << 'EOF' >> "$HOME/.zshrc"
-
-# --- Added by laptop_setup.sh ---
-# Syncs repo, generates final rules, and reapplies Laptop rules
 function update-kwin() {
-    echo -e "\033[0;32m--- Entering Git Synchronization Phase ---\033[0m"
+    local target="${1:-$KWIN_PROFILE}"
+    if [[ -z "$target" ]]; then
+        echo "Error: No profile specified and KWIN_PROFILE not set."
+        return 1
+    fi
+
+    echo -e "\033[0;32m--- Syncing and Updating for Profile: $target ---\033[0m"
     current_dir=$(pwd)
     cd ~/Obsidian/AMD-Linux-Setup || return
 
-    # Check for modified common fragment and automatically commit it
     if git status --porcelain 5-Resources/Window-Rules/common.kwinrule.fragment | grep -q '^ M'; then
-        echo -e "\033[1;33mUncommitted changes detected in common.kwinrule.fragment. Committing automatically...\033[0m"
+        echo -e "\033[1;33mCommitting changes to common.kwinrule.fragment...\033[0m"
         git add 5-Resources/Window-Rules/common.kwinrule.fragment
         git commit -m "AUTOSYNC: KWin common fragment update from $(hostname)"
     fi
 
-    echo -e "\033[0;32m--- Pulling latest changes from remote ---\033[0m"
     if ! git pull; then
-        echo -e "\033[0;31mError: Git pull failed. Cannot continue.\033[0m"
+        echo -e "\033[0;31mError: Git pull failed.\033[0m"
         cd "$current_dir"
         return 1
     fi
 
-    echo -e "\033[0;32m--- Generating and Applying Laptop Window Rules ---\033[0m"
-    ./Scripts/sync_kwin_rules.sh laptop
-    ./Scripts/update_kwin_rules.sh laptop
-
+    ./Scripts/apply_kwin_rules.sh "$target"
     cd "$current_dir"
 }
 
-# Opens common.kwinrule.fragment in Kate for editing
 function edit-kwin() {
-    local repo_dir=~/Obsidian/AMD-Linux-Setup
-    local file_path="$repo_dir/5-Resources/Window-Rules/common.kwinrule.fragment"
+    local target="${1:-$KWIN_PROFILE}"
+    local repo_dir=~/Obsidian/AMD-Linux-Setup/5-Resources/Window-Rules
+    local file_path=""
+
+    case "$target" in
+        "desktop") file_path="$repo_dir/desktop.rule.template" ;;
+        "laptop")  file_path="$repo_dir/laptop.rule.template" ;;
+        "common")  file_path="$repo_dir/common.kwinrule.fragment" ;;
+        *)         file_path="$repo_dir/common.kwinrule.fragment" ;;
+    esac
+
     if [[ -f "$file_path" ]]; then
+        echo "Opening template for: $target"
         kate "$file_path" &
     else
-        echo "File not found: $file_path"
+        echo "Error: File not found: $file_path"
     fi
 }
 EOF
-        echo "Command 'update-kwin' installed."
-    else
-        echo "Command 'update-kwin' already exists in .zshrc."
-    fi
+    echo "Smart KWin functions installed."
 else
-    echo -e "${YELLOW}Warning: Required rule utilities not found. Skipping rules import.${NC}"
+    echo "Functions already exist in .zshrc."
 fi
 
 # ------------------------------------------------------------------------------
