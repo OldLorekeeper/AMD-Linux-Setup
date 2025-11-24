@@ -365,6 +365,17 @@ function update-kwin() {
 
     cd "$current_dir"
 }
+
+# Opens common.kwinrule.fragment in Kate for editing
+function edit-kwin() {
+    local repo_dir=~/Obsidian/AMD-Linux-Setup
+    local file_path="$repo_dir/5-Resources/Window-Rules/common.kwinrule.fragment"
+    if [[ -f "$file_path" ]]; then
+        kate "$file_path" &
+    else
+        echo "File not found: $file_path"
+    fi
+}
 EOF
         echo "Command 'update-kwin' installed."
     else
