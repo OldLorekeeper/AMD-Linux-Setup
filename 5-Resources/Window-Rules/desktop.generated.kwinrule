@@ -1,0 +1,58 @@
+# SIZES:
+# Small: 1000,650
+# Tall: 1200,1200
+# Wide: 2000,1250
+
+[Start Small]
+size=1000,650
+Description=Start Small
+ignoregeometry=true
+ignoregeometryrule=2
+placementrule=2
+sizerule=3
+title=(^(?!Create|Configure|Properties|Save|Edit|Delete|File|Apply|Confirm|Error).*$)
+titlematch=3
+types=1
+wmclass=(konsole|systemsettings|dolphin)
+wmclassmatch=3
+
+# -------------------
+
+[Start Tall]
+size=1200,1200
+Description=Start Tall
+placementrule=2
+sizerule=3
+title=^(?!Close|Configure|Save|Specify|Open).*$
+titlematch=3
+types=1
+wmclass=(kate)
+wmclassmatch=3
+
+# -------------------
+
+[Start Wide]
+size=2000,1250
+Description=Start Wide
+placementrule=2
+sizerule=3
+title=(.* - Google Chrome$)|(^Steam$)|(.*)
+titlematch=3
+types=1
+wmclass=(google-chrome|steam|chrome-[a-z0-9]+-Default|obsidian)
+wmclassmatch=3
+
+# -------------------
+
+[Start Boxy]
+Description=Start Boxy
+placementrule=2
+sizerule=3
+title=^Lutris$
+titlematch=3
+types=1
+wmclass=(net.lutris.Lutris)
+wmclassmatch=3
+# Boxy: 1500,950
+# -------------------
+# UNIQUE DESKTOP RULES (None defined after refactor)
