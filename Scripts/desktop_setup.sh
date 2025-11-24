@@ -351,10 +351,13 @@ fi
 
 # 7. Import KWin Rules & Install Alias
 echo -e "${GREEN}--- Importing Desktop Window Rules ---${NC}"
-# A. Set Persistent Profile Variable
+# A. Set Persistent Profile Variable (Fixes "No profile specified" error)
 echo -e "${GREEN}--- Setting KWIN_PROFILE to 'desktop' in .zshrc ---${NC}"
+# Check if variable is already exported to prevent duplicate lines
 if ! grep -q "export KWIN_PROFILE=" "$HOME/.zshrc"; then
     echo 'export KWIN_PROFILE="desktop"' >> "$HOME/.zshrc"
+    # Export immediately for the current script's session
+    export KWIN_PROFILE="desktop"
 fi
 # B. Apply Rules Immediately
 if [[ -f "$SCRIPT_DIR/apply_kwin_rules.sh" ]]; then
@@ -384,8 +387,9 @@ function update-kwin() {
     # Auto-commit common fragment changes
     if git status --porcelain 5-Resources/Window-Rules/common.kwinrule.fragment | grep -q '^ M'; then
         echo -e "\033[1;33mCommitting changes to common.kwinrule.fragment...\033[0m"
+        # FIX: Use ${HOST} (Zsh built-in) instead of missing 'hostname' binary
         git add 5-Resources/Window-Rules/common.kwinrule.fragment
-        git commit -m "AUTOSYNC: KWin common fragment update from $(hostname)"
+        git commit -m "AUTOSYNC: KWin common fragment update from ${HOST}"
     fi
 
     if ! git pull; then
@@ -399,8 +403,6 @@ function update-kwin() {
 }
 
 function edit-kwin() {
-    # Default to KWIN_PROFILE (system specific) if no arg provided.
-    # Use 'edit-kwin common' to edit the shared rules.
     local target="${1:-$KWIN_PROFILE}"
     local repo_dir=~/Obsidian/AMD-Linux-Setup/5-Resources/Window-Rules
     local file_path=""

@@ -51,10 +51,13 @@ fi
 
 # 4. Import KWin Rules & Install Alias
 echo -e "${GREEN}--- Importing Laptop Window Rules ---${NC}"
-# A. Set Persistent Profile Variable
+# A. Set Persistent Profile Variable (Fixes "No profile specified" error)
 echo -e "${GREEN}--- Setting KWIN_PROFILE to 'laptop' in .zshrc ---${NC}"
+# Check if variable is already exported to prevent duplicate lines
 if ! grep -q "export KWIN_PROFILE=" "$HOME/.zshrc"; then
     echo 'export KWIN_PROFILE="laptop"' >> "$HOME/.zshrc"
+    # Export immediately for the current script's session
+    export KWIN_PROFILE="laptop"
 fi
 # B. Apply Rules Immediately
 if [[ -f "$SCRIPT_DIR/apply_kwin_rules.sh" ]]; then
@@ -63,13 +66,15 @@ if [[ -f "$SCRIPT_DIR/apply_kwin_rules.sh" ]]; then
 else
     echo -e "${YELLOW}Warning: apply_kwin_rules.sh not found. Skipping immediate application.${NC}"
 fi
-# C. Install Smart Functions (Same logic as Desktop, uses $KWIN_PROFILE)
+# C. Install Smart 'update-kwin' and 'edit-kwin' functions
 echo -e "${GREEN}--- Installing smart KWin functions to .zshrc ---${NC}"
 if ! grep -q "function update-kwin" "$HOME/.zshrc"; then
     cat << 'EOF' >> "$HOME/.zshrc"
 
 function update-kwin() {
+    # Default to KWIN_PROFILE if set, otherwise require argument
     local target="${1:-$KWIN_PROFILE}"
+
     if [[ -z "$target" ]]; then
         echo "Error: No profile specified and KWIN_PROFILE not set."
         return 1
@@ -79,10 +84,12 @@ function update-kwin() {
     current_dir=$(pwd)
     cd ~/Obsidian/AMD-Linux-Setup || return
 
+    # Auto-commit common fragment changes
     if git status --porcelain 5-Resources/Window-Rules/common.kwinrule.fragment | grep -q '^ M'; then
         echo -e "\033[1;33mCommitting changes to common.kwinrule.fragment...\033[0m"
+        # FIX: Use ${HOST} (Zsh built-in) instead of missing 'hostname' binary
         git add 5-Resources/Window-Rules/common.kwinrule.fragment
-        git commit -m "AUTOSYNC: KWin common fragment update from $(hostname)"
+        git commit -m "AUTOSYNC: KWin common fragment update from ${HOST}"
     fi
 
     if ! git pull; then
