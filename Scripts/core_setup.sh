@@ -286,25 +286,7 @@ fi
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
-# 18. Steam delay script
-echo -e "${GREEN}--- Creating Steam delay script ---${NC}"
-echo -e '#!/bin/bash\nsleep 15\n/usr/bin/steam -silent "$@"' > ~/Make/steam-delay.sh
-chmod +x ~/Make/steam-delay.sh
-echo -e "${GREEN}--- Core System Setup Complete ---${NC}"
-
-# 19. Run Device Specific Script
-if [[ -n "$DEVICE_SCRIPT" && -f "$DEVICE_SCRIPT" ]]; then
-    echo -e "${GREEN}--- Launching $DEVICE_NAME Setup Script ---${NC}"
-    chmod +x "$DEVICE_SCRIPT"
-    "$DEVICE_SCRIPT"
-elif [[ -n "$DEVICE_SCRIPT" ]]; then
-    echo -e "${RED}Warning: Could not find $DEVICE_SCRIPT. Skipping $DEVICE_NAME setup.${NC}"
-fi
-
-# ------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------
-
-# 20. End
+# 18. End
 echo -e "${YELLOW}--- MANUAL STEPS REQUIRED ---${NC}"
 echo "Review '2.3-Manual' for further instruction."
 # Restart plasma shell to apply plasmoid and icon changes
