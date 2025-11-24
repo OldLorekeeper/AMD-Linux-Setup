@@ -28,6 +28,17 @@ yay -S --needed --noconfirm - < "$SCRIPT_DIR/laptop_pkg.txt"
 echo -e "${GREEN}--- Enabling laptop services ---${NC}"
 sudo systemctl enable --now power-profiles-daemon.service
 
+# 2.1 Enable Numlock Hook
+echo -e "${GREEN}--- enabling numlock in mkinitcpio ---${NC}"
+if ! grep -q "numlock" /etc/mkinitcpio.conf; then
+    # Insert 'numlock' before 'autodetect' hook for early activation
+    sudo sed -i 's/\(HOOKS=.*\) autodetect/\1 numlock autodetect/' /etc/mkinitcpio.conf
+    # Trigger rebuild (handled by pacman hook usually, but good to force here if changing config)
+    sudo mkinitcpio -P
+else
+    echo "Numlock hook already present."
+fi
+
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
