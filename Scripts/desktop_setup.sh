@@ -335,9 +335,16 @@ sudo chmod +x /etc/NetworkManager/dispatcher.d/disable-wifi-powersave
 
 # 6. Desktop Kernel Parameters
 echo -e "${GREEN}--- Applying desktop-specific kernel parameters ---${NC}"
-sudo sed -i 's/^\(GRUB_CMDLINE_LINUX_DEFAULT=".*\)"$/\1 amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=3440x1440@60 amd_pstate=guided"/' /etc/default/grub
-echo -e "${GREEN}--- Rebuilding GRUB configuration ---${NC}"
-sudo grub-mkconfig -o /boot/grub/grub.cfg
+# Define desktop-specific parameters (GPU Features, Hugepages, Resolution, Guided P-State)
+PARAMS="amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=3440x1440@60 amd_pstate=guided"
+# Check if params already exist to prevent duplication
+if grep -q "amdgpu.ppfeaturemask" /etc/default/grub; then
+    echo -e "${YELLOW}Kernel parameters appear to be already set. Skipping append.${NC}"
+else
+    sudo sed -i "s/^\(GRUB_CMDLINE_LINUX_DEFAULT=\"[^\"]*\)\"$/\1 $PARAMS\"/" /etc/default/grub
+    echo -e "${GREEN}--- Rebuilding GRUB configuration ---${NC}"
+    sudo grub-mkconfig -o /boot/grub/grub.cfg
+fi
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------

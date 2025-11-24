@@ -33,10 +33,18 @@ sudo systemctl enable --now power-profiles-daemon.service
 
 # 3. Apply Laptop Kernel Parameters
 echo -e "${GREEN}--- Applying laptop-specific kernel parameters ---${NC}"
-# This command captures the existing parameters and appends the new ones before the final quote
-sudo sed -i 's/^\(GRUB_CMDLINE_LINUX_DEFAULT=".*\)"$/\1 amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=2560x1600@60 amd_pstate=active"/' /etc/default/grub
-echo -e "${GREEN}--- Rebuilding GRUB configuration ---${NC}"
-sudo grub-mkconfig -o /boot/grub/grub.cfg
+# Define laptop-specific parameters (GPU Features, Power features, Hugepages, Resolution, Active P-State)
+PARAMS="amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=2560x1600@60 amd_pstate=active"
+# Check if parameters already exist to prevent duplication
+if grep -q "amdgpu.ppfeaturemask" /etc/default/grub; then
+    echo -e "${YELLOW}Kernel parameters appear to be already set. Skipping append.${NC}"
+else
+    # Appends PARAMS to the GRUB_CMDLINE_LINUX_DEFAULT line
+    sudo sed -i "s/^\(GRUB_CMDLINE_LINUX_DEFAULT=\"[^\"]*\)\"$/\1 $PARAMS\"/" /etc/default/grub
+
+    echo -e "${GREEN}--- Rebuilding GRUB configuration ---${NC}"
+    sudo grub-mkconfig -o /boot/grub/grub.cfg
+fi
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
