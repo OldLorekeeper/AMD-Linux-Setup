@@ -39,4 +39,5 @@ vulkan-tools
 wine
 wine-mono
 winetricks
+wget
 xpadneo-dkms
