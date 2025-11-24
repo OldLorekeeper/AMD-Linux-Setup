@@ -23,19 +23,31 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 # ------------------------------------------------------------------------------
 
 # 1. Pre-install: Sunshine Hook and Repo
-echo -e "${GREEN}--- Creating script and hook to replace Sunshine icons... ---${NC}"
+echo -e "${GREEN}--- Creating script and hook to replace Sunshine icons and restore permissions... ---${NC}"
+
 # Create replacement script using local repo path
+# UPDATE: Added setcap command to restore permissions on update
 sudo tee /usr/local/bin/replace-sunshine-icons.sh > /dev/null << EOF
 #!/bin/bash
 DEST_DIR="/usr/share/icons/hicolor/scalable/status"
 REPO_ROOT="\$(dirname "$SCRIPT_DIR")"
 SOURCE_DIR="\$REPO_ROOT/5-Resources/Icons/Sunshine-Tray-Icons"
+SUNSHINE_BIN="/usr/bin/sunshine"
 
+# 1. Restore Icons
 if [[ -d "\$SOURCE_DIR" ]]; then
     cp "\$SOURCE_DIR"/*.svg "\$DEST_DIR/"
     echo "Sunshine icons updated from local repo."
 else
     echo "Warning: Icon source directory not found at \$SOURCE_DIR"
+fi
+
+# 2. Restore Capabilities (Required for KMS/Screen Capture)
+if [[ -f "\$SUNSHINE_BIN" ]]; then
+    setcap cap_sys_admin+p "\$SUNSHINE_BIN"
+    echo "Sunshine cap_sys_admin capability restored."
+else
+    echo "Warning: Sunshine binary not found at \$SUNSHINE_BIN"
 fi
 EOF
 sudo chmod +x /usr/local/bin/replace-sunshine-icons.sh
@@ -299,15 +311,20 @@ echo -e "${GREEN}--- Applying Wi-Fi Power Save Fix ---${NC}"
 # Ensure iw is installed (required for the fix)
 yay -S --needed --noconfirm iw
 # Create NetworkManager Dispatcher Script
+# UPDATE: Changed logic to detect ANY wireless interface (wl*) dynamically
 sudo tee /etc/NetworkManager/dispatcher.d/disable-wifi-powersave > /dev/null << 'EOF'
 #!/bin/sh
 # Use $1 for the interface name (passed by NetworkManager)
 # Use $2 for the action (up, down, etc.)
 
-if [ "$1" = "wlan0" ] && [ "$2" = "up" ]; then
-    /usr/bin/iw dev "$1" set power_save off
-    /usr/bin/logger "Wifi Power Save disabled for $1"
-fi
+case "$1" in
+    wl*)
+        if [ "$2" = "up" ]; then
+            /usr/bin/iw dev "$1" set power_save off
+            /usr/bin/logger "Wifi Power Save disabled for wireless interface: $1"
+        fi
+        ;;
+esac
 EOF
 # Set permissions (Root owned + Executable)
 sudo chown root:root /etc/NetworkManager/dispatcher.d/disable-wifi-powersave
