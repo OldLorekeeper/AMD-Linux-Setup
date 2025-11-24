@@ -66,17 +66,6 @@ fi
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
-# 2a. Clone Repo
-echo -e "${GREEN}--- Cloning AMD-Linux-Setup repository ---${NC}"
-if [ -d "$HOME/Obsidian/AMD-Linux-Setup" ]; then
-    echo -e "${YELLOW}Repo already exists. Skipping clone.${NC}"
-else
-    git clone https://github.com/OldLorekeeper/AMD-Linux-Setup "$HOME/Obsidian/AMD-Linux-Setup"
-fi
-
-# ------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------
-
 # 3. Setup @games Subvolume
 echo -e "${GREEN}--- Setting up @games Btrfs subvolume ---${NC}"
 MOUNT_POINT="$HOME/Games"
