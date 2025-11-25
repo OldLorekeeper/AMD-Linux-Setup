@@ -333,7 +333,32 @@ sudo chmod +x /etc/NetworkManager/dispatcher.d/disable-wifi-powersave
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
-# 6. Desktop Kernel Parameters
+# 6. Local Binaries and PATH Setup
+echo -e "${GREEN}--- Configuring ~/.local/bin and updating ZSH PATH ---${NC}"
+# 6a. Create directory and Symlink fix-cover-art script
+mkdir -p "$HOME/.local/bin"
+SOURCE_SCRIPT="$REPO_ROOT/5-Resources/Local-Scripts/fix-cover-art"
+TARGET_LINK="$HOME/.local/bin/fix-cover-art"
+if [[ -f "$SOURCE_SCRIPT" ]]; then
+    ln -sf "$SOURCE_SCRIPT" "$TARGET_LINK"
+    chmod +x "$TARGET_LINK"
+    echo "Symlinked fix-cover-art to ~/.local/bin."
+else
+    echo -e "${YELLOW}Warning: Source script $SOURCE_SCRIPT not found. Skipping symlink.${NC}"
+fi
+# 6b. Update ZSH PATH
+if ! grep -q 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.zshrc"; then
+    echo -e "\n# Added by desktop_setup.sh for local binaries" >> "$HOME/.zshrc"
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.zshrc"
+    echo "Added ~/.local/bin to \$PATH in .zshrc."
+else
+    echo -e "${YELLOW}~/.local/bin already in ZSH PATH. Skipping append.${NC}"
+fi
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
+# 7. Desktop Kernel Parameters
 echo -e "${GREEN}--- Applying desktop-specific kernel parameters ---${NC}"
 # Define desktop-specific parameters (GPU Features, Hugepages, Resolution, Guided P-State)
 PARAMS="amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=3440x1440@60 amd_pstate=guided"
@@ -349,7 +374,7 @@ fi
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
-# 7. Import KWin Rules & Install Alias
+# 8. Import KWin Rules & Install Alias
 echo -e "${GREEN}--- Importing Desktop Window Rules ---${NC}"
 # A. Set Persistent Profile Variable (Fixes "No profile specified" error)
 echo -e "${GREEN}--- Setting KWIN_PROFILE to 'desktop' in .zshrc ---${NC}"
