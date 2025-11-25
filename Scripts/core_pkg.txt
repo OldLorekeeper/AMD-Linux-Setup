@@ -24,7 +24,6 @@ plasma6-applets-panel-colorizer
 papirus-folders
 papirus-icon-theme
 protontricks
-p7zip
 python-pip
 spectacle
 steam

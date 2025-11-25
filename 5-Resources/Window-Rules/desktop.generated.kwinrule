@@ -11,7 +11,7 @@ ignoregeometry=true
 ignoregeometryrule=2
 placementrule=2
 sizerule=3
-title=(^(?!Create|Configure|Properties|Save|Edit|Delete|File|Apply|Confirm|Error|Dolphin$|System Settings$|Konsole$).*$)
+title=(^(?!Create|Configure|Properties|Save|Edit|Export|Warn|Delete|File|Apply|Confirm|Error|Dolphin$|System Settings$|Konsole$).*$)
 titlematch=3
 types=1
 wmclass=(konsole|systemsettings|dolphin)
@@ -24,10 +24,10 @@ size=1200,1200
 Description=Start Tall
 placementrule=2
 sizerule=3
-title=^(?!Close|Configure|Save|Specify|Open).*$
+title=(^(?!Close|Configure|Export|Import|Warn|LSP|Select|Save|Specify|Open).*$)
 titlematch=3
 types=1
-wmclass=(kate)
+wmclass=(org.kde.kate)
 wmclassmatch=3
 
 # -------------------

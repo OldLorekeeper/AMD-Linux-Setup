@@ -12,6 +12,5 @@ python-wheel
 radarr-bin
 slskd-bin
 solaar
-solidity-bin
 sonarr-bin
 sunshine
