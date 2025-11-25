@@ -24,8 +24,9 @@ loadkeys uk
 # ------------------------------------------------------------------------------
 
 # 2. Optimise Pacman
-echo -e "${GREEN}--- Enabling parallel downloads in pacman.conf ---${NC}"
+echo -e "${GREEN}--- Enabling parallel downloads and color in pacman.conf ---${NC}"
 sed -i 's/^#*\(ParallelDownloads = \).*/\1100/' /etc/pacman.conf
+sed -i 's/^#Color/Color/' /etc/pacman.conf
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
