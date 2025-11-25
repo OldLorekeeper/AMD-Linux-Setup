@@ -16,10 +16,10 @@ wmclassmatch=3
 Description=Start Tall
 placementrule=2
 sizerule=3
-title=(^(?!Close|Configure|Export|Warn|Select|Save|Specify|Open).*$)
+title=(^(?!Close|Configure|Export|Import|Warn|Select|Save|Specify|Open).*$)
 titlematch=3
 types=1
-wmclass=(kate)
+wmclass=(org.kde.kate)
 wmclassmatch=3
 
 # -------------------
