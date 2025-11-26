@@ -207,6 +207,22 @@ fi
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
+# 7. Configure Konsole
+echo -e "${GREEN}--- Installing Konsole profiles ---${NC}"
+mkdir -p "$HOME/.local/share/konsole"
+# Use cloned repo path as source of truth
+KONSOLE_SRC="$HOME/Obsidian/AMD-Linux-Setup/5-Resources/Konsole"
+
+if [ -d "$KONSOLE_SRC" ]; then
+    cp -f "$KONSOLE_SRC"/* "$HOME/.local/share/konsole/" 2>/dev/null
+    echo "Copied Konsole schemes and profiles."
+else
+    echo -e "${YELLOW}Warning: Konsole resources not found at $KONSOLE_SRC.${NC}"
+fi
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
 # End
 echo -e "${GREEN}--- Home Folder & ZSH Setup Complete ---${NC}"
 echo "Please restart your terminal or log out/in to see ZSH changes (new Konsole profile required)."
