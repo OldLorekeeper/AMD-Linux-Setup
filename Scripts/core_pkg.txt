@@ -5,6 +5,7 @@ cmake
 cmake-extras
 darkly-bin
 extra-cmake-modules
+efibootmgr
 fastfetch
 geekbench
 google-chrome
