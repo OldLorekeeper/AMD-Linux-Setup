@@ -1,7 +1,11 @@
+bash-language-server
 cups
 cpupower
+cmake
+cmake-extras
+darkly-bin
+extra-cmake-modules
 fastfetch
-gamemode
 geekbench
 google-chrome
 gwenview
@@ -10,9 +14,11 @@ inkscape
 isoimagewriter
 kio-gdrive
 konsave
+kwin-effects-forceblur
 lact
 libva-utils
 mkinitcpio-firmware
+nss-mdns
 obsidian
 plasma6-applets-panel-colorizer
 papirus-folders
@@ -24,6 +30,12 @@ timeshift-systemd-timer
 transmission-cli
 vdpauinfo
 vlc
+vlc-plugin-ffmpeg
+virt-manager
+qemu-desktop
+libvirt
+edk2-ovmf
+dnsmasq
 vulkan-headers
 wine
 wine-mono

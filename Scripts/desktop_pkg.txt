@@ -1,5 +1,6 @@
 jellyfin-web
 jellyfin-server
+kid3
 lidarr-bin
 lutris
 prowlarr-bin
@@ -14,3 +15,4 @@ slskd-bin
 solaar
 sonarr-bin
 sunshine
+yt-dlp
