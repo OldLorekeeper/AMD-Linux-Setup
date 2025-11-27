@@ -10,6 +10,7 @@ hunspell-en_gb
 inkscape
 isoimagewriter
 kio-gdrive
+konsave
 kwallet
 lact
 lib32-libva
