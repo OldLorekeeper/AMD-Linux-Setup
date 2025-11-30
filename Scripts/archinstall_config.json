@@ -67,6 +67,7 @@
         "git",
         "kio-admin",
         "linux-zen-headers",
+        "lz4",
         "7zip",
         "reflector",
         "wayland-protocols",
