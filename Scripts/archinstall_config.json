@@ -64,6 +64,7 @@
         "amd-ucode",
         "chromium",
         "dosfstools",
+        "fwupd",
         "git",
         "kio-admin",
         "linux-zen-headers",

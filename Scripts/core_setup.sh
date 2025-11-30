@@ -74,7 +74,35 @@ echo -e "${GREEN}--- Updating mirror list ---${NC}"
 sudo reflector --country GB,IE,NL,DE,FR,EU --age 6 --protocol https --sort rate --fastest 10 --save /etc/pacman.d/mirrorlist
 
 # ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------# ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
+
+# 5. Enable core services
+echo -e "${GREEN}--- Enabling core services ---${NC}"
+# Added fwupd.service to the list
+sudo systemctl enable --now transmission bluetooth timeshift-hourly.timer lactd btrfs-scrub@-.timer fwupd.service
+
+# 5a. Configure grub-btrfsd for Timeshift
+echo -e "${GREEN}--- Configuring grub-btrfsd for Timeshift ---${NC}"
+# Install dependency required for the daemon to watch filesystem events
+yay -S --needed --noconfirm inotify-tools
+# Edit the service to watch Timeshift (equivalent to systemctl edit --full)
+# We copy the default unit to /etc to create a persistent override
+if [ -f /usr/lib/systemd/system/grub-btrfsd.service ]; then
+    sudo cp /usr/lib/systemd/system/grub-btrfsd.service /etc/systemd/system/grub-btrfsd.service
+    # Modify the ExecStart command to use --timeshift-auto
+    sudo sed -i 's|^ExecStart=.*|ExecStart=/usr/bin/grub-btrfsd --syslog --timeshift-auto|' /etc/systemd/system/grub-btrfsd.service
+    # Reload daemon to pick up the new file in /etc and enable the service
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now grub-btrfsd
+else
+    echo -e "${YELLOW}Warning: grub-btrfsd.service not found. Is grub-btrfs installed?${NC}"
+fi
+
+# 5b. Refresh Firmware Metadata (fwupd)
+echo -e "${GREEN}--- Refreshing firmware metadata ---${NC}"
+# Force refresh to populate the local database immediately
+fwupdmgr refresh --force || echo -e "${YELLOW}Warning: Firmware refresh failed. Check connection.${NC}"
 
 # 3. Install yay
 echo -e "${GREEN}--- Installing yay (AUR Helper) ---${NC}"
@@ -99,8 +127,10 @@ yay -S --needed --noconfirm - < "$SCRIPT_DIR/core_pkg.txt"
 
 # 5. Enable core services
 echo -e "${GREEN}--- Enabling core services ---${NC}"
-sudo systemctl enable --now transmission bluetooth timeshift-hourly.timer lactd btrfs-scrub@-.timer
-# 5a. Configure grub-btrfsd (Timeshift automation)
+# Added fwupd.service to the list
+sudo systemctl enable --now transmission bluetooth timeshift-hourly.timer lactd btrfs-scrub@-.timer fwupd.service
+
+# 5a. Configure grub-btrfsd for Timeshift
 echo -e "${GREEN}--- Configuring grub-btrfsd for Timeshift ---${NC}"
 # Install dependency required for the daemon to watch filesystem events
 yay -S --needed --noconfirm inotify-tools
@@ -116,6 +146,11 @@ if [ -f /usr/lib/systemd/system/grub-btrfsd.service ]; then
 else
     echo -e "${YELLOW}Warning: grub-btrfsd.service not found. Is grub-btrfs installed?${NC}"
 fi
+
+# 5b. Refresh Firmware Metadata (fwupd)
+echo -e "${GREEN}--- Refreshing firmware metadata ---${NC}"
+# Force refresh to populate the local database immediately
+fwupdmgr refresh --force || echo -e "${YELLOW}Warning: Firmware refresh failed. Check connection.${NC}"
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
