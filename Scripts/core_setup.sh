@@ -144,7 +144,7 @@ echo -e "${GREEN}--- Configuring zram swap ---${NC}"
 sudo tee /etc/systemd/zram-generator.conf > /dev/null << 'EOF'
 [zram0]
 zram-size = ram / 2
-compression-algorithm = zstd
+compression-algorithm = lz4
 swap-priority = 100
 EOF
 
