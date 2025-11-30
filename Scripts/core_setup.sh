@@ -162,6 +162,30 @@ sudo sysctl --system
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
+# 10.5. Optimise mkinitcpio
+echo -e "${GREEN}--- Optimising mkinitcpio (Boot Speed) ---${NC}"
+
+# 1. Modules: amdgpu (Early KMS) + nvme (Fast Storage)
+#    Replaces any existing MODULES line
+sudo sed -i 's|^MODULES=.*|MODULES=(amdgpu nvme)|' /etc/mkinitcpio.conf
+
+# 2. Compression: lz4 (High Performance Decompression)
+#    Uncomment the lz4 option (explicitly enables it, overriding implicit default)
+sudo sed -i 's/^#COMPRESSION="lz4"/COMPRESSION="lz4"/' /etc/mkinitcpio.conf
+
+# 3. Hooks: Remove fsck, ensure btrfs
+#    Replaces the entire HOOKS line to ensure clean state for Btrfs
+sudo sed -i 's|^HOOKS=.*|HOOKS=(base udev autodetect modconf kms keyboard keymap consolefont block btrfs filesystems)|' /etc/mkinitcpio.conf
+
+# 4. Regenerate initramfs
+echo -e "${GREEN}--- Regenerating initramfs ---${NC}"
+# Ensure lz4 package is present (Safety check)
+yay -S --needed --noconfirm lz4
+sudo mkinitcpio -P
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
 # 11. Pacman hooks
 echo -e "${GREEN}--- Adding pacman hooks for initramfs and GRUB ---${NC}"
 sudo mkdir -p /etc/pacman.d/hooks
