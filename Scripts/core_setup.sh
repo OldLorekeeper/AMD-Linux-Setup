@@ -103,7 +103,7 @@ sudo pacman -U --noconfirm \
 # Update pacman.conf
 # 1. Enable x86_64_v4 architecture support
 sudo sed -i 's/^Architecture = auto/Architecture = auto x86_64_v4/' /etc/pacman.conf
-# 2. Inject CachyOS repos above [core]
+# 2. Append CachyOS repos to bottom of pacman.conf
 cat <<EOF > /tmp/cachyos_repos.conf
 
 [cachyos-znver4]
@@ -116,12 +116,8 @@ Include = /etc/pacman.d/cachyos-v4-mirrorlist
 Include = /etc/pacman.d/cachyos-mirrorlist
 
 EOF
-# Insert the block before the first occurrence of [core]
-if grep -q "\[core\]" /etc/pacman.conf; then
-    sudo sed -i '/\[core\]/e cat /tmp/cachyos_repos.conf' /etc/pacman.conf
-else
-    sudo cat /tmp/cachyos_repos.conf >> /etc/pacman.conf
-fi
+# Append to end of file
+sudo cat /tmp/cachyos_repos.conf >> /etc/pacman.conf
 rm /tmp/cachyos_repos.conf
 # Force sync database
 sudo pacman -Syy --noconfirm
