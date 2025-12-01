@@ -19,7 +19,7 @@ SUDO_PID=$!
 trap 'kill $SUDO_PID' EXIT
 
 SCRIPT_DIR=${0:a:h}
-REPO_ROOT=${SCRIPT_DIR:h} # Modifer :h gets parent dir
+REPO_ROOT=${SCRIPT_DIR:h}
 
 print "${GREEN}--- Starting Desktop Setup ---${NC}"
 
@@ -30,13 +30,11 @@ print "${GREEN}--- Starting Desktop Setup ---${NC}"
 print "${GREEN}--- Configuring Sunshine & Repos ---${NC}"
 
 # Sunshine Icons
-# Uses Repo path directly.
 sudo tee /usr/local/bin/replace-sunshine-icons.sh > /dev/null << EOF
 #!/bin/bash
 DEST="/usr/share/icons/hicolor/scalable/status"
 SRC="$REPO_ROOT/5-Resources/Icons/Sunshine-Tray-Icons"
 [[ -d "\$SRC" ]] && cp "\$SRC"/*.svg "\$DEST/"
-# Expansion ${:-=cmd} finds cmd in path; :A resolves absolute path
 [[ -f "/usr/bin/sunshine" ]] && setcap cap_sys_admin+p "${${:-=sunshine}:A}"
 EOF
 sudo chmod +x /usr/local/bin/replace-sunshine-icons.sh
@@ -75,7 +73,7 @@ print "${GREEN}--- Packages & Services ---${NC}"
 yay -S --needed --noconfirm - < "$SCRIPT_DIR/desktop_pkg.txt"
 
 SERVICES=("sonarr" "radarr" "lidarr" "prowlarr" "jellyfin" "transmission")
-sudo systemctl enable --now $SERVICES # Arrays expand naturally in Zsh
+sudo systemctl enable --now $SERVICES
 
 # Shutdown Safety
 for service in $SERVICES; do
@@ -85,7 +83,6 @@ done
 sudo systemctl daemon-reload
 
 # Sunshine User Service
-# Zsh expansion: =sunshine finds it in path, :A makes it absolute
 sudo setcap cap_sys_admin+p "${${:-=sunshine}:A}"
 systemctl --user enable --now sunshine
 
@@ -185,7 +182,41 @@ sudo udevadm control --reload-rules && sudo udevadm trigger
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
-# 5. Local Binaries
+# 5. Sunshine Performance
+print "${GREEN}--- Configuring Sunshine Performance ---${NC}"
+
+BOOST_SCRIPT="$REPO_ROOT/5-Resources/Sunshine/sunshine-gpu-boost.zsh"
+
+# Detect RX 7900 XT (Navi 31)
+CARD_PATH=$(grep -lE "0x744(c|d)" /sys/class/drm/card*/device/device 2>/dev/null | head -n 1)
+
+if [[ -n "$CARD_PATH" ]]; then
+    # Extract card name (e.g. card0)
+    CARD_NAME=${${CARD_PATH:h}:h:t}
+
+    print "Detected RX 7900 XT at $CARD_NAME"
+
+    if [[ -f "$BOOST_SCRIPT" ]]; then
+        # Configure script in-place to use correct GPU
+        sed -i "s/card[0-9]\+/$CARD_NAME/" "$BOOST_SCRIPT"
+        chmod +x "$BOOST_SCRIPT"
+
+        # Sudoers Rule pointing to REPO path
+        print "$USER ALL=(ALL) NOPASSWD: $BOOST_SCRIPT" | sudo tee /etc/sudoers.d/90-sunshine-boost > /dev/null
+        sudo chmod 440 /etc/sudoers.d/90-sunshine-boost
+
+        print "Configured GPU Boost in repo: $BOOST_SCRIPT"
+    else
+        print "${YELLOW}Warning: Source script $BOOST_SCRIPT not found.${NC}"
+    fi
+else
+    print "${YELLOW}Warning: RX 7900 XT not found. Skipping GPU Boost setup.${NC}"
+fi
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
+# 6. Local Binaries
 print "${GREEN}--- Configuring Local Binaries ---${NC}"
 mkdir -p "$HOME/.local/bin"
 SOURCE_SCRIPT="$REPO_ROOT/5-Resources/Local-Scripts/fix-cover-art.zsh"
@@ -202,7 +233,7 @@ fi
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
-# 6. KDE Integration
+# 7. KDE Integration
 print "${GREEN}--- KDE Rules ---${NC}"
 grep -q 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.zshrc" || print 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.zshrc"
 grep -q "export KWIN_PROFILE=" "$HOME/.zshrc" || print 'export KWIN_PROFILE="desktop"' >> "$HOME/.zshrc"
