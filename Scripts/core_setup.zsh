@@ -2,8 +2,17 @@
 # ------------------------------------------------------------------------------
 # 3. Core System Setup
 # ------------------------------------------------------------------------------
+#
+# DEVELOPMENT RULES:
+# 1. Formatting: Keep layout compact. No vertical whitespace inside blocks.
+# 2. Separators: Use double dotted lines (# ------) for major sections.
+# 3. Safety: Use 'setopt ERR_EXIT NO_UNSET PIPE_FAIL'.
+# 4. Syntax: Use Zsh native modifiers (e.g. ${VAR:h}) instead of subshells.
+# 5. Output: Use 'print' instead of 'echo'.
+#
+# ------------------------------------------------------------------------------
 
-# Zsh Options for Robustness
+# Safety Options
 setopt ERR_EXIT     # Same as set -e
 setopt NO_UNSET     # Same as set -u (Error on unset vars)
 setopt PIPE_FAIL    # Fail if any part of a pipe fails
@@ -83,7 +92,7 @@ if ! grep -q "Architecture = auto x86_64_v4" /etc/pacman.conf; then
     sudo sed -i 's/^Architecture = auto/Architecture = auto x86_64_v4/' /etc/pacman.conf
 fi
 
-# Append Repos (Idempotent)
+# Append Repos (must always be at bottom of pacman.conf)
 if ! grep -q "\[cachyos-znver4\]" /etc/pacman.conf; then
     cat <<EOF | sudo tee -a /etc/pacman.conf > /dev/null
 
@@ -99,6 +108,9 @@ EOF
 fi
 sudo pacman -Syy --noconfirm
 
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
 # 5. Kernel & Packages
 print "${GREEN}--- Installing Kernel & Packages ---${NC}"
 sudo pacman -S --noconfirm linux-cachyos linux-cachyos-headers
@@ -107,6 +119,9 @@ sudo pacman -S --noconfirm linux-cachyos linux-cachyos-headers
 for pkg in linux linux-headers; do
     pacman -Qq "$pkg" &>/dev/null && sudo pacman -Rns --noconfirm "$pkg"
 done
+
+# Remove Discover (Cleanup)
+sudo pacman -Rdd --noconfirm discover || true
 
 yay -S --needed --noconfirm - < "$SCRIPT_DIR/core_pkg.txt"
 
@@ -200,24 +215,27 @@ EOF
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
-# 8. Finalisation
-print "${GREEN}--- Finalising ---${NC}"
+# 8. UI & Visuals
+print "${GREEN}--- Configuring UI & Visuals ---${NC}"
 papirus-folders -C breeze --theme Papirus-Dark
-sudo grub-mkconfig -o /boot/grub/grub.cfg
-
-# Remove Discover (Cleanup)
-sudo pacman -Rdd --noconfirm discover || true
 
 # Gemini Plasmoid (Idempotent)
 GEMINI_DIR="$HOME/.local/share/plasma/plasmoids/com.samirgaire10.google_gemini-plasma6"
 if [[ ! -d "$GEMINI_DIR" ]]; then
     git clone https://github.com/samirgaire10/com.samirgaire10.google_gemini-plasma6.git "$HOME/Make/gemini"
-    mkdir -p "${GEMINI_DIR:h}" # Modifer :h gets dirname
+    mkdir -p "${GEMINI_DIR:h}"
     mv "$HOME/Make/gemini" "$GEMINI_DIR"
     QML="$GEMINI_DIR/contents/ui/main.qml"
     sed -i '/Component.onCompleted: url = plasmoid.configuration.url;/c\                Timer { id: sT; interval: 3000; repeat: false; onTriggered: geminiwebview.url = plasmoid.configuration.url } Component.onCompleted: sT.start()' "$QML"
     sed -i '/profile: geminiProfile/a \                onFeaturePermissionRequested: { if (feature === WebEngineView.ClipboardReadWrite) { geminiwebview.grantFeaturePermission(securityOrigin, feature, true); } else { geminiwebview.grantFeaturePermission(securityOrigin, feature, false); } }' "$QML"
 fi
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
+# 9. Finalisation
+print "${GREEN}--- Finalising ---${NC}"
+sudo grub-mkconfig -o /boot/grub/grub.cfg
 
 print "${YELLOW}Restarting Plasma...${NC}"
 sleep 5
