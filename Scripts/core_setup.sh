@@ -211,6 +211,17 @@ sudo sysctl --system
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
+#12.5 BBR Congestion Control
+echo -e "${GREEN}--- Enabling BBR Congestion Control ---${NC}"
+sudo tee /etc/sysctl.d/99-bbr.conf > /dev/null <<'EOF'
+net.core.default_qdisc = cake
+net.ipv4.tcp_congestion_control = bbr
+EOF
+sudo sysctl --system
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
 # 13. Optimise mkinitcpio
 echo -e "${GREEN}--- Optimising mkinitcpio (Boot Speed) ---${NC}"
 sudo sed -i 's|^MODULES=.*|MODULES=(amdgpu nvme)|' /etc/mkinitcpio.conf
