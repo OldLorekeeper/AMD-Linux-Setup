@@ -24,7 +24,6 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 # 1. Pre-install: Sunshine Hook and Repo
 echo -e "${GREEN}--- Creating script and hook to replace Sunshine icons and restore permissions... ---${NC}"
-
 # Create replacement script using local repo path
 # UPDATE: Added setcap command to restore permissions on update
 sudo tee /usr/local/bin/replace-sunshine-icons.sh > /dev/null << EOF
@@ -66,7 +65,20 @@ Exec = /usr/local/bin/replace-sunshine-icons.sh
 EOF
 echo -e "${GREEN}--- Adding [lizardbyte] repo for Sunshine... ---${NC}"
 if ! grep -q "\[lizardbyte\]" /etc/pacman.conf; then
-    echo -e "\n[lizardbyte]\nSigLevel = Optional\nServer = https://github.com/LizardByte/pacman-repo/releases/latest/download" | sudo tee -a /etc/pacman.conf
+    # Insert [lizardbyte] ABOVE [cachyos-znver4] (from core_setup.sh) to ensure correct priority
+    if grep -q "\[cachyos-znver4\]" /etc/pacman.conf; then
+        echo "Injecting [lizardbyte] above CachyOS repositories..."
+        # Sed insert: inserts text before the line matching [cachyos-znver4]
+        sudo sed -i '/\[cachyos-znver4\]/i \
+[lizardbyte]\
+SigLevel = Optional\
+Server = https://github.com/LizardByte/pacman-repo/releases/latest/download\
+' /etc/pacman.conf
+    else
+        # Fallback: Append if CachyOS repos are missing
+        echo -e "\n[lizardbyte]\nSigLevel = Optional\nServer = https://github.com/LizardByte/pacman-repo/releases/latest/download" | sudo tee -a /etc/pacman.conf
+    fi
+
     # FIX: Use -Syu to prevent partial upgrade issues
     echo -e "${YELLOW}Syncing repositories...${NC}"
     sudo pacman -Syu
