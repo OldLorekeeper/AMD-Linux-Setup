@@ -8,7 +8,7 @@ setopt NO_UNSET
 setopt PIPE_FAIL
 
 # Configuration
-MONITOR="DP-1"    # Check 'kscreen-doctor -o'
+MONITOR="DP-2"    # Check 'kscreen-doctor -o'
 STREAM_MODE="9"   # Target streaming resolution mode index
 DEFAULT_MODE="1"  # Default desktop resolution mode index
 
