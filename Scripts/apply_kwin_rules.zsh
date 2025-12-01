@@ -26,7 +26,7 @@ CONFIG_FILE="$HOME/.config/kwinrulesrc"
 # ------------------------------------------------------------------------------
 
 # 2. Sync Logic: Extract Sizes and Generate File
-print "--- Generating Rules for $PROFILE ---"
+print -- "--- Generating Rules for $PROFILE ---"
 
 # Extract sizes directly into variables
 SMALL_SIZE=$(grep -E '^# *Small:' "$TEMPLATE" | awk '{print $3}')
@@ -57,7 +57,7 @@ print "Generated $GENERATED"
 # ------------------------------------------------------------------------------
 
 # 3. Update Logic: Apply to KWin
-print "--- Applying Rules to KWin ---"
+print -- "--- Applying Rules to KWin ---"
 
 if [[ ! -f "$GENERATED" ]]; then
   print "Error: Generated file not found."

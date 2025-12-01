@@ -108,12 +108,24 @@ sed -i 's/^plugins=(git)$/plugins=(git archlinux zsh-autosuggestions zsh-syntax-
 if ! grep -q "Custom Aliases" "$HOME/.zshrc"; then
     cat << 'EOF' >> "$HOME/.zshrc"
 
-# --- Custom Aliases ---
+export PATH="$HOME/.local/bin:$PATH"
+
 alias mkinit="sudo mkinitcpio -P"
 alias mkgrub="sudo grub-mkconfig -o /boot/grub/grub.cfg"
-function git() {
-    if [[ "$1" == "clone" && -n "$2" && -z "$3" && "$(pwd)" == "$HOME" ]]; then
-        command git clone "$2" "$HOME/Make/$(basename "$2" .git)"
+
+git() {
+    if (( EUID == 0 )); then
+        command git "$@"
+        return
+    fi
+    if [[ "$1" == "clone" && -n "$2" && -z "$3" ]]; then
+        if [[ "$PWD" == "$HOME" ]]; then
+            print -P "%F{yellow}Auto-cloning to ~/Make...%f"
+            local repo_name="${${2:t}%.git}"
+            command git clone "$2" "$HOME/Make/$repo_name"
+        else
+            command git clone "$2"
+        fi
     else
         command git "$@"
     fi

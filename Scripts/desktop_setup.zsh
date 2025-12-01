@@ -84,7 +84,8 @@ done
 sudo systemctl daemon-reload
 
 # Sunshine User Service
-sudo setcap cap_sys_admin+p "${${:-=sunshine}:A}"
+REAL_SUNSHINE_PATH=$(readlink -f "$(command -v sunshine)")
+sudo setcap cap_sys_admin+p "$REAL_SUNSHINE_PATH"
 systemctl --user enable --now sunshine
 
 # Solaar
@@ -189,7 +190,7 @@ print "${GREEN}--- Configuring Sunshine Performance ---${NC}"
 BOOST_SCRIPT="$REPO_ROOT/5-Resources/Sunshine/sunshine-gpu-boost.zsh"
 
 # Detect RX 7900 XT (Navi 31)
-CARD_PATH=$(grep -lE "0x744(c|d)" /sys/class/drm/card*/device/device 2>/dev/null | head -n 1)
+CARD_PATH=$(grep -lE "0x744(c|d)" /sys/class/drm/card*/device/device 2>/dev/null | head -n 1 || true)
 
 if [[ -n "$CARD_PATH" ]]; then
     # Extract card name (e.g. card0)

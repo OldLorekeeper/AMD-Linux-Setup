@@ -230,6 +230,70 @@ if [[ ! -d "$GEMINI_DIR" ]]; then
     sed -i '/profile: geminiProfile/a \                onFeaturePermissionRequested: { if (feature === WebEngineView.ClipboardReadWrite) { geminiwebview.grantFeaturePermission(securityOrigin, feature, true); } else { geminiwebview.grantFeaturePermission(securityOrigin, feature, false); } }' "$QML"
 fi
 
+# --- KWin Functions Injection ---
+print "${GREEN}--- Configuring KWin Management ---${NC}"
+
+# Convert DEVICE_NAME to lowercase (Zsh modifier :l) for the profile
+TARGET_PROFILE="${DEVICE_NAME:l}"
+
+# Append functions to .zshrc using a heredoc
+# Note: Variables like $HOST and $1 are escaped (\$) to prevent expansion during script run
+cat <<EOF >> "$HOME/.zshrc"
+
+export KWIN_PROFILE="$TARGET_PROFILE"
+
+update-kwin() {
+    # Default to KWIN_PROFILE if set, otherwise require argument
+    local target="\${1:-\$KWIN_PROFILE}"
+
+    if [[ -z "\$target" ]]; then
+        print -u2 "Error: No profile specified and KWIN_PROFILE not set."
+        return 1
+    fi
+
+    print -P "%F{green}--- Syncing and Updating for Profile: \$target ---%f"
+    local current_dir=\$PWD
+    cd "\$HOME/Obsidian/AMD-Linux-Setup" || return
+
+    # Auto-commit common fragment changes
+    if git status --porcelain 5-Resources/Window-Rules/common.kwinrule.fragment | grep -q '^ M'; then
+        print -P "%F{yellow}Committing changes to common.kwinrule.fragment...%f"
+        git add 5-Resources/Window-Rules/common.kwinrule.fragment
+        git commit -m "AUTOSYNC: KWin common fragment update from \${HOST}"
+    fi
+
+    if ! git pull; then
+        print -P "%F{red}Error: Git pull failed.%f"
+        cd "\$current_dir"
+        return 1
+    fi
+
+    # Run Zsh script (corrected extension)
+    ./Scripts/apply_kwin_rules.zsh "\$target"
+    cd "\$current_dir"
+}
+
+edit-kwin() {
+    local target="\${1:-\$KWIN_PROFILE}"
+    local repo_dir="\$HOME/Obsidian/AMD-Linux-Setup/5-Resources/Window-Rules"
+    local file_path=""
+
+    case "\$target" in
+        "desktop") file_path="\$repo_dir/desktop.rule.template" ;;
+        "laptop")  file_path="\$repo_dir/laptop.rule.template" ;;
+        "common")  file_path="\$repo_dir/common.kwinrule.fragment" ;;
+        *)         file_path="\$repo_dir/common.kwinrule.fragment" ;;
+    esac
+
+    if [[ -f "\$file_path" ]]; then
+        print "Opening template for: \$target"
+        kate "\$file_path" &!
+    else
+        print -u2 "Error: File not found: \$file_path"
+    fi
+}
+EOF
+
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
