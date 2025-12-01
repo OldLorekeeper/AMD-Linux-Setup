@@ -42,20 +42,14 @@ fi
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
-# 3. Apply Laptop Kernel Parameters
-echo -e "${GREEN}--- Applying laptop-specific kernel parameters ---${NC}"
+# 7. Desktop Kernel Parameters
+echo -e "${GREEN}--- Enforcing laptop-specific kernel parameters ---${NC}"
 # Define laptop-specific parameters (GPU Features, Power features, Hugepages, Resolution, Active P-State)
-PARAMS="amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=2560x1600@60 amd_pstate=active"
-# Check if parameters already exist to prevent duplication
-if grep -q "amdgpu.ppfeaturemask" /etc/default/grub; then
-    echo -e "${YELLOW}Kernel parameters appear to be already set. Skipping append.${NC}"
-else
-    # Appends PARAMS to the GRUB_CMDLINE_LINUX_DEFAULT line
-    sudo sed -i "s/^\(GRUB_CMDLINE_LINUX_DEFAULT=\"[^\"]*\)\"$/\1 $PARAMS\"/" /etc/default/grub
-
-    echo -e "${GREEN}--- Rebuilding GRUB configuration ---${NC}"
-    sudo grub-mkconfig -o /boot/grub/grub.cfg
-fi
+NEW_CMDLINE='GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=2560x1600@60 amd_pstate=active"'
+# Force replace the line in /etc/default/grub
+sudo sed -i 's|^GRUB_CMDLINE_LINUX_DEFAULT=.*|'"$NEW_CMDLINE"'|' /etc/default/grub
+echo -e "${GREEN}--- Rebuilding GRUB configuration ---${NC}"
+sudo grub-mkconfig -o /boot/grub/grub.cfg
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
