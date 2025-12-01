@@ -217,7 +217,9 @@ ExecStart=/usr/lib/slskd/slskd --config /etc/slskd/slskd.yml
 EOF
 echo "Creating slskd config directory and placeholder file..."
 sudo mkdir -p /etc/slskd
-sudo tee /etc/slskd/slskd.yml > /dev/null << 'EOF'
+# Only create the file if it does NOT exist to preserve user credentials
+if [ ! -f /etc/slskd/slskd.yml ]; then
+    sudo tee /etc/slskd/slskd.yml > /dev/null << 'EOF'
 #
 # Placeholder file created by script.
 # EDIT THIS FILE with your details before use.
@@ -239,9 +241,13 @@ directories:
   downloads: /mnt/Media/Torrents/slskd/Complete
   incomplete: /mnt/Media/Torrents/slskd/Incomplete
 soulseek:
-  username: [insert desired soluseek username]
-  password: [insert desired soluseek password - no symbols]
+  username: [insert desired soulseek username]
+  password: [insert desired soulseek password - no symbols]
 EOF
+    echo "Created new placeholder slskd.yml."
+else
+    echo "Existing slskd.yml found. Skipping overwrite to preserve credentials."
+fi
 echo "Enabling slskd service..."
 sudo systemctl daemon-reload
 sudo systemctl enable --now slskd.service

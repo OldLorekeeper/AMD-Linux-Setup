@@ -92,19 +92,22 @@ fi
 
 # 4. Configure CachyOS Repositories (Zen 4)
 echo -e "${GREEN}--- Configuring CachyOS Zen 4 Repositories ---${NC}"
-# Import keys manually (Ubuntu keyserver is more reliable for CachyOS)
+# Import keys manually
 sudo pacman-key --recv-keys F3B607488DB35A47 --keyserver keyserver.ubuntu.com
 sudo pacman-key --lsign-key F3B607488DB35A47
-# Download Mirrorlists directly
+# Download Mirrorlists
 sudo pacman -U --noconfirm \
 'https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-keyring-20240331-1-any.pkg.tar.zst' \
 'https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-mirrorlist-22-1-any.pkg.tar.zst' \
 'https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-v4-mirrorlist-22-1-any.pkg.tar.zst'
 # Update pacman.conf
-# 1. Enable x86_64_v4 architecture support
-sudo sed -i 's/^Architecture = auto/Architecture = auto x86_64_v4/' /etc/pacman.conf
-# 2. Append CachyOS repos to bottom of pacman.conf
-cat <<EOF > /tmp/cachyos_repos.conf
+# 1. Enable x86_64_v4 architecture support (Idempotent Check)
+if ! grep -q "Architecture = auto x86_64_v4" /etc/pacman.conf; then
+    sudo sed -i 's/^Architecture = auto/Architecture = auto x86_64_v4/' /etc/pacman.conf
+fi
+# 2. Append CachyOS repos (Idempotent Check)
+if ! grep -q "\[cachyos-znver4\]" /etc/pacman.conf; then
+    cat <<EOF > /tmp/cachyos_repos.conf
 
 [cachyos-znver4]
 Include = /etc/pacman.d/cachyos-v4-mirrorlist
@@ -116,9 +119,12 @@ Include = /etc/pacman.d/cachyos-v4-mirrorlist
 Include = /etc/pacman.d/cachyos-mirrorlist
 
 EOF
-# Append to end of file
-sudo cat /tmp/cachyos_repos.conf >> /etc/pacman.conf
-rm /tmp/cachyos_repos.conf
+    # Append to end of file
+    sudo cat /tmp/cachyos_repos.conf >> /etc/pacman.conf
+    rm /tmp/cachyos_repos.conf
+else
+    echo "CachyOS repositories already present in pacman.conf."
+fi
 # Force sync database
 sudo pacman -Syy --noconfirm
 
