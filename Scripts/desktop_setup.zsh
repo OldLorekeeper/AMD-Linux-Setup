@@ -102,7 +102,51 @@ print "${GREEN}--- Configuring Tools ---${NC}"
 tee "$HOME/Make/hideme_tag.py" > /dev/null << 'EOF'
 #!/usr/bin/env python3
 import requests
-# Placeholder: User must populate this file manually from backups or documentation
+
+JELLYFIN_URL = "http://localhost:8096"
+API_KEY = "INSERT-API"
+USERNAME = "INSERT-USERNAME"
+HIDE_TAG = "hideme"
+
+headers = {
+    "X-Emby-Token": API_KEY
+}
+
+# Get user ID from name
+users_resp = requests.get(f"{JELLYFIN_URL}/Users", headers=headers)
+users_resp.raise_for_status()
+users = users_resp.json()
+user = next(u for u in users if u["Name"] == USERNAME)
+user_id = user["Id"]
+
+# Find tagged items
+resp = requests.get(f"{JELLYFIN_URL}/Users/{user_id}/Items", params={
+    "Recursive": "true",
+    "IncludeItemTypes": "Episode,Movie",
+    "Tags": HIDE_TAG
+}, headers=headers)
+resp.raise_for_status()
+items = resp.json()["Items"]
+
+# Mark as played and simulate full playback
+for item in items:
+    item_id = item["Id"]
+    name = item["Name"]
+    runtime = item.get("RunTimeTicks")
+
+    if not runtime:
+        print(f"Skipping {name} (no duration info)")
+        continue
+
+    print(f"Marking as played: {name}")
+
+    requests.post(f"{JELLYFIN_URL}/Users/{user_id}/PlayedItems/{item_id}", headers=headers)
+    requests.post(f"{JELLYFIN_URL}/Sessions/Playing/Stopped", headers=headers, json={
+        "ItemId": item_id,
+        "PositionTicks": runtime - 1,
+        "PlaySessionId": "",
+        "CanSeek": True
+    })
 EOF
 chmod +x "$HOME/Make/hideme_tag.py"
 
