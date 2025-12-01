@@ -1,32 +1,38 @@
-#!/bin/bash
-# apply_kwin_rules.sh – Syncs templates and applies KWin rules in one step.
-# Usage: ./apply_kwin_rules.sh [desktop|laptop]
+#!/bin/zsh
+# ------------------------------------------------------------------------------
+# KWin Rule Applicator
+# ------------------------------------------------------------------------------
 
-set -e
+setopt ERR_EXIT
+setopt NO_UNSET
+setopt PIPE_FAIL
 
+# 1. Configuration & Paths
 PROFILE="$1"
 if [[ -z "$PROFILE" ]]; then
-  echo "Error: No profile specified. Use 'desktop' or 'laptop'."
+  print "Error: No profile specified. Use 'desktop' or 'laptop'."
   exit 1
 fi
 
-# 1. Define Paths
-SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &>/dev/null && pwd )"
-REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+SCRIPT_DIR=${0:a:h}
+REPO_ROOT=${SCRIPT_DIR:h}
 RULES_DIR="$REPO_ROOT/5-Resources/Window-Rules"
 TEMPLATE="$RULES_DIR/${PROFILE}.rule.template"
 COMMON="$RULES_DIR/common.kwinrule.fragment"
 GENERATED="$RULES_DIR/${PROFILE}.generated.kwinrule"
 CONFIG_FILE="$HOME/.config/kwinrulesrc"
 
-# 2. Sync Logic: Extract Sizes and Generate File
-echo "--- Generating Rules for $PROFILE ---"
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
-# Extract sizes from the immutable template
-read SMALL_SIZE <<<"$(grep -E '^# *Small:' "$TEMPLATE" | awk '{print $3}')"
-read TALL_SIZE  <<<"$(grep -E '^# *Tall:'  "$TEMPLATE" | awk '{print $3}')"
-read WIDE_SIZE  <<<"$(grep -E '^# *Wide:'  "$TEMPLATE" | awk '{print $3}')"
-read BOXY_SIZE  <<<"$(grep -E '^# *Boxy:'  "$TEMPLATE" | awk '{print $3}')"
+# 2. Sync Logic: Extract Sizes and Generate File
+print "--- Generating Rules for $PROFILE ---"
+
+# Extract sizes directly into variables
+SMALL_SIZE=$(grep -E '^# *Small:' "$TEMPLATE" | awk '{print $3}')
+TALL_SIZE=$(grep -E '^# *Tall:'  "$TEMPLATE" | awk '{print $3}')
+WIDE_SIZE=$(grep -E '^# *Wide:'  "$TEMPLATE" | awk '{print $3}')
+BOXY_SIZE=$(grep -E '^# *Boxy:'  "$TEMPLATE" | awk '{print $3}')
 
 # Insert sizes into common fragment
 sed -E \
@@ -45,20 +51,23 @@ sed -E \
 } > "$GENERATED"
 
 rm "$GENERATED.tmp"
-echo "Generated $GENERATED"
+print "Generated $GENERATED"
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 # 3. Update Logic: Apply to KWin
-echo "--- Applying Rules to KWin ---"
+print "--- Applying Rules to KWin ---"
 
 if [[ ! -f "$GENERATED" ]]; then
-  echo "Error: Generated file not found."
+  print "Error: Generated file not found."
   exit 1
 fi
 
 # Back up the existing KWin rules configuration
 if [[ -f "$CONFIG_FILE" ]]; then
   cp "$CONFIG_FILE" "${CONFIG_FILE}.bak"
-  echo "Backed up existing config to ${CONFIG_FILE}.bak"
+  print "Backed up existing config to ${CONFIG_FILE}.bak"
 fi
 
 # Convert to kwinrulesrc format (Numbered Sections)
@@ -83,17 +92,25 @@ awk '
   }
 ' "$GENERATED" > "$CONFIG_FILE"
 
-echo "Wrote numbered rules to $CONFIG_FILE"
+print "Wrote numbered rules to $CONFIG_FILE"
 
 # Reload KWin (Wayland)
 if pgrep -x kwin_wayland >/dev/null; then
-  DBUS_CMD="$(command -v qdbus-qt6 || command -v qdbus6 || command -v qdbus)"
+  # Find first available qdbus binary
+  DBUS_CMD=""
+  for cmd in qdbus-qt6 qdbus6 qdbus; do
+    if (( $+commands[$cmd] )); then
+      DBUS_CMD=$cmd
+      break
+    fi
+  done
+
   if [[ -n "$DBUS_CMD" ]]; then
-    "$DBUS_CMD" org.kde.KWin /KWin reconfigure || echo "Warning: DBus reconfigure failed."
-    echo "Success: Rules updated and KWin reconfigured."
+    "$DBUS_CMD" org.kde.KWin /KWin reconfigure || print "Warning: DBus reconfigure failed."
+    print "Success: Rules updated and KWin reconfigured."
   else
-    echo "Warning: qdbus command not found; rules written but not auto-reloaded."
+    print "Warning: qdbus command not found; rules written but not auto-reloaded."
   fi
 else
-  echo "Warning: kwin_wayland not running. Rules written but not applied."
+  print "Warning: kwin_wayland not running. Rules written but not applied."
 fi

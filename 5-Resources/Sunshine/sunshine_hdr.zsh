@@ -1,10 +1,19 @@
-#!/usr/bin/zsh
+#!/bin/zsh
+# ------------------------------------------------------------------------------
+# Sunshine HDR & Resolution Switcher
+# ------------------------------------------------------------------------------
+
+setopt ERR_EXIT
+setopt NO_UNSET
+setopt PIPE_FAIL
+
 # Configuration
 MONITOR="DP-2"
-STREAM_MODE="9"
-DEFAULT_MODE="1"
+STREAM_MODE="9"   # Target mode index
+DEFAULT_MODE="1"  # Default mode index
 
-# ------------------------------------------------------------
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 case "$1" in
     enable)
@@ -16,7 +25,7 @@ case "$1" in
         kscreen-doctor output.$MONITOR.hdr.disable output.$MONITOR.mode.$DEFAULT_MODE output.$MONITOR.scale.1.0
         ;;
     *)
-        echo "Usage: $0 {enable|disable}"
+        print "Usage: $0 {enable|disable}"
         exit 1
         ;;
 esac

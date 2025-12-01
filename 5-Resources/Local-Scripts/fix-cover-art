@@ -1,24 +1,35 @@
 #!/usr/bin/zsh
+# ------------------------------------------------------------------------------
+# Audio Cover Art Embedder (Kid3 Wrapper)
+# ------------------------------------------------------------------------------
+
+# Safety Options
+setopt ERR_EXIT
+setopt NO_UNSET
+setopt PIPE_FAIL
+
+# Logic Options
+setopt globstarshort
+setopt nullglob
 
 # Check for dependency
-if ! command -v kid3-cli &> /dev/null; then
+if ! (( $+commands[kid3-cli] )); then
     print -P "%F{red}Error: kid3-cli is not installed.%f"
     exit 1
 fi
 
 # Ensure we use the Absolute Path of the target directory
 TARGET_DIR="${1:-$PWD}"
-TARGET_DIR=$(realpath "$TARGET_DIR")
+TARGET_DIR=${TARGET_DIR:A} # Zsh modifier for absolute path (realpath)
 print -P "%F{blue}Scanning: $TARGET_DIR%f"
 
-# ............................................................
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
-setopt globstarshort
-setopt nullglob
-
+# 1. Discovery
 # Define the condition for a "valid" folder (contains any of the 4 image types)
-# This uses Zsh execution qualifiers to filter the list cleanly
-local match_code='[[ -f $REPLY/cover.jpg || -f $REPLY/cover.png || -f $REPLY/folder.jpg || -f $REPLY/folder.png ]]'
+local match_code='[[ -f $REPLY/cover.jpg || \
+-f $REPLY/cover.png || -f $REPLY/folder.jpg || -f $REPLY/folder.png ]]'
 
 # Build list of target folders
 local -a target_folders
@@ -29,8 +40,11 @@ if (( ${#target_folders} == 0 )); then
     exit 0
 fi
 
-# Iterate
-for folder in "${target_folders[@]}"; do
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
+# 2. Processing
+for folder in $target_folders; do
     local cover_img=""
 
     # Priority Hierarchy
@@ -49,16 +63,16 @@ for folder in "${target_folders[@]}"; do
     audio_files=("$folder"/*.{mp3,flac,m4a,ogg}(N))
 
     if (( ${#audio_files} > 0 )); then
-        print -P "%F{green}Processing: ${folder##*/}%f"
-        print -P "  Source: ${cover_img##*/}"
+        print -P "%F{green}Processing: ${folder:t}%f"
+        print -P "  Source: ${cover_img:t}"
 
-        for file in "${audio_files[@]}"; do
+        for file in $audio_files; do
             # Embed image using absolute path
-            # The simplified command overwrites existing Front Cover frames automatically
             if output=$(kid3-cli -c "set picture:\"$cover_img\" \"\"" "$file" 2>&1); then
-                 # Success
+                 # Success - silent
+                 :
             else
-                 print -P "%F{red}    Failed: ${file##*/} -> $output%f"
+                 print -P "%F{red}    Failed: ${file:t} -> $output%f"
             fi
         done
 
@@ -66,7 +80,5 @@ for folder in "${target_folders[@]}"; do
         touch "$folder"
     fi
 done
-
-# ............................................................
 
 print -P "%F{blue}Batch operation complete.%f"
