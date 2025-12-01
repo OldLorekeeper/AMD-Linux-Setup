@@ -63,21 +63,17 @@ Description = Replacing Sunshine tray icons...
 When = PostTransaction
 Exec = /usr/local/bin/replace-sunshine-icons.sh
 EOF
+# ... inside desktop_setup.sh ...
+
 echo -e "${GREEN}--- Adding [lizardbyte] repo for Sunshine... ---${NC}"
-if grep -q "\[cachyos-znver4\]" /etc/pacman.conf; then
+if ! grep -q "\[lizardbyte\]" /etc/pacman.conf; then
+    if grep -q "\[cachyos-znver4\]" /etc/pacman.conf; then
         echo "Injecting [lizardbyte] above CachyOS repositories..."
+        # Corrected SED: No trailing backslash after the URL
         sudo sed -i '/\[cachyos-znver4\]/i \
 [lizardbyte]\
 SigLevel = Optional\
 Server = https://github.com/LizardByte/pacman-repo/releases/latest/download' /etc/pacman.conf
-    else
-        echo "Injecting [lizardbyte] above CachyOS repositories..."
-        # Sed insert: inserts text before the line matching [cachyos-znver4]
-        sudo sed -i '/\[cachyos-znver4\]/i \
-[lizardbyte]\
-SigLevel = Optional\
-Server = https://github.com/LizardByte/pacman-repo/releases/latest/download\
-' /etc/pacman.conf
     else
         # Fallback: Append if CachyOS repos are missing
         echo -e "\n[lizardbyte]\nSigLevel = Optional\nServer = https://github.com/LizardByte/pacman-repo/releases/latest/download" | sudo tee -a /etc/pacman.conf
