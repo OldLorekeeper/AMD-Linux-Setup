@@ -1,0 +1,31 @@
+#!/bin/zsh
+# ------------------------------------------------------------------------------
+# Sunshine Resolution Switcher (No HDR)
+# ------------------------------------------------------------------------------
+
+setopt ERR_EXIT
+setopt NO_UNSET
+setopt PIPE_FAIL
+
+# Configuration
+MONITOR="DP-1"    # Check 'kscreen-doctor -o'
+STREAM_MODE="9"   # Target streaming resolution mode index
+DEFAULT_MODE="1"  # Default desktop resolution mode index
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
+case "$1" in
+    enable)
+        # Set Stream Mode and Scale (Adjust scale if needed, e.g., 1.0 or 1.2)
+        kscreen-doctor output.$MONITOR.mode.$STREAM_MODE output.$MONITOR.scale.1.0
+        ;;
+    disable)
+        # Revert Mode and Scale
+        kscreen-doctor output.$MONITOR.mode.$DEFAULT_MODE output.$MONITOR.scale.1.0
+        ;;
+    *)
+        print "Usage: $0 {enable|disable}"
+        exit 1
+        ;;
+esac
