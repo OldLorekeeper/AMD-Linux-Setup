@@ -84,10 +84,24 @@ fi
 # ------------------------------------------------------------------------------
 
 # 5. ZSH & Oh-My-Zsh
-echo -e "${GREEN}--- Configuring Shell ---${NC}"
-if [ ! -d "$HOME/.oh-my-zsh" ]; then
+echo -e "${GREEN}--- Installing Oh-My-Zsh for User and Root ---${NC}"
+# Install for User
+if [ -d "$HOME/.oh-my-zsh" ]; then
+    echo -e "${YELLOW}Oh-My-Zsh already installed for user. Skipping.${NC}"
+else
+    echo "Installing for user $USER..."
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 fi
+# Install for Root (and symlink)
+echo "Setting up Oh-My-Zsh for root (via symlinks)..."
+if [ ! -d "/root/.oh-my-zsh" ]; then
+    sudo sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+fi
+# Remove default root files and symlink to user's config
+sudo rm -f /root/.zshrc
+sudo rm -rf /root/.oh-my-zsh
+sudo ln -sf "$HOME/.oh-my-zsh" /root/.oh-my-zsh
+sudo ln -sf "$HOME/.zshrc" /root/.zshrc
 
 # Plugins
 ZSH_CUSTOM=${ZSH_CUSTOM:-~/.oh-my-zsh/custom}
