@@ -15,6 +15,12 @@
 
 set -e
 
+# Refresh sudo and keep it alive in background
+sudo -v
+( while true; do sudo -v; sleep 60; done; ) &
+SUDO_PID=$!
+trap 'kill $SUDO_PID' EXIT
+
 # Colour Codes
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -79,13 +85,15 @@ sudo reflector --country GB,IE,NL,DE,FR,EU --age 6 --protocol https --sort rate 
 
 # 3. Install yay
 echo -e "${GREEN}--- Installing yay (AUR Helper) ---${NC}"
-sudo pacman -S --needed --noconfirm git base-devel
-if [ ! -d "$HOME/Make/yay" ]; then
-    git clone https://aur.archlinux.org/yay.git "$HOME/Make/yay"
+if command -v yay &> /dev/null; then
+    echo "yay is already installed. Skipping build."
 else
-    echo "yay repository already exists in ~/Make."
+    sudo pacman -S --needed --noconfirm git base-devel
+    # Remove existing directory to ensure a clean build if previous attempt failed
+    rm -rf "$HOME/Make/yay"
+    git clone https://aur.archlinux.org/yay.git "$HOME/Make/yay"
+    (cd "$HOME/Make/yay" && makepkg -si --noconfirm)
 fi
-(cd "$HOME/Make/yay" && makepkg -si --noconfirm)
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
