@@ -129,14 +129,18 @@ sudo pacman -Syy --noconfirm
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
-# 5. Install CachyOS Kernel & Remove Zen
-echo -e "${GREEN}--- Installing linux-cachyos and removing linux-zen ---${NC}"
+# 5. Install CachyOS Kernel & Remove Default
+echo -e "${GREEN}--- Installing linux-cachyos and removing stock kernel ---${NC}"
 # Install CachyOS kernel (AutoFDO optimised)
-# Note: xpadneo-dkms (in core_pkg.txt) will automatically build against this kernel in the next step
 sudo pacman -S --noconfirm linux-cachyos linux-cachyos-headers
-# Remove Linux Zen to keep system clean
-echo "Removing linux-zen..."
-sudo pacman -Rns --noconfirm linux-zen linux-zen-headers
+
+# Remove default 'linux' kernel (and headers if present)
+echo "Removing stock linux kernel..."
+for pkg in linux linux-headers; do
+    if pacman -Qq "$pkg" &>/dev/null; then
+        sudo pacman -Rns --noconfirm "$pkg"
+    fi
+done
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
