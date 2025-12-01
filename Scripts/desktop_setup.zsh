@@ -185,12 +185,29 @@ sudo udevadm control --reload-rules && sudo udevadm trigger
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
-# 5. KDE Integration
+# 5. Local Binaries
+print "${GREEN}--- Configuring Local Binaries ---${NC}"
+mkdir -p "$HOME/.local/bin"
+SOURCE_SCRIPT="$REPO_ROOT/5-Resources/Local-Scripts/fix-cover-art.zsh"
+TARGET_LINK="$HOME/.local/bin/fix-cover-art"
+
+if [[ -f "$SOURCE_SCRIPT" ]]; then
+    ln -sf "$SOURCE_SCRIPT" "$TARGET_LINK"
+    chmod +x "$TARGET_LINK"
+    print "Symlinked fix-cover-art to ~/.local/bin."
+else
+    print "${YELLOW}Warning: $SOURCE_SCRIPT not found.${NC}"
+fi
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
+# 6. KDE Integration
 print "${GREEN}--- KDE Rules ---${NC}"
 grep -q 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.zshrc" || print 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.zshrc"
 grep -q "export KWIN_PROFILE=" "$HOME/.zshrc" || print 'export KWIN_PROFILE="desktop"' >> "$HOME/.zshrc"
 export KWIN_PROFILE="desktop"
 
-[[ -f "$SCRIPT_DIR/apply_kwin_rules.sh" ]] && chmod +x "$SCRIPT_DIR/apply_kwin_rules.sh" && "$SCRIPT_DIR/apply_kwin_rules.sh" desktop
+[[ -f "$SCRIPT_DIR/apply_kwin_rules.zsh" ]] && chmod +x "$SCRIPT_DIR/apply_kwin_rules.zsh" && "$SCRIPT_DIR/apply_kwin_rules.zsh" desktop
 
 print "${GREEN}--- Desktop Setup Complete. Reboot Required. ---${NC}"

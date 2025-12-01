@@ -36,8 +36,8 @@ print "2) Laptop"
 read "device_choice?Choice [1-2]: "
 
 case $device_choice in
-    1) DEVICE_SCRIPT="$SCRIPT_DIR/desktop_setup.sh"; DEVICE_NAME="Desktop" ;;
-    2) DEVICE_SCRIPT="$SCRIPT_DIR/laptop_setup.sh"; DEVICE_NAME="Laptop" ;;
+    1) DEVICE_SCRIPT="$SCRIPT_DIR/desktop_setup.zsh"; DEVICE_NAME="Desktop" ;;
+    2) DEVICE_SCRIPT="$SCRIPT_DIR/laptop_setup.zsh"; DEVICE_NAME="Laptop" ;;
     *) print "${RED}Invalid selection. Core only.${NC}"; DEVICE_SCRIPT="" ;;
 esac
 
@@ -117,6 +117,9 @@ yay -S --needed --noconfirm - < "$SCRIPT_DIR/core_pkg.txt"
 print "${GREEN}--- Applying System Configs ---${NC}"
 sudo systemctl enable --now transmission bluetooth timeshift-hourly.timer lactd btrfs-scrub@-.timer fwupd.service
 
+# Firmware Refresh
+fwupdmgr refresh --force || print "${YELLOW}Warning: Firmware refresh failed.${NC}"
+
 # Grub-Btrfsd
 if [[ -f /usr/lib/systemd/system/grub-btrfsd.service ]]; then
     sudo cp /usr/lib/systemd/system/grub-btrfsd.service /etc/systemd/system/grub-btrfsd.service
@@ -124,6 +127,9 @@ if [[ -f /usr/lib/systemd/system/grub-btrfsd.service ]]; then
     sudo systemctl daemon-reload
     sudo systemctl enable --now grub-btrfsd
 fi
+
+# Bluetooth Experimental
+sudo sed -i 's/^#*\(Experimental = \).*/\1true/' /etc/bluetooth/main.conf
 
 # Reflector Timer
 sudo tee /etc/xdg/reflector/reflector.conf > /dev/null << 'EOF'
@@ -198,6 +204,9 @@ EOF
 print "${GREEN}--- Finalising ---${NC}"
 papirus-folders -C breeze --theme Papirus-Dark
 sudo grub-mkconfig -o /boot/grub/grub.cfg
+
+# Remove Discover (Cleanup)
+sudo pacman -Rdd --noconfirm discover || true
 
 # Gemini Plasmoid (Idempotent)
 GEMINI_DIR="$HOME/.local/share/plasma/plasmoids/com.samirgaire10.google_gemini-plasma6"

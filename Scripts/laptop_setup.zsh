@@ -53,6 +53,6 @@ print "${GREEN}--- KDE Rules ---${NC}"
 grep -q "export KWIN_PROFILE=" "$HOME/.zshrc" || print 'export KWIN_PROFILE="laptop"' >> "$HOME/.zshrc"
 export KWIN_PROFILE="laptop"
 
-[[ -f "$SCRIPT_DIR/apply_kwin_rules.sh" ]] && chmod +x "$SCRIPT_DIR/apply_kwin_rules.sh" && "$SCRIPT_DIR/apply_kwin_rules.sh" laptop
+[[ -f "$SCRIPT_DIR/apply_kwin_rules.zsh" ]] && chmod +x "$SCRIPT_DIR/apply_kwin_rules.zsh" && "$SCRIPT_DIR/apply_kwin_rules.zsh" laptop
 
 print "${GREEN}--- Laptop Setup Complete. Reboot Required. ---${NC}"
