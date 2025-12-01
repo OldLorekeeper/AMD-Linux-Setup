@@ -45,9 +45,11 @@ The setup follows a tiered execution order:
 ## Notes
 
 - **Clean Install Required:** The scripts assume a fresh Arch Linux environment.
-    
+	
+- **Idempotent Execution:** The post-install scripts (`core_setup.sh`, `desktop_setup.sh`, `laptop_setup.sh`) are idempotent. They can be safely re-run to repair configuration drift or finish interrupted setups without duplicating entries (e.g. in `pacman.conf`) or overwriting user-defined secrets (e.g. `slskd.yml`). 
+	
 - **Manual Secrets:** Secure configuration for services (e.g., Jellyfin API keys, Slskd credentials) requires manual entry after the scripts complete.
-    
+	
 - **Filesystem Assumptions:** The installation script assumes a Btrfs layout with specific subvolumes (e.g. `@games`).
 
 ## License
