@@ -132,25 +132,32 @@ print "Configuring Slskd..."
 sudo mkdir -p /etc/slskd
 
 if [[ ! -f /etc/slskd/slskd.yml ]]; then
+    print "${GREEN}--- Configure Slskd Credentials ---${NC}"
+
+    # Interactive prompts
+    read "SLSKD_USER?Create Slskd WebUI Username: "
+    read -s "SLSKD_PASS?Create Slskd WebUI Password: "; print
+    read "SOULSEEK_USER?Create Soulseek Username: "
+    read -s "SOULSEEK_PASS?Create Soulseek Password (no symbols): "; print
+
+    print "Writing configuration..."
     sudo tee /etc/slskd/slskd.yml > /dev/null << EOF
-# Placeholder file created by setup script.
-# EDIT THIS FILE with your details before use.
 web:
   port: 5030
   https:
     disabled: true
   authentication:
     disabled: false
-    username: [insert webui username]
-    password: [insert webui password]
+    username: $SLSKD_USER
+    password: $SLSKD_PASS
 directories:
   downloads: /mnt/Media/Torrents/slskd/Complete
   incomplete: /mnt/Media/Torrents/slskd/Incomplete
 soulseek:
-  username: [insert desired soulseek username]
-  password: [insert desired soulseek password - no symbols]
+  username: $SOULSEEK_USER
+  password: $SOULSEEK_PASS
 EOF
-    print "Created placeholder slskd.yml"
+    print "Created configured slskd.yml"
 else
     print "${YELLOW}slskd.yml exists. Skipping overwrite.${NC}"
 fi
