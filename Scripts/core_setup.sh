@@ -188,7 +188,8 @@ fwupdmgr refresh --force || echo -e "${YELLOW}Warning: Firmware refresh failed. 
 echo -e "${GREEN}--- Applying system-wide configurations ---${NC}"
 # 9. Setup Locale
 echo -e "${GREEN}--- Setting up en_US locale ---${NC}"
-sudo sed -i 's/^#*\(en_US.UTF-8\)/\1/' /etc/locale.gen
+# Escaped the dot (.) to match the literal character
+sudo sed -i 's/^#*\(en_US\.UTF-8\)/\1/' /etc/locale.gen
 sudo locale-gen
 
 # ------------------------------------------------------------------------------

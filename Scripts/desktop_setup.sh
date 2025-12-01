@@ -64,9 +64,13 @@ When = PostTransaction
 Exec = /usr/local/bin/replace-sunshine-icons.sh
 EOF
 echo -e "${GREEN}--- Adding [lizardbyte] repo for Sunshine... ---${NC}"
-if ! grep -q "\[lizardbyte\]" /etc/pacman.conf; then
-    # Insert [lizardbyte] ABOVE [cachyos-znver4] (from core_setup.sh) to ensure correct priority
-    if grep -q "\[cachyos-znver4\]" /etc/pacman.conf; then
+if grep -q "\[cachyos-znver4\]" /etc/pacman.conf; then
+        echo "Injecting [lizardbyte] above CachyOS repositories..."
+        sudo sed -i '/\[cachyos-znver4\]/i \
+[lizardbyte]\
+SigLevel = Optional\
+Server = https://github.com/LizardByte/pacman-repo/releases/latest/download' /etc/pacman.conf
+    else
         echo "Injecting [lizardbyte] above CachyOS repositories..."
         # Sed insert: inserts text before the line matching [cachyos-znver4]
         sudo sed -i '/\[cachyos-znver4\]/i \
