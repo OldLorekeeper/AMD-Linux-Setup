@@ -128,33 +128,102 @@ systemctl --user daemon-reload
 systemctl --user enable --now hideme_tag.timer
 
 # Slskd (Idempotent)
+print "Configuring Slskd..."
 sudo mkdir -p /etc/slskd
+
 if [[ ! -f /etc/slskd/slskd.yml ]]; then
-    sudo tee /etc/slskd/slskd.yml > /dev/null << 'EOF'
+    sudo tee /etc/slskd/slskd.yml > /dev/null << EOF
+# Placeholder file created by setup script.
+# EDIT THIS FILE with your details before use.
 web:
   port: 5030
+  https:
+    disabled: true
   authentication:
-    username: [admin]
-    password: [password]
+    disabled: false
+    username: [insert webui username]
+    password: [insert webui password]
 directories:
   downloads: /mnt/Media/Torrents/slskd/Complete
+  incomplete: /mnt/Media/Torrents/slskd/Incomplete
+soulseek:
+  username: [insert desired soulseek username]
+  password: [insert desired soulseek password - no symbols]
 EOF
     print "Created placeholder slskd.yml"
 else
     print "${YELLOW}slskd.yml exists. Skipping overwrite.${NC}"
 fi
+
+# Slskd Service Override
 sudo mkdir -p /etc/systemd/system/slskd.service.d
-print "[Unit]\nRequiresMountsFor=/mnt/Media\n[Service]\nExecStart=\nExecStart=/usr/lib/slskd/slskd --config /etc/slskd/slskd.yml" | sudo tee /etc/systemd/system/slskd.service.d/override.conf > /dev/null
+sudo tee /etc/systemd/system/slskd.service.d/override.conf > /dev/null << EOF
+[Unit]
+RequiresMountsFor=/mnt/Media
+
+[Service]
+ExecStart=
+ExecStart=/usr/lib/slskd/slskd --config /etc/slskd/slskd.yml
+EOF
+
 sudo systemctl daemon-reload
 sudo systemctl enable --now slskd
 
-# Soularr
+# Soularr (Idempotent)
+print "Configuring Soularr..."
 if [[ ! -d "/opt/soularr" ]]; then
     cd /opt && sudo git clone https://github.com/mrusse/soularr.git
     sudo chown -R "$USER:$(id -gn "$USER")" /opt/soularr
-    sudo pip install --break-system-packages -r /opt/soularr/requirements.txt
+else
+    print "${YELLOW}Soularr directory exists. Skipping clone.${NC}"
+fi
+
+# Dependencies & Config
+sudo pip install --break-system-packages -r /opt/soularr/requirements.txt
+sudo mkdir -p /opt/soularr/config
+
+if [[ ! -f /opt/soularr/config/config.ini ]]; then
     sudo cp /opt/soularr/config.ini /opt/soularr/config/config.ini
 fi
+
+# Soularr Service (OneShot)
+sudo tee /etc/systemd/system/soularr.service > /dev/null << EOF
+[Unit]
+Description=Soularr (Lidarr <-> Slskd automation)
+Wants=network-online.target lidarr.service slskd.service
+After=network-online.target lidarr.service slskd.service
+Requires=lidarr.service slskd.service
+RequiresMountsFor=/mnt/Media
+
+[Service]
+Type=oneshot
+User=$USER
+Group=$(id -gn "$USER")
+WorkingDirectory=/opt/soularr
+ExecStart=/usr/bin/python /opt/soularr/soularr.py --config-dir /opt/soularr/config --no-lock-file
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/opt/soularr /var/log /mnt/Media/Torrents/slskd/Complete/
+EOF
+
+# Soularr Timer (Every 30m)
+sudo tee /etc/systemd/system/soularr.timer > /dev/null << EOF
+[Unit]
+Description=Run Soularr every 30 minutes
+
+[Timer]
+OnCalendar=*:0/30
+Persistent=true
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now soularr.timer
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
@@ -238,8 +307,6 @@ fi
 # 7. KDE Integration
 print "${GREEN}--- KDE Rules ---${NC}"
 grep -q 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.zshrc" || print 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.zshrc"
-grep -q "export KWIN_PROFILE=" "$HOME/.zshrc" || print 'export KWIN_PROFILE="desktop"' >> "$HOME/.zshrc"
-export KWIN_PROFILE="desktop"
 
 [[ -f "$SCRIPT_DIR/apply_kwin_rules.zsh" ]] && chmod +x "$SCRIPT_DIR/apply_kwin_rules.zsh" && "$SCRIPT_DIR/apply_kwin_rules.zsh" desktop
 
