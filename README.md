@@ -51,6 +51,8 @@ The setup follows a tiered execution order:
 - **Manual Secrets:** Secure configuration for services (e.g., Jellyfin API keys, Slskd credentials) requires manual entry after the scripts complete.
 	
 - **Filesystem Assumptions:** The installation script assumes a Btrfs layout with specific subvolumes (e.g. `@games`).
+	
+- **Zsh native:** All scripts are Zsh native and Bash is only used where necessary during system setup.
 
 ## License
 
