@@ -359,17 +359,14 @@ fi
 # ------------------------------------------------------------------------------
 
 # 7. Desktop Kernel Parameters
-echo -e "${GREEN}--- Applying desktop-specific kernel parameters ---${NC}"
-# Define desktop-specific parameters (GPU Features, Hugepages, Resolution, Guided P-State)
-PARAMS="amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=3440x1440@60 amd_pstate=guided"
-# Check if params already exist to prevent duplication
-if grep -q "amdgpu.ppfeaturemask" /etc/default/grub; then
-    echo -e "${YELLOW}Kernel parameters appear to be already set. Skipping append.${NC}"
-else
-    sudo sed -i "s/^\(GRUB_CMDLINE_LINUX_DEFAULT=\"[^\"]*\)\"$/\1 $PARAMS\"/" /etc/default/grub
-    echo -e "${GREEN}--- Rebuilding GRUB configuration ---${NC}"
-    sudo grub-mkconfig -o /boot/grub/grub.cfg
-fi
+echo -e "${GREEN}--- Enforcing desktop-specific kernel parameters ---${NC}"
+# Define the exact string requested
+# Includes: loglevel=3, quiet, GPU features, Hugepages, Resolution (3440x1440), and Active P-State
+NEW_CMDLINE='GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=3440x1440@60 amd_pstate=active"'
+# Force replace the line in /etc/default/grub
+sudo sed -i 's|^GRUB_CMDLINE_LINUX_DEFAULT=.*|'"$NEW_CMDLINE"'|' /etc/default/grub
+echo -e "${GREEN}--- Rebuilding GRUB configuration ---${NC}"
+sudo grub-mkconfig -o /boot/grub/grub.cfg
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
@@ -451,6 +448,17 @@ EOF
 else
     echo "Functions already exist in .zshrc."
 fi
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
+# 9. Optimise NVMe Scheduler (Kyber)
+# Your logs confirmed 'kyber' is available. This forces it for NVMe drives.
+echo -e "${GREEN}--- Setting NVMe I/O Scheduler to Kyber ---${NC}"
+sudo tee /etc/udev/rules.d/60-iosched.rules > /dev/null << 'EOF'
+ACTION=="add|change", KERNEL=="nvme[0-9]n[0-9]", ATTR{queue/scheduler}="kyber"
+EOF
+sudo udevadm control --reload-rules && sudo udevadm trigger
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------

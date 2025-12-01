@@ -8,12 +8,16 @@
         }
     },
     "archinstall-language": "English",
-    "auth_config": null,
-    "bootloader": "Grub",
+    "auth_config": {},
+    "bootloader_config": {
+        "bootloader": "Grub",
+        "removable": false,
+        "uki": false
+    },
     "custom_commands": [],
-    "hostname": "archlinux",
+    "hostname": "NCC-1701",
     "kernels": [
-        "linux-zen"
+        "linux"
     ],
     "locale_config": {
         "kb_layout": "uk",
@@ -61,13 +65,14 @@
     },
     "ntp": true,
     "packages": [
+        "7zip",
         "amd-ucode",
         "chromium",
         "dosfstools",
+        "fwupd",
         "git",
         "kio-admin",
-        "linux-zen-headers",
-        "7zip",
+        "lz4",
         "reflector",
         "wayland-protocols",
         "zsh"
@@ -90,6 +95,5 @@
     "services": [],
     "swap": true,
     "timezone": "Europe/London",
-    "uki": false,
-    "version": "3.0.13"
+    "version": "3.0.14"
 }
