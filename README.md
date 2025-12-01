@@ -52,7 +52,7 @@ The setup follows a tiered execution order:
 	
 - **Filesystem Assumptions:** The installation script assumes a Btrfs layout with specific subvolumes (e.g. `@games`).
 	
-- **Zsh native:** All scripts are Zsh native and Bash is only used where necessary during system setup.
+- **Zsh native:** All scripts are Zsh native and Bash is only used where necessary during system setup  (see script template folder for examples and ruleset)
 
 ## License
 
