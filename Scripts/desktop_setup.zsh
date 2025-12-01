@@ -35,7 +35,8 @@ sudo tee /usr/local/bin/replace-sunshine-icons.sh > /dev/null << EOF
 DEST="/usr/share/icons/hicolor/scalable/status"
 SRC="$REPO_ROOT/5-Resources/Icons/Sunshine-Tray-Icons"
 [[ -d "\$SRC" ]] && cp "\$SRC"/*.svg "\$DEST/"
-[[ -f "/usr/bin/sunshine" ]] && setcap cap_sys_admin+p "${${:-=sunshine}:A}"
+SUNSHINE_PATH=\$(command -v sunshine)
+[[ -n "\$SUNSHINE_PATH" ]] && setcap cap_sys_admin+p "\$SUNSHINE_PATH"
 EOF
 sudo chmod +x /usr/local/bin/replace-sunshine-icons.sh
 
