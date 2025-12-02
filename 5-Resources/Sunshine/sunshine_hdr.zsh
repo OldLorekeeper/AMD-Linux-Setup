@@ -9,8 +9,8 @@ setopt PIPE_FAIL
 
 # Configuration
 MONITOR="DP-2"
-STREAM_MODE="9"   # Target mode index
-DEFAULT_MODE="1"  # Default mode index
+STREAM_MODE="7"
+DEFAULT_MODE="1"
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
