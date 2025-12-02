@@ -99,8 +99,7 @@ fi
 
 # 4. Visual Backup (Konsave)
 print "${GREEN}--- Visual Backup (Konsave) ---${NC}"
-zmodload zsh/datetime
-strftime -s DATE_STR '%Y-%m-%d' $EPOCHSECONDS
+zmodload zsh/datetime; strftime -s DATE_STR '%Y-%m-%d' $EPOCHSECONDS
 PROFILE_NAME="$PROFILE_TYPE Dock $DATE_STR"
 
 # Define Repo Export Path (Relative to Script Location)
