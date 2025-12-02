@@ -71,6 +71,9 @@ if [[ "$(findmnt -n -o FSTYPE /tmp)" == "tmpfs" ]]; then
     sudo sed -i 's/^#*\(BUILDDIR=\/tmp\/makepkg\)/\1/' /etc/makepkg.conf
 fi
 
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
 # 3. Mirrors
 print "${GREEN}--- Updating Mirrors ---${NC}"
 sudo reflector --country GB,IE,NL,DE,FR,EU --age 6 --protocol https --sort rate --fastest 10 --save /etc/pacman.d/mirrorlist
@@ -167,10 +170,10 @@ if ! grep -q "LIBVA_DRIVER_NAME" /etc/environment; then
 fi
 
 # ZRAM & Sysctl
+# NOTE: The execution of 'sudo sysctl --system' is DEFERRED to the device_setup scripts
 print "[zram0]\nzram-size = ram / 2\ncompression-algorithm = lz4\nswap-priority = 100" | sudo tee /etc/systemd/zram-generator.conf > /dev/null
 print "vm.swappiness = 10" | sudo tee /etc/sysctl.d/99-swappiness.conf > /dev/null
 print "net.core.default_qdisc = cake\nnet.ipv4.tcp_congestion_control = bbr" | sudo tee /etc/sysctl.d/99-bbr.conf > /dev/null
-sudo sysctl --system
 
 # Mkinitcpio
 sudo sed -i 's|^MODULES=.*|MODULES=(amdgpu nvme)|' /etc/mkinitcpio.conf
@@ -193,6 +196,7 @@ Type = Package
 Target = amd-ucode
 Target = btrfs-progs
 Target = mkinitcpio-firmware
+Target = linux-cachyos-headers
 [Action]
 Description = Rebuilding initramfs...
 When = PostTransaction
@@ -299,15 +303,67 @@ EOF
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
-# 9. Finalisation
-print "${GREEN}--- Finalising ---${NC}"
+# 9. Finalisation & Deferred Setup (Interactive Console)
+print "${GREEN}--- Finalisation & Deferred Setup - Interactive ---${NC}"
 sudo grub-mkconfig -o /boot/grub/grub.cfg
 
-print "${YELLOW}Restarting Plasma...${NC}"
-sleep 5
-kquitapp6 plasmashell && kstart plasmashell
-
 if [[ -f "$DEVICE_SCRIPT" ]]; then
-    print "${GREEN}--- Chaining to $DEVICE_NAME Setup ---${NC}"
-    zsh "$DEVICE_SCRIPT"
+
+WRAPPER_SCRIPT="$HOME/.local/bin/run_device_setup_once.zsh"
+AUTOSTART_FILE="$HOME/.config/autostart/device-setup-once.desktop"
+
+# 1. Create a self-deleting wrapper script.
+cat << EOF > "$WRAPPER_SCRIPT"
+#!/usr/bin/zsh
+# ------------------------------------------------------------------------------
+# INTERACTIVE DEVICE SETUP WRAPPER (Self-Deleting)
+# ------------------------------------------------------------------------------
+# This script runs the final setup, waits for user input, and cleans up the autostart files.
+
+# Load colours again for wrapper visibility
+autoload -Uz colors && colors
+YELLOW="${fg[yellow]}"
+NC="${reset_color}"
+
+# Run the final device-specific script (needs absolute path :A)
+zsh '$DEVICE_SCRIPT:A'
+
+# Wait for user input to confirm completion and signal cleanup
+print "\n\n${YELLOW}--- Setup Complete. Press any key to close and apply changes. ---${NC}"
+read -k1
+
+# Cleanup: Delete the autostart file and this wrapper, then restart Plasma to apply KWin/Theming.
+rm -f '$AUTOSTART_FILE'
+rm -f "\$0"
+kquitapp6 plasmashell && kstart plasmashell
+EOF
+
+chmod +x "$WRAPPER_SCRIPT"
+
+# 2. Create the simplified autostart .desktop file
+mkdir -p "$HOME/.config/autostart"
+
+# Exec now only calls konsole to run the simple wrapper script.
+cat << EOF > "$AUTOSTART_FILE"
+[Desktop Entry]
+Type=Application
+Exec=konsole --separate --hide-tabbar -e "$WRAPPER_SCRIPT"
+Hidden=false
+NoDisplay=false
+Name=Initial Device Setup
+Comment=Runs device-specific setup script on first login.
+Terminal=false
+X-KDE-Autostart-Phase=Desktop
+X-GNOME-Autostart-enabled=true
+EOF
+
+    print "${GREEN}Configured to launch '$DEVICE_NAME Setup' interactively on next login.${NC}"
 fi
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
+# 10. Final Reboot
+print "${RED}New kernel installed. Rebooting now to complete core setup...${NC}"
+sleep 5
+sudo reboot
