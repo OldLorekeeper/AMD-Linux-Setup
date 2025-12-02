@@ -79,6 +79,7 @@
         "extra-cmake-modules",
         "fastfetch",
         "fwupd",
+        "gamemode",
         "gamescope",
         "git",
         "gwenview",
@@ -87,8 +88,9 @@
         "isoimagewriter",
         "kio-admin",
         "lact",
-        "lib32-vulkan-radeon",
+        "lib32-gamemode"
         "lib32-gnutls",
+        "lib32-vulkan-radeon",
         "libva-utils",
         "libvirt",
         "lz4",
