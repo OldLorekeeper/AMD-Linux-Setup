@@ -6,7 +6,7 @@ This repository hosts a bespoke automation suite for deploying a high-performanc
 
 ### [Get Started ⇢](1-Install/1.1-USB.md)
 
-## Hardware Targets
+## Hardware targets
 
 For full details, see [Hardware Spec](./7-Hardware-Specs) files.
 
@@ -50,7 +50,7 @@ The setup follows a strict, tiered execution order to ensure consistency and ide
     - Applies specific kernel parameters for efficiency.
 - **Visuals:** Applies the consistent KDE "Dock" profile via `konsave` and enforces window rules.
 
-## Development Standards
+## Development standards
 
 This repository adheres to strict scripting standards to maintain stability:
 
@@ -59,6 +59,6 @@ This repository adheres to strict scripting standards to maintain stability:
 - **Safety:** All Zsh scripts utilise `setopt ERR_EXIT NO_UNSET PIPE_FAIL`.
 - **Formatting:** Scripts utilise compact layouts with double-dotted line separators for readability (see [TEMPLATES](./Scripts/TEMPLATES) folder)
 
-## License and Disclaimer
+## License and disclaimer
 
 This is a personal configuration repository provided "as-is". No warranty is implied. Use these scripts at your own risk.
