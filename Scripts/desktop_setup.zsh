@@ -232,16 +232,17 @@ sudo grub-mkconfig -o /boot/grub/grub.cfg
 print 'ACTION=="add|change", KERNEL=="nvme[0-9]n[0-9]", ATTR{queue/scheduler}="kyber"' | sudo tee /etc/udev/rules.d/60-iosched.rules > /dev/null
 sudo udevadm control --reload-rules && sudo udevadm trigger
 
-# Media drive setup
+## Media drive setup
 print "${YELLOW}--- Media Drive Setup (Optional) ---${NC}"
 if grep -q "/mnt/Media" /etc/fstab; then
     print "${YELLOW}/mnt/Media already configured in fstab. Skipping.${NC}"
 else
-    # Allow user to skip immediately, which is ideal for VMs
-    read "SKIP_MEDIA?Skip media partition setup (y/N)? "
-    if [[ "$SKIP_MEDIA" == "y" || "$SKIP_MEDIA" == "Y" ]]; then
-        print "${RED}Skipping Media drive setup as requested.${NC}"
-    else
+    # Allow user to continue with setup (Y) or skip (N, default)
+    print "This step configures the dedicated media drive"
+    print "Choosing 'Yes' will list partitions and prompt for a UUID to permanently mount at /mnt/Media."
+    print "Choosing 'No' will skip this step"
+    read "SETUP_MEDIA?Set up media drive now (Y)es/(N)o? "
+    if [[ "$SETUP_MEDIA" == "y" || "$SETUP_MEDIA" == "Y" ]]; then
         print "Available Partitions:"
         # List partitions, excluding Loop (7) and ROM (11) devices
         lsblk -o NAME,SIZE,FSTYPE,LABEL,UUID -e 7,11
@@ -261,6 +262,8 @@ else
         else
             print "${RED}Skipping Media drive setup (No UUID provided).${NC}"
         fi
+    else
+        print "${RED}Skipping Media drive setup as requested. Continue manual steps to mount it later.${NC}"
     fi
 fi
 
