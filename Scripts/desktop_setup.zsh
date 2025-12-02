@@ -274,6 +274,8 @@ fi
 print "${GREEN}--- Configuring Sunshine Performance ---${NC}"
 
 BOOST_SCRIPT="$REPO_ROOT/5-Resources/Sunshine/sunshine-gpu-boost.zsh"
+HDR_SCRIPT="$REPO_ROOT/5-Resources/Sunshine/sunshine_hdr.zsh"
+RES_SCRIPT="$REPO_ROOT/5-Resources/Sunshine/sunshine_res.zsh"
 
 # Detect RX 7900 XT (Navi 31)
 CARD_PATH=$(grep -lE "0x744(c|d)" /sys/class/drm/card*/device/device 2>/dev/null | head -n 1 || true)
@@ -293,12 +295,50 @@ if [[ -n "$CARD_PATH" ]]; then
         print "$USER ALL=(ALL) NOPASSWD: $BOOST_SCRIPT" | sudo tee /etc/sudoers.d/90-sunshine-boost > /dev/null
         sudo chmod 440 /etc/sudoers.d/90-sunshine-boost
 
+        # Symlink to /usr/local/bin
+        sudo ln -sf "$BOOST_SCRIPT" "/usr/local/bin/sunshine-gpu-boost"
+
         print "Configured GPU Boost in repo: $BOOST_SCRIPT"
     else
         print "${YELLOW}Warning: Source script $BOOST_SCRIPT not found.${NC}"
     fi
 else
     print "${YELLOW}Warning: RX 7900 XT not found. Skipping GPU Boost setup.${NC}"
+fi
+
+# Install HDR/Resolution Scripts
+for script in "$HDR_SCRIPT" "$RES_SCRIPT"; do
+    if [[ -f "$script" ]]; then
+        chmod +x "$script"
+        # Symlink to /usr/local/bin without extension (e.g., sunshine_hdr)
+        sudo ln -sf "$script" "/usr/local/bin/${${script:t}:r}"
+        print "Symlinked ${${script:t}:r} to /usr/local/bin"
+    fi
+done
+
+# Interactive Config for Resolution Scripts
+if (( $+commands[kscreen-doctor] )); then
+    print "\n${YELLOW}--- Sunshine Resolution/HDR Configuration ---${NC}"
+    print "Current Output Configuration:"
+    kscreen-doctor -o
+    print ""
+    read "CONFIRM?Configure Sunshine Monitor and Mode Indexes now? [Y/n]: "
+    if [[ "$CONFIRM" =~ ^[Yy]$ ]]; then
+        read "MON_ID?Enter Monitor ID (e.g. DP-1): "
+        read "STREAM_IDX?Enter Target Stream Mode Index (e.g. 9): "
+        read "DEFAULT_IDX?Enter Default Mode Index (e.g. 1): "
+
+        if [[ -n "$MON_ID" && -n "$STREAM_IDX" && -n "$DEFAULT_IDX" ]]; then
+            for file in "$HDR_SCRIPT" "$RES_SCRIPT"; do
+                sed -i 's/^MONITOR=.*/MONITOR="'"$MON_ID"'"/' "$file"
+                sed -i 's/^STREAM_MODE=.*/STREAM_MODE="'"$STREAM_IDX"'"/' "$file"
+                sed -i 's/^DEFAULT_MODE=.*/DEFAULT_MODE="'"$DEFAULT_IDX"'"/' "$file"
+                print "Updated variables in $file"
+            done
+        else
+             print "${RED}Invalid input. Skipping configuration.${NC}"
+        fi
+    fi
 fi
 
 # ------------------------------------------------------------------------------
