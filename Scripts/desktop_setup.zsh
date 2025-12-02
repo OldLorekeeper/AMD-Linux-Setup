@@ -361,4 +361,37 @@ grep -q 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.zshrc" || print 'export P
 
 [[ -f "$SCRIPT_DIR/apply_kwin_rules.zsh" ]] && chmod +x "$SCRIPT_DIR/apply_kwin_rules.zsh" && "$SCRIPT_DIR/apply_kwin_rules.zsh" desktop
 
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
+# 8. Theming (Konsave)
+print "${GREEN}--- Applying Visual Profile ---${NC}"
+KONSAVE_DIR="$REPO_ROOT/5-Resources/Konsave"
+
+# Find profile: Match "Desktop Dock*.knsv", Sort by Name Descending (.On), Pick 1st
+PROFILE_FILE=( "$KONSAVE_DIR"/Desktop\ Dock*.knsv(.On[1]) )
+
+if [[ -n "$PROFILE_FILE" && -f "$PROFILE_FILE" ]]; then
+    # Extract profile name (e.g. "Desktop Dock 2025-11-27")
+    PROFILE_NAME="${${PROFILE_FILE:t}:r}"
+
+    print "Found profile: $PROFILE_NAME"
+
+    # Remove existing profile to force update (suppress errors)
+    konsave -r "$PROFILE_NAME" 2>/dev/null || true
+
+    # Import and Apply (suppress deprecation warnings)
+    if konsave -i "$PROFILE_FILE" >/dev/null 2>&1; then
+        konsave -a "$PROFILE_NAME" >/dev/null 2>&1
+        print "Successfully applied profile: $PROFILE_NAME"
+    else
+        print "${RED}Error: Failed to import profile.${NC}"
+    fi
+else
+    print "${YELLOW}Warning: No 'Desktop Dock' profile found in $KONSAVE_DIR${NC}"
+fi
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
 print "${GREEN}--- Desktop Setup Complete. Reboot Required. ---${NC}"

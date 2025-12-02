@@ -127,6 +127,7 @@ export PATH="$HOME/.local/bin:$PATH"
 alias mkinit="sudo mkinitcpio -P"
 alias mkgrub="sudo grub-mkconfig -o /boot/grub/grub.cfg"
 
+# Auto-clone to ~/Make if not using sudo
 git() {
     if (( EUID == 0 )); then
         command git "$@"
@@ -142,6 +143,22 @@ git() {
         fi
     else
         command git "$@"
+    fi
+}
+
+# System maintenance shortcut
+maintain() {
+    local script="$HOME/Obsidian/AMD-Linux-Setup/Scripts/maintain_system.zsh"
+
+    if [[ -f "$script" ]]; then
+        # Ensure it is executable before running
+        [[ -x "$script" ]] || chmod +x "$script"
+
+        # Execute directly
+        "$script"
+    else
+        print -P "%F{red}Error: Maintenance script not found at:%f\n$script"
+        return 1
     fi
 }
 EOF

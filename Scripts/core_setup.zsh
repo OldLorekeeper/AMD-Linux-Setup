@@ -240,6 +240,8 @@ TARGET_PROFILE="${DEVICE_NAME:l}"
 # Note: Variables like $HOST and $1 are escaped (\$) to prevent expansion during script run
 cat <<EOF >> "$HOME/.zshrc"
 
+#Shortcuts to manage custom KWIN rules
+
 export KWIN_PROFILE="$TARGET_PROFILE"
 
 update-kwin() {
