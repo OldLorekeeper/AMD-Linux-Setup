@@ -132,12 +132,7 @@ if (( $+commands[konsave] )); then
             for path in "${internal_profiles[@][4,-1]}"; do
                 konsave -r "${path:t}" -f
             done
-        fi# 4. Btrfs @games Subvolume
-echo -e "${GREEN}--- Setting up @games Subvolume ---${NC}"
-MOUNT_POINT="$HOME/Games"
-ROOT_DEVICE=$(findmnt -n -o SOURCE /)
-ROOT_DEVICE=${ROOT_DEVICE%[*}
-DEVICE_UUID=$(blkid -s UUID -o value "$ROOT_DEVICE")
+        fi
     fi
 
     # 2. Prune Repo Exports (.knsv files)
