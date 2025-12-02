@@ -172,7 +172,7 @@ fi
 # ZRAM & Sysctl
 # NOTE: The execution of 'sudo sysctl --system' is DEFERRED to the device_setup scripts
 print "[zram0]\nzram-size = ram / 2\ncompression-algorithm = lz4\nswap-priority = 100" | sudo tee /etc/systemd/zram-generator.conf > /dev/null
-print "vm.swappiness = 10" | sudo tee /etc/sysctl.d/99-swappiness.conf > /dev/null
+print "vm.swappiness = 150\nvm.page-cluster = 0" | sudo tee /etc/sysctl.d/99-swappiness.conf > /dev/null
 print "net.core.default_qdisc = cake\nnet.ipv4.tcp_congestion_control = bbr" | sudo tee /etc/sysctl.d/99-bbr.conf > /dev/null
 
 # Mkinitcpio
