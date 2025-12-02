@@ -52,7 +52,8 @@ fi
 # 4. Btrfs @games Subvolume
 echo -e "${GREEN}--- Setting up @games Subvolume ---${NC}"
 MOUNT_POINT="$HOME/Games"
-ROOT_DEVICE=$(findmnt -n -o SOURCE / | sed 's/\[.*\]//')
+ROOT_DEVICE=$(findmnt -n -o SOURCE /)
+ROOT_DEVICE=${ROOT_DEVICE%[*}
 DEVICE_UUID=$(blkid -s UUID -o value "$ROOT_DEVICE")
 
 if [ -z "$DEVICE_UUID" ]; then

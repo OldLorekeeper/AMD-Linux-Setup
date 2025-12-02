@@ -99,7 +99,8 @@ fi
 
 # 4. Visual Backup (Konsave)
 print "${GREEN}--- Visual Backup (Konsave) ---${NC}"
-DATE_STR=$(date +%Y-%m-%d)
+zmodload zsh/datetime
+strftime -s DATE_STR '%Y-%m-%d' $EPOCHSECONDS
 PROFILE_NAME="$PROFILE_TYPE Dock $DATE_STR"
 
 # Define Repo Export Path (Relative to Script Location)
@@ -131,7 +132,12 @@ if (( $+commands[konsave] )); then
             for path in "${internal_profiles[@][4,-1]}"; do
                 konsave -r "${path:t}" -f
             done
-        fi
+        fi# 4. Btrfs @games Subvolume
+echo -e "${GREEN}--- Setting up @games Subvolume ---${NC}"
+MOUNT_POINT="$HOME/Games"
+ROOT_DEVICE=$(findmnt -n -o SOURCE /)
+ROOT_DEVICE=${ROOT_DEVICE%[*}
+DEVICE_UUID=$(blkid -s UUID -o value "$ROOT_DEVICE")
     fi
 
     # 2. Prune Repo Exports (.knsv files)
