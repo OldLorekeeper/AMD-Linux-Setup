@@ -118,7 +118,7 @@ for repo in "${PLUGINS[@]}"; do
 done
 
 # .zshrc Customisation
-sed -i 's/^plugins=(git)$/plugins=(git archlinux zsh-autosuggestions zsh-syntax-highlighting you-should-use)/' "$HOME/.zshrc"
+sed -i 's/^plugins=(git)$/plugins=(git archlinux zsh-autosuggestions zsh-syntax-highlighting zsh-you-should-use)/' "$HOME/.zshrc"
 if ! grep -q "Custom Aliases" "$HOME/.zshrc"; then
     cat << 'EOF' >> "$HOME/.zshrc"
 
