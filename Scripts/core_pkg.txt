@@ -9,5 +9,6 @@ mkinitcpio-firmware
 papirus-folders
 plasma6-applets-panel-colorizer
 protontricks
+protonup-qt
 timeshift-systemd-timer
 xpadneo-dkms
