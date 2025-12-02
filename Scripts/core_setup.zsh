@@ -71,6 +71,11 @@ if [[ "$(findmnt -n -o FSTYPE /tmp)" == "tmpfs" ]]; then
     sudo sed -i 's/^#*\(BUILDDIR=\/tmp\/makepkg\)/\1/' /etc/makepkg.conf
 fi
 
+# Optimize Rust builds for Zen 4 / Native Arch
+if ! grep -q "RUSTFLAGS" /etc/makepkg.conf; then
+    print 'RUSTFLAGS="-C target-cpu=native"' | sudo tee -a /etc/makepkg.conf > /dev/null
+fi
+
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
@@ -144,6 +149,28 @@ if [[ -f /usr/lib/systemd/system/grub-btrfsd.service ]]; then
     sudo sed -i 's|^ExecStart=.*|ExecStart=/usr/bin/grub-btrfsd --syslog --timeshift-auto|' /etc/systemd/system/grub-btrfsd.service
     sudo systemctl daemon-reload
     sudo systemctl enable --now grub-btrfsd
+fi
+
+# Btrfs Maintenance: Monthly Balance to prevent metadata full errors
+if ! systemctl list-timers | grep -q "btrfs-balance"; then
+    print "Configuring monthly Btrfs balance..."
+    sudo tee /etc/systemd/system/btrfs-balance.service > /dev/null << EOF
+[Unit]
+Description=Btrfs Balance
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/btrfs balance start -dusage=50 -musage=50 /
+EOF
+    sudo tee /etc/systemd/system/btrfs-balance.timer > /dev/null << EOF
+[Unit]
+Description=Run Btrfs Balance Monthly
+[Timer]
+OnCalendar=monthly
+Persistent=true
+[Install]
+WantedBy=timers.target
+EOF
+    sudo systemctl enable --now btrfs-balance.timer
 fi
 
 # Bluetooth Experimental

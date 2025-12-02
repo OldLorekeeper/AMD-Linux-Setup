@@ -78,6 +78,14 @@ else
     sudo systemctl daemon-reload
     sudo mount "$MOUNT_POINT" 2>/dev/null || true
     sudo chown -R "$USER:$(id -gn "$USER")" "$MOUNT_POINT"
+
+    # OPTIMISATION: Disable CoW for Games to prevent fragmentation/stuttering
+    if ! lsattr -d "$MOUNT_POINT" | grep -q "\-C\-"; then
+        sudo chattr +C "$MOUNT_POINT"
+        echo -e "${GREEN}--- Applied No-CoW (+C) attribute to $MOUNT_POINT ---${NC}"
+    else
+        echo -e "${YELLOW}No-CoW (+C) attribute already set on $MOUNT_POINT.${NC}"
+    fi
 fi
 
 # ------------------------------------------------------------------------------
