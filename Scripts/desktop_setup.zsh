@@ -280,7 +280,7 @@ sudo systemctl enable --now soularr.timer
 # ------------------------------------------------------------------------------
 
 # 4. Hardware & Kernel
-print "${GREEN}--- Hardware Fixes ---${NC}"
+print "${GREEN}--- Hardware Fixes and Media Mount ---${NC}"
 
 # AMD 600 Series USB Fix
 print 'SUBSYSTEM=="pci", ATTR{vendor}=="0x1022", ATTR{device}=="0x43f7", ATTR{power/control}="on"' | sudo tee /etc/udev/rules.d/99-xhci-fix.rules > /dev/null
@@ -300,6 +300,31 @@ sudo grub-mkconfig -o /boot/grub/grub.cfg
 # Kyber I/O
 print 'ACTION=="add|change", KERNEL=="nvme[0-9]n[0-9]", ATTR{queue/scheduler}="kyber"' | sudo tee /etc/udev/rules.d/60-iosched.rules > /dev/null
 sudo udevadm control --reload-rules && sudo udevadm trigger
+
+#Media drive setup
+if grep -q "/mnt/Media" /etc/fstab; then
+    print "${YELLOW}/mnt/Media already configured in fstab. Skipping.${NC}"
+else
+    print "Available Partitions:"
+    # List partitions, excluding Loop (7) and ROM (11) devices
+    lsblk -o NAME,SIZE,FSTYPE,LABEL,UUID -e 7,11
+    read "MEDIA_UUID?Enter UUID of Media Partition (copy from above): "
+    if [[ -n "$MEDIA_UUID" ]]; then
+        sudo mkdir -p /mnt/Media
+        sudo cp /etc/fstab /etc/fstab.bak
+        # Append entry using tab separation for cleaner fstab formatting
+        print "\n# Media Drive\nUUID=$MEDIA_UUID\t/mnt/Media\tauto\trw,nosuid,nodev,noatime,nofail,x-gvfs-hide,x-systemd.automount\t0 0" | sudo tee -a /etc/fstab > /dev/null
+        sudo systemctl daemon-reload
+        # Attempt mount; warn on failure but do not exit script
+        if sudo mount /mnt/Media 2>/dev/null; then
+            print "Media drive configured and mounted."
+        else
+            print "${RED}Warning: Mount failed. Check UUID or filesystem type.${NC}"
+        fi
+    else
+        print "${RED}Skipping Media drive setup (No UUID provided).${NC}"
+    fi
+fi
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
