@@ -281,14 +281,9 @@ RES_SCRIPT="$REPO_ROOT/5-Resources/Sunshine/sunshine_res.zsh"
 CARD_PATH=$(grep -lE "0x744(c|d)" /sys/class/drm/card*/device/device 2>/dev/null | head -n 1 || true)
 
 if [[ -n "$CARD_PATH" ]]; then
-    # Extract card name (e.g. card0)
-    CARD_NAME=${${CARD_PATH:h}:h:t}
-
-    print "Detected RX 7900 XT at $CARD_NAME"
+    print "Detected RX 7900 XT"
 
     if [[ -f "$BOOST_SCRIPT" ]]; then
-        # Configure script in-place to use correct GPU
-        sed -i "s/card[0-9]\+/$CARD_NAME/" "$BOOST_SCRIPT"
         chmod +x "$BOOST_SCRIPT"
 
         # Sudoers Rule pointing to REPO path
