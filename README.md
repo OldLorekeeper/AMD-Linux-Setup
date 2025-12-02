@@ -20,20 +20,20 @@ For full details, see [Hardware Spec](./7-Hardware-Specs) files.
 The setup follows a strict, tiered execution order to ensure consistency and idempotency.
 
 ### Tier 0: Bootstrap
-**Script:** `Scripts/system_install.sh` (Bash)
+**Script:** `system_install.sh` (Bash)
 - Prepares the live environment (keys, mirrors, pacman configuration).
 - Fetches the custom `archinstall` JSON configuration.
 - Launches `archinstall` to provision the base OS and Btrfs filesystem.
 
 ### Tier 1: User Environment
-**Script:** `Scripts/home_setup.sh` (Bash)
+**Script:** `home_setup.sh` (Bash)
 - Creates standard directory structure (`~/Make`, `~/Obsidian`).
 - **Storage:** Detects the Btrfs root, creates the `@games` subvolume, and mounts it to `~/Games` with the `+C` (No-CoW) attribute.
 - **Shell:** Deploys Oh-My-Zsh, plugins, and custom Git identity configuration.
 - **Terminal:** Installs custom Konsole profiles.
 
 ### Tier 2: Core Configuration
-**Script:** `Scripts/core_setup.zsh` (Zsh)
+**Script:** `core_setup.zsh` (Zsh)
 - **Kernel:** Replaces stock kernel with `linux-cachyos` and regenerates initramfs.
 - **Build Chain:** Optimises `makepkg` for `-march=native`, parallel compilation, and Rust targets.
 - **System:** Configures ZRAM, Btrfs maintenance tasks, and networking (BBR/Cake).
