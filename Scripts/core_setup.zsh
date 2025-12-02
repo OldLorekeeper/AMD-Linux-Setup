@@ -318,24 +318,26 @@ cat << EOF > "$WRAPPER_SCRIPT"
 # ------------------------------------------------------------------------------
 # INTERACTIVE DEVICE SETUP WRAPPER (Self-Deleting)
 # ------------------------------------------------------------------------------
-# This script runs the final setup, waits for user input, and cleans up the autostart files.
+# This script runs the final setup, waits for user input, performs cleanup, and reboots.
 
 # Load colours again for wrapper visibility
 autoload -Uz colors && colors
 YELLOW="${fg[yellow]}"
+RED="${fg[red]}"
 NC="${reset_color}"
 
 # Run the final device-specific script (needs absolute path :A)
 zsh '$DEVICE_SCRIPT:A'
 
 # Wait for user input to confirm completion and signal cleanup
-print "\n\n${YELLOW}--- Setup Complete. Press any key to close and apply changes. ---${NC}"
+print "\n\n${YELLOW}--- Setup Complete. Press any key to initiate final reboot. ---${NC}"
 read -k1
 
-# Cleanup: Delete the autostart file and this wrapper, then restart Plasma to apply KWin/Theming.
+# Cleanup: Delete the autostart file and this wrapper, then reboot the system.
 rm -f '$AUTOSTART_FILE'
 rm -f "\$0"
-kquitapp6 plasmashell && kstart plasmashell
+print "${RED}--- Initiating System Reboot ---${NC}"
+sudo reboot
 EOF
 
 chmod +x "$WRAPPER_SCRIPT"
@@ -363,7 +365,7 @@ fi
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
-# 10. Final Reboot
-print "${RED}New kernel installed. Rebooting now to complete core setup...${NC}"
+# 10. Reboot
+print "${RED}New kernel installed. Rebooting now to complete device setup...${NC}"
 sleep 5
 sudo reboot
