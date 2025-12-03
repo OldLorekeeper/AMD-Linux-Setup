@@ -123,8 +123,8 @@ web:
     username: $SLSKD_USER
     password: $SLSKD_PASS
 directories:
-  downloads: /mnt/Media/Torrents/slskd/Complete
-  incomplete: /mnt/Media/Torrents/slskd/Incomplete
+  downloads: /mnt/Media/Downloads/slskd/Complete
+  incomplete: /mnt/Media/Downloads/slskd/Incomplete
 soulseek:
   username: $SOULSEEK_USER
   password: $SOULSEEK_PASS
@@ -184,7 +184,7 @@ NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=full
 ProtectHome=read-only
-ReadWritePaths=/opt/soularr /var/log /mnt/Media/Torrents/slskd/Complete/
+ReadWritePaths=/opt/soularr /var/log /mnt/Media/Downloads/slskd/Complete/
 EOF
 
 # Soularr Timer (Every 30m)
@@ -233,37 +233,45 @@ print 'ACTION=="add|change", KERNEL=="nvme[0-9]n[0-9]", ATTR{queue/scheduler}="k
 sudo udevadm control --reload-rules && sudo udevadm trigger
 
 ## Media drive setup
-print "${YELLOW}--- Media Drive Setup (Optional) ---${NC}"
+print "${YELLOW}--- Media Drive Setup ---${NC}"
+
+MOUNT_OPTS="rw,nosuid,nodev,noatime,nofail,x-gvfs-hide,x-systemd.automount,compress=zstd:3,discard=async"
+
 if grep -q "/mnt/Media" /etc/fstab; then
-    print "${YELLOW}/mnt/Media already configured in fstab. Skipping.${NC}"
+    print "${YELLOW}/mnt/Media already configured in fstab. Skipping mount injection.${NC}"
 else
-    # Allow user to continue with setup (Y) or skip (N, default)
-    print "This step configures the dedicated media drive"
-    print "Choosing 'Yes' will list partitions and prompt for a UUID to permanently mount at /mnt/Media."
-    print "Choosing 'No' will skip this step"
+    # User interaction (option to skip)
+    print "This step configures the dedicated media drive (NVMe/Btrfs)"
+    print "Choosing 'Yes' will list partitions and prompt for a UUID."
     read "SETUP_MEDIA?Set up media drive now (Y)es/(N)o? "
-    if [[ "$SETUP_MEDIA" == "y" || "$SETUP_MEDIA" == "Y" ]]; then
+
+    if [[ "$SETUP_MEDIA" =~ ^[Yy]$ ]]; then
         print "Available Partitions:"
-        # List partitions, excluding Loop (7) and ROM (11) devices
         lsblk -o NAME,SIZE,FSTYPE,LABEL,UUID -e 7,11
         read "MEDIA_UUID?Enter UUID of Media Partition (copy from above): "
+
         if [[ -n "$MEDIA_UUID" ]]; then
             sudo mkdir -p /mnt/Media
             sudo cp /etc/fstab /etc/fstab.bak
-            # Append entry using tab separation for cleaner fstab formatting
-            print "\n# Media Drive\nUUID=$MEDIA_UUID\t/mnt/Media\tauto\trw,nosuid,nodev,noatime,nofail,x-gvfs-hide,x-systemd.automount\t0 0" | sudo tee -a /etc/fstab > /dev/null
+            print "\n# Media Drive\nUUID=$MEDIA_UUID\t/mnt/Media\tbtrfs\t$MOUNT_OPTS\t0 0" | sudo tee -a /etc/fstab > /dev/null
             sudo systemctl daemon-reload
-            # Attempt mount; warn on failure but do not exit script
             if sudo mount /mnt/Media 2>/dev/null; then
-                print "Media drive configured and mounted."
+                print "${GREEN}Drive mounted. Applying structure and permissions...${NC}"
+                sudo mkdir -p /mnt/Media/{Films,TV,Music/{Maintained,Manual},Downloads/{lidarr,radarr,slskd,sonarr}}
+                if ! lsattr -d /mnt/Media/Downloads | grep -q "C"; then
+                    sudo chattr +C /mnt/Media/Downloads
+                    print "Applied No-CoW (+C) attribute to /mnt/Media/Downloads"
+                fi
+                sudo chown -R "$USER:$(id -gn "$USER")" /mnt/Media
+                sudo chmod -R 777 /mnt/Media
             else
-                print "${RED}Warning: Mount failed. Check UUID or filesystem type.${NC}"
+                print "${RED}Warning: Mount failed. Check UUID.${NC}"
             fi
         else
             print "${RED}Skipping Media drive setup (No UUID provided).${NC}"
         fi
     else
-        print "${RED}Skipping Media drive setup as requested. Continue manual steps to mount it later.${NC}"
+        print "${RED}Skipping Media drive setup as requested.${NC}"
     fi
 fi
 
