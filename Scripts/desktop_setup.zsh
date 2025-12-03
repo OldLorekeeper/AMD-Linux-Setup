@@ -77,10 +77,13 @@ yay -S --needed --noconfirm - < "$SCRIPT_DIR/desktop_pkg.txt"
 SERVICES=("sonarr" "radarr" "lidarr" "prowlarr" "jellyfin" "transmission")
 sudo systemctl enable --now $SERVICES
 
-# Shutdown Safety
+# Service Overrides (Mounts & Permissions)
 for service in $SERVICES; do
     sudo mkdir -p "/etc/systemd/system/$service.service.d"
+    # Prevent start until mount is ready
     print "[Unit]\nRequiresMountsFor=/mnt/Media" | sudo tee "/etc/systemd/system/$service.service.d/media-mount.conf" > /dev/null
+    # Force Group Write Permissions (002 = 775/664)
+    print "[Service]\nUMask=0002" | sudo tee "/etc/systemd/system/$service.service.d/permissions.conf" > /dev/null
 done
 sudo systemctl daemon-reload
 
@@ -141,6 +144,7 @@ sudo tee /etc/systemd/system/slskd.service.d/override.conf > /dev/null << EOF
 RequiresMountsFor=/mnt/Media
 
 [Service]
+UMask=0002
 ExecStart=
 ExecStart=/usr/lib/slskd/slskd --config /etc/slskd/slskd.yml
 EOF
@@ -178,6 +182,7 @@ RequiresMountsFor=/mnt/Media
 Type=oneshot
 User=$USER
 Group=$(id -gn "$USER")
+UMask=0002
 WorkingDirectory=/opt/soularr
 ExecStart=/usr/bin/python /opt/soularr/soularr.py --config-dir /opt/soularr/config --no-lock-file
 NoNewPrivileges=yes
@@ -262,8 +267,23 @@ else
                     sudo chattr +C /mnt/Media/Downloads
                     print "Applied No-CoW (+C) attribute to /mnt/Media/Downloads"
                 fi
-                sudo chown -R "$USER:$(id -gn "$USER")" /mnt/Media
-                sudo chmod -R 777 /mnt/Media
+                print "Configuring 'media' group and permissions..."
+                sudo groupadd -f media
+                sudo usermod -aG media "$USER"
+
+                # Add services to media group
+                for svc in sonarr radarr lidarr prowlarr jellyfin transmission slskd; do
+                    id "$svc" &>/dev/null && sudo usermod -aG media "$svc"
+                done
+
+                # Set Ownership (User + Media Group)
+                sudo chown -R "$USER:media" /mnt/Media
+
+                # Directories: 2775 (SetGID = New files inherit 'media' group)
+                sudo find /mnt/Media -type d -exec chmod 2775 {} +
+
+                # Files: 664 (Group Writeable)
+                sudo find /mnt/Media -type f -exec chmod 664 {} +
             else
                 print "${RED}Warning: Mount failed. Check UUID.${NC}"
             fi
