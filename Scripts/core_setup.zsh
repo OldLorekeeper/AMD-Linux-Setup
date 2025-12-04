@@ -1,20 +1,23 @@
 #!/bin/zsh
 # ------------------------------------------------------------------------------
 # 3. Core System Setup
+# Establishes the build environment, CachyOS kernels, and shared system services.
 # ------------------------------------------------------------------------------
 #
-# DEVELOPMENT RULES:
+# DEVELOPMENT RULES (Read before editing):
 # 1. Formatting: Keep layout compact. No vertical whitespace inside blocks.
 # 2. Separators: Use double dotted lines (# ------) for major sections.
-# 3. Safety: Use 'setopt ERR_EXIT NO_UNSET PIPE_FAIL'.
-# 4. Syntax: Use Zsh native modifiers (e.g. ${VAR:h}) instead of subshells.
-# 5. Output: Use 'print' instead of 'echo'.
+# 3. Idempotency: Scripts must be safe to re-run. Check state before changes.
+# 4. Safety: Use 'setopt ERR_EXIT NO_UNSET PIPE_FAIL'.
+# 5. Context: Hardcoded for AMD Ryzen 7000/Radeon 7000. No hardcoded secrets.
+# 6. Syntax: Use Zsh native modifiers (e.g. ${VAR:h}) over subshells.
+# 7. Output: Use 'print'. Do NOT use 'echo'.
 #
 # ------------------------------------------------------------------------------
 
 # Safety Options
-setopt ERR_EXIT     # Same as set -e
-setopt NO_UNSET     # Same as set -u (Error on unset vars)
+setopt ERR_EXIT     # Exit on error
+setopt NO_UNSET     # Error on unset variables
 setopt PIPE_FAIL    # Fail if any part of a pipe fails
 
 # Load Colours
@@ -70,7 +73,6 @@ sudo sed -i "s/^#*MAKEFLAGS=.*/MAKEFLAGS=\"-j$(nproc)\"/" /etc/makepkg.conf
 if [[ "$(findmnt -n -o FSTYPE /tmp)" == "tmpfs" ]]; then
     sudo sed -i 's/^#*\(BUILDDIR=\/tmp\/makepkg\)/\1/' /etc/makepkg.conf
 fi
-
 # Optimize Rust builds for Zen 4 / Native Arch
 if ! grep -q "RUSTFLAGS" /etc/makepkg.conf; then
     print 'RUSTFLAGS="-C target-cpu=native"' | sudo tee -a /etc/makepkg.conf > /dev/null
@@ -127,10 +129,8 @@ sudo pacman -S --noconfirm linux-cachyos linux-cachyos-headers
 for pkg in linux linux-headers; do
     pacman -Qq "$pkg" &>/dev/null && sudo pacman -Rns --noconfirm "$pkg"
 done
-
 # Remove Discover (Cleanup)
 sudo pacman -Rdd --noconfirm discover || true
-
 yay -S --needed --noconfirm - < "$SCRIPT_DIR/core_pkg.txt"
 
 # ------------------------------------------------------------------------------
@@ -139,7 +139,6 @@ yay -S --needed --noconfirm - < "$SCRIPT_DIR/core_pkg.txt"
 # 6. Services & Configs
 print "${GREEN}--- Applying System Configs ---${NC}"
 sudo systemctl enable --now transmission bluetooth timeshift-hourly.timer btrfs-scrub@-.timer fwupd.service
-
 # Firmware Refresh
 fwupdmgr refresh --force || print "${YELLOW}Warning: Firmware refresh failed.${NC}"
 
@@ -197,7 +196,6 @@ if ! grep -q "LIBVA_DRIVER_NAME" /etc/environment; then
 fi
 
 # ZRAM & Sysctl
-# NOTE: The execution of 'sudo sysctl --system' is DEFERRED to the device_setup scripts
 print "[zram0]\nzram-size = ram / 2\ncompression-algorithm = lz4\nswap-priority = 100" | sudo tee /etc/systemd/zram-generator.conf > /dev/null
 print "vm.swappiness = 150\nvm.page-cluster = 0" | sudo tee /etc/sysctl.d/99-swappiness.conf > /dev/null
 print "net.core.default_qdisc = cake\nnet.ipv4.tcp_congestion_control = bbr" | sudo tee /etc/sysctl.d/99-bbr.conf > /dev/null
@@ -268,7 +266,6 @@ TRANS_ARCHIVE="${SCRIPT_DIR:h}/5-Resources/Transmission-Plasmoid/transmission-pl
 if [[ ! -d "$TRANS_WIDGET_DIR" ]]; then
     if [[ -f "$TRANS_ARCHIVE" ]]; then
         print "Installing Transmission Monitor Plasmoid..."
-        # Extract into the parent 'plasmoids' folder because archive already contains the widget folder
         mkdir -p "${TRANS_WIDGET_DIR:h}"
         tar -xf "$TRANS_ARCHIVE" -C "${TRANS_WIDGET_DIR:h}"
     else
@@ -278,12 +275,10 @@ fi
 
 # --- KWin Functions Injection ---
 print "${GREEN}--- Configuring KWin Management ---${NC}"
-
 # Convert DEVICE_NAME to lowercase (Zsh modifier :l) for the profile
 TARGET_PROFILE="${DEVICE_NAME:l}"
 
 # Append functions to .zshrc using a heredoc
-# Note: Variables like $HOST and $1 are escaped (\$) to prevent expansion during script run
 cat <<EOF >> "$HOME/.zshrc"
 
 #Shortcuts to manage custom KWIN rules
@@ -350,45 +345,33 @@ print "${GREEN}--- Finalisation & Deferred Setup - Interactive ---${NC}"
 sudo grub-mkconfig -o /boot/grub/grub.cfg
 
 if [[ -f "$DEVICE_SCRIPT" ]]; then
+    WRAPPER_SCRIPT="$HOME/.local/bin/run_device_setup_once.zsh"
+    AUTOSTART_FILE="$HOME/.config/autostart/device-setup-once.desktop"
 
-WRAPPER_SCRIPT="$HOME/.local/bin/run_device_setup_once.zsh"
-AUTOSTART_FILE="$HOME/.config/autostart/device-setup-once.desktop"
-
-# Create a self-deleting wrapper script.
-cat << EOF > "$WRAPPER_SCRIPT"
+    # Create a self-deleting wrapper script.
+    cat << EOF > "$WRAPPER_SCRIPT"
 #!/usr/bin/zsh
 # ------------------------------------------------------------------------------
 # INTERACTIVE DEVICE SETUP WRAPPER (Self-Deleting)
 # ------------------------------------------------------------------------------
 # This script runs the final setup, waits for user input, performs cleanup, and reboots.
-
-# Load colours again for wrapper visibility
 autoload -Uz colors && colors
 YELLOW="${fg[yellow]}"
 RED="${fg[red]}"
 NC="${reset_color}"
-
-# Run the final device-specific script (needs absolute path :A)
 zsh '$DEVICE_SCRIPT:A'
-
-# Wait for user input to confirm completion and signal cleanup
 print "\n\n${YELLOW}--- Setup Complete. Press any key to initiate final reboot. ---${NC}"
 read -k1
-
-# Cleanup: Delete the autostart file and this wrapper, then reboot the system.
 rm -f '$AUTOSTART_FILE'
 rm -f "\$0"
 print "${RED}--- Initiating System Reboot ---${NC}"
 sudo reboot
 EOF
+    chmod +x "$WRAPPER_SCRIPT"
 
-chmod +x "$WRAPPER_SCRIPT"
-
-# Create the simplified autostart .desktop file
-mkdir -p "$HOME/.config/autostart"
-
-# Exec now only calls konsole to run the simple wrapper script.
-cat << EOF > "$AUTOSTART_FILE"
+    # Create the simplified autostart .desktop file
+    mkdir -p "$HOME/.config/autostart"
+    cat << EOF > "$AUTOSTART_FILE"
 [Desktop Entry]
 Type=Application
 Exec=konsole --separate --hide-tabbar -e "$WRAPPER_SCRIPT"
@@ -400,7 +383,6 @@ Terminal=false
 X-KDE-Autostart-Phase=Desktop
 X-GNOME-Autostart-enabled=true
 EOF
-
     print "${GREEN}Configured to launch '$DEVICE_NAME Setup' interactively on next login.${NC}"
 fi
 

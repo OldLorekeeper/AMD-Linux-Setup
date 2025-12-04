@@ -1,6 +1,17 @@
 #!/bin/bash
 # ------------------------------------------------------------------------------
 # 2. User Environment Setup
+# Directory structure, Git identity, and initial dotfile configuration
+# ------------------------------------------------------------------------------
+#
+# DEVELOPMENT RULES (Read before editing):
+# 1. Formatting: Keep layout compact. Remove vertical whitespace within logical blocks.
+# 2. Separators: Use double dotted lines (# ------) to separate major stages.
+# 3. Idempotency: Scripts must be safe to re-run. Check state before destructive actions.
+# 4. Safety: Always use 'set -e'.
+# 5. Context: Hardcoded for AMD Ryzen 7000/Radeon 7000. No hardcoded secrets.
+# 6. Tooling: Use 'echo -e'. Prefer native bash expansion (${VAR%/*}) over sed/awk.
+#
 # ------------------------------------------------------------------------------
 
 set -e
@@ -32,7 +43,6 @@ else
     read -p "Enter GitHub Email: " git_email
     read -s -p "Enter GitHub PAT: " git_pat; echo ""
     read -p "Enter GitHub Username: " git_user
-
     git config --global credential.helper libsecret
     git config --global user.email "$git_email"
     git config --global user.password "$git_pat"
@@ -100,6 +110,7 @@ else
     echo "Installing for user $USER..."
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 fi
+
 # Install for Root (and symlink)
 echo "Setting up Oh-My-Zsh for root (via symlinks)..."
 if [ ! -d "/root/.oh-my-zsh" ]; then
@@ -116,7 +127,6 @@ ZSH_CUSTOM=${ZSH_CUSTOM:-~/.oh-my-zsh/custom}
 PLUGINS=(
     "zsh-users/zsh-autosuggestions"
     "zsh-users/zsh-syntax-highlighting"
-    "MichaelAquilina/zsh-you-should-use"
 )
 for repo in "${PLUGINS[@]}"; do
     plugin_name=$(basename "$repo")
@@ -126,7 +136,7 @@ for repo in "${PLUGINS[@]}"; do
 done
 
 # .zshrc Customisation
-sed -i 's/^plugins=(git)$/plugins=(git archlinux zsh-autosuggestions zsh-syntax-highlighting zsh-you-should-use)/' "$HOME/.zshrc"
+sed -i 's/^plugins=(git)$/plugins=(git archlinux zsh-autosuggestions zsh-syntax-highlighting)/' "$HOME/.zshrc"
 if ! grep -q "Custom Aliases" "$HOME/.zshrc"; then
     cat << 'EOF' >> "$HOME/.zshrc"
 

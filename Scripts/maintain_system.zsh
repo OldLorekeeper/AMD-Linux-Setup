@@ -1,9 +1,19 @@
 #!/bin/zsh
 # ------------------------------------------------------------------------------
 # System Maintenance & Backup
-# Updates system, firmware, cleans cache, and backups Konsave profile
+# Updates system, firmware, cleans cache, and backups Konsave profile.
 # ------------------------------------------------------------------------------
 #
+# DEVELOPMENT RULES (Read before editing):
+# 1. Formatting: Keep layout compact. No vertical whitespace inside blocks.
+# 2. Separators: Use double dotted lines (# ------) for major sections.
+# 3. Idempotency: Scripts must be safe to re-run. Check state before changes.
+# 4. Safety: Use 'setopt ERR_EXIT NO_UNSET PIPE_FAIL'.
+# 5. Context: Hardcoded for AMD Ryzen 7000/Radeon 7000. No hardcoded secrets.
+# 6. Syntax: Use Zsh native modifiers (e.g. ${VAR:h}) over subshells.
+# 7. Output: Use 'print'. Do NOT use 'echo'.
+#
+# ------------------------------------------------------------------------------
 
 # Safety Options
 setopt ERR_EXIT     # Exit on error
@@ -36,7 +46,6 @@ print "${GREEN}--- Environment Check ---${NC}"
 
 # Safely source .zshrc (ignore errors from plugins/aliases)
 if [[ -f "$HOME/.zshrc" ]]; then
-    # Disable ERR_EXIT temporarily so .zshrc checks don't kill the script
     unsetopt ERR_EXIT
     ZSH_SKIP_OMZ_CHECK=1 source "$HOME/.zshrc" >/dev/null 2>&1
     setopt ERR_EXIT
@@ -51,7 +60,6 @@ else
     print "1) Desktop"
     print "2) Laptop"
     read "kwin_choice?Choice [1-2]: "
-
     case $kwin_choice in
         1) PROFILE_TYPE="Desktop" ;;
         2) PROFILE_TYPE="Laptop" ;;
@@ -108,15 +116,8 @@ if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
         if ! sudo grep -q '"umask": 2' "$TRANS_CONFIG"; then
             print "${YELLOW}Detected incorrect Transmission umask. Fixing...${NC}"
             sudo systemctl stop transmission
-
-            # Safe Backup: Only create if it doesn't exist to preserve the original state
-            if [[ ! -f "${TRANS_CONFIG}.original" ]]; then
-                sudo cp "$TRANS_CONFIG" "${TRANS_CONFIG}.original"
-            fi
-
-            # Use sed to safely replace the integer value for umask
+            [[ ! -f "${TRANS_CONFIG}.original" ]] && sudo cp "$TRANS_CONFIG" "${TRANS_CONFIG}.original"
             sudo sed -i 's/"umask": [0-9]\+/"umask": 2/' "$TRANS_CONFIG"
-
             sudo systemctl start transmission
             print "Fixed Transmission settings."
         else
@@ -128,19 +129,16 @@ if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
     TARGET="/mnt/Media"
     if [[ -d "$TARGET" ]]; then
         print "Verifying Media permissions..."
-
         # 1. Fix Group Ownership (if not 'media')
         if sudo find "$TARGET" -not -group media -print -quit | grep -q .; then
             print "${YELLOW}Fixing group ownership...${NC}"
             sudo find "$TARGET" -not -group media -exec chown :media {} +
         fi
-
         # 2. Fix Directory Permissions (if not 2775/SetGID)
         if sudo find "$TARGET" -type d -not -perm -2775 -print -quit | grep -q .; then
             print "${YELLOW}Fixing directory permissions (SetGID)...${NC}"
             sudo find "$TARGET" -type d -not -perm -2775 -exec chmod 2775 {} +
         fi
-
         # 3. Fix File Permissions (if not 664/Group Write)
         DOWNLOADS="$TARGET/Downloads"
         if [[ -d "$DOWNLOADS" ]]; then
@@ -161,6 +159,7 @@ fi
 # 5. Visual Backup (Konsave)
 print "${GREEN}--- Visual Backup (Konsave) ---${NC}"
 zmodload zsh/datetime; strftime -s DATE_STR '%Y-%m-%d' $EPOCHSECONDS
+
 # LINKAGE: Naming convention ("$PROFILE_TYPE Dock...") is matched by regex in desktop_setup.zsh / laptop_setup.zsh.
 PROFILE_NAME="$PROFILE_TYPE Dock $DATE_STR"
 
@@ -175,7 +174,6 @@ if (( $+commands[konsave] )); then
     # Export to Repository
     if [[ -d "$EXPORT_DIR" ]]; then
         print "Exporting to repo: $EXPORT_DIR"
-        # Export (-e) to directory (-d) with force overwrite (-f)
         konsave -e "$PROFILE_NAME" -d "$EXPORT_DIR" -f
     else
         print "${YELLOW}Warning: Export directory not found at $EXPORT_DIR${NC}"
@@ -187,7 +185,6 @@ if (( $+commands[konsave] )); then
     if [[ -d "$KONSAVE_CONFIG" ]]; then
         local -a internal_profiles
         internal_profiles=( "$KONSAVE_CONFIG"/"$PROFILE_TYPE Dock "*(-/On) )
-
         if (( ${#internal_profiles} > 3 )); then
             print "Pruning internal profiles (keeping newest 3)..."
             for path in "${internal_profiles[@][4,-1]}"; do
@@ -199,9 +196,7 @@ if (( $+commands[konsave] )); then
     # 2. Prune Repo Exports (.knsv files)
     if [[ -d "$EXPORT_DIR" ]]; then
         local -a repo_files
-        # Match .knsv files, sort by modification time (newest first)
         repo_files=( "$EXPORT_DIR"/"$PROFILE_TYPE Dock "*.knsv(.om) )
-
         if (( ${#repo_files} > 3 )); then
             print "Pruning repo exports (keeping newest 3)..."
             for file in "${repo_files[@][4,-1]}"; do
@@ -210,7 +205,6 @@ if (( $+commands[konsave] )); then
             done
         fi
     fi
-
 else
     print "${RED}Error: Konsave not installed. Skipping backup.${NC}"
 fi

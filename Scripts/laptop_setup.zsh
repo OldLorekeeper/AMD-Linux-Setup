@@ -1,14 +1,30 @@
 #!/bin/zsh
 # ------------------------------------------------------------------------------
 # 4. Laptop Profile Setup
+# Configures the mobile profile (Power saving, Scaling, Integrated Graphics).
+# ------------------------------------------------------------------------------
+#
+# DEVELOPMENT RULES (Read before editing):
+# 1. Formatting: Keep layout compact. No vertical whitespace inside blocks.
+# 2. Separators: Use double dotted lines (# ------) for major sections.
+# 3. Idempotency: Scripts must be safe to re-run. Check state before changes.
+# 4. Safety: Use 'setopt ERR_EXIT NO_UNSET PIPE_FAIL'.
+# 5. Context: Hardcoded for AMD Ryzen 7000/Radeon 7000. No hardcoded secrets.
+# 6. Syntax: Use Zsh native modifiers (e.g. ${VAR:h}) over subshells.
+# 7. Output: Use 'print'. Do NOT use 'echo'.
+#
 # ------------------------------------------------------------------------------
 
-setopt ERR_EXIT
-setopt NO_UNSET
-setopt PIPE_FAIL
+# Safety Options
+setopt ERR_EXIT     # Exit on error
+setopt NO_UNSET     # Error on unset variables
+setopt PIPE_FAIL    # Fail if any part of a pipe fails
 
+# Load Colours
 autoload -Uz colors && colors
 GREEN="${fg[green]}"
+YELLOW="${fg[yellow]}"
+RED="${fg[red]}"
 NC="${reset_color}"
 
 # Sudo Keep-Alive
@@ -28,6 +44,9 @@ print "${GREEN}--- Starting Laptop Setup ---${NC}"
 print "${GREEN}--- Installing Packages ---${NC}"
 yay -S --needed --noconfirm - < "$SCRIPT_DIR/laptop_pkg.txt"
 
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
 # 2. Kernel & Hardware
 print "${GREEN}--- Configuring Hardware ---${NC}"
 
@@ -43,10 +62,8 @@ if ! grep -q "numlock" /etc/mkinitcpio.conf; then
 fi
 
 # Services
+# NOTE: Ensure valid services are listed here or remove the line if empty to avoid errors.
 sudo systemctl enable --now
-
-# ------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------
 
 # 2.5 Ensure Kernel Configs from Core Setup are applied now that new kernel is running
 sudo sysctl --system
@@ -56,7 +73,6 @@ sudo sysctl --system
 
 # 3. KDE Integration
 print "${GREEN}--- KDE Rules ---${NC}"
-
 [[ -f "$SCRIPT_DIR/apply_kwin_rules.zsh" ]] && chmod +x "$SCRIPT_DIR/apply_kwin_rules.zsh" && "$SCRIPT_DIR/apply_kwin_rules.zsh" laptop
 
 # ------------------------------------------------------------------------------
@@ -73,12 +89,9 @@ PROFILE_FILE=( "$KONSAVE_DIR"/Laptop\ Dock*.knsv(.On[1]) )
 
 if [[ -n "$PROFILE_FILE" && -f "$PROFILE_FILE" ]]; then
     PROFILE_NAME="${${PROFILE_FILE:t}:r}"
-
     print "Found profile: $PROFILE_NAME"
-
     # Remove existing profile to force update
     konsave -r "$PROFILE_NAME" 2>/dev/null || true
-
     # Import and Apply (suppress deprecation warnings)
     if konsave -i "$PROFILE_FILE" >/dev/null 2>&1; then
         konsave -a "$PROFILE_NAME" >/dev/null 2>&1

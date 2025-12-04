@@ -7,14 +7,15 @@
 # DEVELOPMENT RULES (Read before editing):
 # 1. Formatting: Keep layout compact. Remove vertical whitespace within logical blocks.
 # 2. Separators: Use double dotted lines (# ------) to separate major stages.
-# 3. Safety: Always use 'set -e'. Verify conditions before destructive actions.
-# 4. Tooling: Use 'echo -e' for colored output.
+# 3. Idempotency: Scripts must be safe to re-run. Check state before destructive actions.
+# 4. Safety: Always use 'set -e'.
+# 5. Context: Hardcoded for AMD Ryzen 7000/Radeon 7000. No hardcoded secrets.
+# 6. Tooling: Use 'echo -e'. Prefer native bash expansion (${VAR%/*}) over sed/awk.
 #
 # ------------------------------------------------------------------------------
 
 set -e
 
-# Visual Formatting
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'

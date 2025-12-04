@@ -1,6 +1,17 @@
 #!/bin/bash
 # ------------------------------------------------------------------------------
 # 1. System Bootstrap (Arch ISO)
+# Initial environment configuration and installer launch
+# ------------------------------------------------------------------------------
+#
+# DEVELOPMENT RULES (Read before editing):
+# 1. Formatting: Keep layout compact. Remove vertical whitespace within logical blocks.
+# 2. Separators: Use double dotted lines (# ------) to separate major stages.
+# 3. Idempotency: Scripts must be safe to re-run. Check state before destructive actions.
+# 4. Safety: Always use 'set -e'.
+# 5. Context: Hardcoded for AMD Ryzen 7000/Radeon 7000. No hardcoded secrets.
+# 6. Tooling: Use 'echo -e'. Prefer native bash expansion (${VAR%/*}) over sed/awk.
+#
 # ------------------------------------------------------------------------------
 
 set -e
@@ -31,7 +42,6 @@ reflector --country GB,IE,NL,DE,FR,EU --age 12 --protocol https --sort rate --fa
 # 3. Fetch Config & Update Installer
 echo -e "${GREEN}--- Preparing Installer ---${NC}"
 curl -sL -o /root/archinstall_config.json "https://raw.githubusercontent.com/OldLorekeeper/AMD-Linux-Setup/main/Scripts/archinstall_config.json"
-
 # Update keyring first to prevent signature errors on older ISOs
 pacman -Sy --noconfirm archlinux-keyring
 pacman -S --noconfirm archinstall

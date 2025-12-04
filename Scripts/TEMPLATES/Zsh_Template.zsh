@@ -7,9 +7,11 @@
 # DEVELOPMENT RULES (Read before editing):
 # 1. Formatting: Keep layout compact. No vertical whitespace inside blocks.
 # 2. Separators: Use double dotted lines (# ------) for major sections.
-# 3. Safety: Use 'setopt ERR_EXIT NO_UNSET PIPE_FAIL'.
-# 4. Syntax: Use Zsh native modifiers (e.g. ${VAR:h}) instead of subshells.
-# 5. Output: Use 'print' instead of 'echo'.
+# 3. Idempotency: Scripts must be safe to re-run. Check state before changes.
+# 4. Safety: Use 'setopt ERR_EXIT NO_UNSET PIPE_FAIL'.
+# 5. Context: Hardcoded for AMD Ryzen 7000/Radeon 7000. No hardcoded secrets.
+# 6. Syntax: Use Zsh native modifiers (e.g. ${VAR:h}) over subshells.
+# 7. Output: Use 'print'. Do NOT use 'echo'.
 #
 # ------------------------------------------------------------------------------
 

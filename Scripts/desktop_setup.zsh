@@ -1,12 +1,26 @@
 #!/bin/zsh
 # ------------------------------------------------------------------------------
 # 4. Desktop Profile Setup
+# Configures the static workstation profile (Gaming, Media Hosting, Sunshine).
+# ------------------------------------------------------------------------------
+#
+# DEVELOPMENT RULES (Read before editing):
+# 1. Formatting: Keep layout compact. No vertical whitespace inside blocks.
+# 2. Separators: Use double dotted lines (# ------) for major sections.
+# 3. Idempotency: Scripts must be safe to re-run. Check state before changes.
+# 4. Safety: Use 'setopt ERR_EXIT NO_UNSET PIPE_FAIL'.
+# 5. Context: Hardcoded for AMD Ryzen 7000/Radeon 7000. No hardcoded secrets.
+# 6. Syntax: Use Zsh native modifiers (e.g. ${VAR:h}) over subshells.
+# 7. Output: Use 'print'. Do NOT use 'echo'.
+#
 # ------------------------------------------------------------------------------
 
-setopt ERR_EXIT
-setopt NO_UNSET
-setopt PIPE_FAIL
+# Safety Options
+setopt ERR_EXIT     # Exit on error
+setopt NO_UNSET     # Error on unset variables
+setopt PIPE_FAIL    # Fail if any part of a pipe fails
 
+# Load Colours
 autoload -Uz colors && colors
 GREEN="${fg[green]}"
 YELLOW="${fg[yellow]}"
@@ -80,9 +94,7 @@ sudo systemctl enable --now $SERVICES
 # Service Overrides (Mounts & Permissions)
 for service in $SERVICES; do
     sudo mkdir -p "/etc/systemd/system/$service.service.d"
-    # Prevent start until mount is ready
     print "[Unit]\nRequiresMountsFor=/mnt/Media" | sudo tee "/etc/systemd/system/$service.service.d/media-mount.conf" > /dev/null
-    # Force Group Write Permissions (002 = 775/664)
     print "[Service]\nUMask=0002" | sudo tee "/etc/systemd/system/$service.service.d/permissions.conf" > /dev/null
 done
 sudo systemctl daemon-reload
@@ -93,19 +105,11 @@ print "Checking Transmission internal settings..."
 TRANS_CONFIG="/var/lib/transmission/.config/transmission-daemon/settings.json"
 
 if [[ -f "$TRANS_CONFIG" ]]; then
-    # Only act if the config differs from target state ("umask": 2)
     if ! sudo grep -q '"umask": 2' "$TRANS_CONFIG"; then
         print "Updating Transmission umask..."
         sudo systemctl stop transmission
-
-        # Safe Backup: Only create if it doesn't exist (preserves true original)
-        if [[ ! -f "${TRANS_CONFIG}.original" ]]; then
-            sudo cp "$TRANS_CONFIG" "${TRANS_CONFIG}.original"
-        fi
-
-        # Apply Change
+        [[ ! -f "${TRANS_CONFIG}.original" ]] && sudo cp "$TRANS_CONFIG" "${TRANS_CONFIG}.original"
         sudo sed -i 's/"umask": [0-9]\+/"umask": 2/' "$TRANS_CONFIG"
-
         sudo systemctl start transmission
         print "${GREEN}Updated Transmission umask to 2.${NC}"
     else
@@ -133,11 +137,8 @@ print "${GREEN}--- Configuring Tools ---${NC}"
 # Slskd (Idempotent)
 print "Configuring Slskd..."
 sudo mkdir -p /etc/slskd
-
 if [[ ! -f /etc/slskd/slskd.yml ]]; then
     print "${GREEN}--- Configure Slskd Credentials ---${NC}"
-
-    # Interactive prompts
     read "SLSKD_USER?Create Slskd WebUI Username: "
     read -s "SLSKD_PASS?Create Slskd WebUI Password: "; print
     read "SOULSEEK_USER?Create Soulseek Username: "
@@ -170,13 +171,11 @@ sudo mkdir -p /etc/systemd/system/slskd.service.d
 sudo tee /etc/systemd/system/slskd.service.d/override.conf > /dev/null << EOF
 [Unit]
 RequiresMountsFor=/mnt/Media
-
 [Service]
 UMask=0002
 ExecStart=
 ExecStart=/usr/lib/slskd/slskd --config /etc/slskd/slskd.yml
 EOF
-
 sudo systemctl daemon-reload
 sudo systemctl enable --now slskd
 
@@ -192,10 +191,7 @@ fi
 # Dependencies & Config
 sudo pip install --break-system-packages -r /opt/soularr/requirements.txt
 sudo mkdir -p /opt/soularr/config
-
-if [[ ! -f /opt/soularr/config/config.ini ]]; then
-    sudo cp /opt/soularr/config.ini /opt/soularr/config/config.ini
-fi
+[[ ! -f /opt/soularr/config/config.ini ]] && sudo cp /opt/soularr/config.ini /opt/soularr/config/config.ini
 
 # Soularr Service (OneShot)
 sudo tee /etc/systemd/system/soularr.service > /dev/null << EOF
@@ -205,7 +201,6 @@ Wants=network-online.target lidarr.service slskd.service
 After=network-online.target lidarr.service slskd.service
 Requires=lidarr.service slskd.service
 RequiresMountsFor=/mnt/Media
-
 [Service]
 Type=oneshot
 User=$USER
@@ -224,16 +219,13 @@ EOF
 sudo tee /etc/systemd/system/soularr.timer > /dev/null << EOF
 [Unit]
 Description=Run Soularr every 30 minutes
-
 [Timer]
 OnCalendar=*:0/30
 Persistent=true
 AccuracySec=1min
-
 [Install]
 WantedBy=timers.target
 EOF
-
 sudo systemctl daemon-reload
 sudo systemctl enable --now soularr.timer
 
@@ -267,7 +259,6 @@ sudo udevadm control --reload-rules && sudo udevadm trigger
 
 ## Media drive setup
 print "${YELLOW}--- Media Drive Setup ---${NC}"
-
 MOUNT_OPTS="rw,nosuid,nodev,noatime,nofail,x-gvfs-hide,x-systemd.automount,compress=zstd:3,discard=async"
 
 if grep -q "/mnt/Media" /etc/fstab; then
@@ -306,10 +297,8 @@ else
 
                 # Set Ownership (User + Media Group)
                 sudo chown -R "$USER:media" /mnt/Media
-
                 # Directories: 2775 (SetGID = New files inherit 'media' group)
                 sudo find /mnt/Media -type d -exec chmod 2775 {} +
-
                 # Files: 664 (Group Writeable)
                 sudo find /mnt/Media -type f -exec chmod 664 {} +
             else
@@ -338,17 +327,13 @@ CARD_PATH=$(grep -lE "0x744(c|d)" /sys/class/drm/card*/device/device 2>/dev/null
 
 if [[ -n "$CARD_PATH" ]]; then
     print "Detected RX 7900 XT"
-
     if [[ -f "$BOOST_SCRIPT" ]]; then
         chmod +x "$BOOST_SCRIPT"
-
         # Sudoers Rule pointing to REPO path
         print "$USER ALL=(ALL) NOPASSWD: $BOOST_SCRIPT" | sudo tee /etc/sudoers.d/90-sunshine-boost > /dev/null
         sudo chmod 440 /etc/sudoers.d/90-sunshine-boost
-
         # Symlink to /usr/local/bin
         sudo ln -sf "$BOOST_SCRIPT" "/usr/local/bin/sunshine-gpu-boost"
-
         print "Configured GPU Boost in repo: $BOOST_SCRIPT"
     else
         print "${YELLOW}Warning: Source script $BOOST_SCRIPT not found.${NC}"
@@ -421,7 +406,6 @@ fi
 # 7. KDE Integration
 print "${GREEN}--- KDE Rules ---${NC}"
 grep -q 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.zshrc" || print 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.zshrc"
-
 [[ -f "$SCRIPT_DIR/apply_kwin_rules.zsh" ]] && chmod +x "$SCRIPT_DIR/apply_kwin_rules.zsh" && "$SCRIPT_DIR/apply_kwin_rules.zsh" desktop
 
 # ------------------------------------------------------------------------------
@@ -431,19 +415,14 @@ grep -q 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.zshrc" || print 'export P
 print "${GREEN}--- Applying Visual Profile ---${NC}"
 KONSAVE_DIR="$REPO_ROOT/5-Resources/Konsave"
 
-# Find profile: Match "Desktop Dock*.knsv"
-# LINKAGE: Matches naming convention defined in maintain_system.zsh (Section 5).
+# Find profile: Match "Desktop Dock*.knsv", Sort by Name Descending (.On), Pick 1st
 PROFILE_FILE=( "$KONSAVE_DIR"/Desktop\ Dock*.knsv(.On[1]) )
 
 if [[ -n "$PROFILE_FILE" && -f "$PROFILE_FILE" ]]; then
-    # Extract profile name (e.g. "Desktop Dock 2025-11-27")
     PROFILE_NAME="${${PROFILE_FILE:t}:r}"
-
     print "Found profile: $PROFILE_NAME"
-
     # Remove existing profile to force update (suppress errors)
     konsave -r "$PROFILE_NAME" 2>/dev/null || true
-
     # Import and Apply (suppress deprecation warnings)
     if konsave -i "$PROFILE_FILE" >/dev/null 2>&1; then
         konsave -a "$PROFILE_NAME" >/dev/null 2>&1
