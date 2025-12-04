@@ -88,6 +88,7 @@ done
 sudo systemctl daemon-reload
 
 # Transmission JSON Configuration (Optimised Idempotency)
+# LINKAGE: This logic is replicated in maintain_system.zsh (Section 4A). Changes must
 print "Checking Transmission internal settings..."
 TRANS_CONFIG="/var/lib/transmission/.config/transmission-daemon/settings.json"
 

@@ -102,6 +102,7 @@ if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
     print "${GREEN}--- Media drive permission checks ---${NC}"
 
     # A. Transmission Config Check
+    # LINKAGE: This logic is replicated in desktop_setup.zsh (Section 2). Changes must be synced.
     TRANS_CONFIG="/var/lib/transmission/.config/transmission-daemon/settings.json"
     if [[ -f "$TRANS_CONFIG" ]]; then
         if ! sudo grep -q '"umask": 2' "$TRANS_CONFIG"; then
