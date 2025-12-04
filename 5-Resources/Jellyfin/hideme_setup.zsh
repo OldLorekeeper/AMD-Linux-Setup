@@ -1,14 +1,24 @@
 #!/bin/zsh
 # ------------------------------------------------------------------------------
 # Jellyfin HideMe Tag Configuration Script
-# Generates the executable hideme_tag.py with user-provided credentials.
+# Generates and schedules a Python script to auto-mark "hideme" tagged items as played.
 # ------------------------------------------------------------------------------
 #
+# DEVELOPMENT RULES (Read before editing):
+# 1. Formatting: Keep layout compact. No vertical whitespace inside blocks.
+# 2. Separators: Use double dotted lines (# ------) for major sections.
+# 3. Idempotency: Scripts must be safe to re-run. Check state before changes.
+# 4. Safety: Use 'setopt ERR_EXIT NO_UNSET PIPE_FAIL'.
+# 5. Context: Hardcoded for AMD Ryzen 7000/Radeon 7000. No hardcoded secrets.
+# 6. Syntax: Use Zsh native modifiers (e.g. ${VAR:h}) over subshells.
+# 7. Output: Use 'print'. Do NOT use 'echo'.
+#
+# ------------------------------------------------------------------------------
 
 # Safety Options
-setopt ERR_EXIT
-setopt NO_UNSET
-setopt PIPE_FAIL
+setopt ERR_EXIT     # Exit on error
+setopt NO_UNSET     # Error on unset variables
+setopt PIPE_FAIL    # Fail if any part of a pipe fails
 
 # Load Colours
 autoload -Uz colors && colors
@@ -40,6 +50,7 @@ print "${GREEN}--- Gathering Credentials ---${NC}"
 print "Please enter your Jellyfin credentials:"
 read "JF_API?API Key (Required): "
 read "JF_USER?Username (Required): "
+
 if [[ -z "$JF_API" || -z "$JF_USER" ]]; then
     print "${RED}Error: API Key and Username are required. Aborting.${NC}"
     exit 1
@@ -50,6 +61,7 @@ SERVICE_PATH="$HOME/.config/systemd/user"
 
 # Generate Python Script
 print "Generating executable Python script at: $TARGET_SCRIPT"
+# Note: Variables like $JF_API are shell-expanded. Python f-strings use single braces {var}.
 tee "$TARGET_SCRIPT" > /dev/null << EOF
 #!/usr/bin/env python3
 import requests
@@ -79,11 +91,11 @@ except StopIteration:
 
 # Find tagged items
 try:
-    resp = requests.get(f"{JELLYFIN_URL}/Users/{user_id}/Items", params={{
+    resp = requests.get(f"{JELLYFIN_URL}/Users/{user_id}/Items", params={
         "Recursive": "true",
         "IncludeItemTypes": "Episode,Movie",
         "Tags": HIDE_TAG
-    }}, headers=headers)
+    }, headers=headers)
     resp.raise_for_status()
     items = resp.json()["Items"]
 except requests.exceptions.RequestException as e:
@@ -97,18 +109,18 @@ for item in items:
     runtime = item.get("RunTimeTicks")
 
     if not runtime:
-        print(f"Skipping {{name}} (no duration info)")
+        print(f"Skipping {name} (no duration info)")
         continue
 
-    print(f"Marking as played: {{name}}")
+    print(f"Marking as played: {name}")
 
-    requests.post(f"{{JELLYFIN_URL}}/Users/{{user_id}}/PlayedItems/{{item_id}}", headers=headers)
-    requests.post(f"{{JELLYFIN_URL}}/Sessions/Playing/Stopped", headers=headers, json={{
+    requests.post(f"{JELLYFIN_URL}/Users/{user_id}/PlayedItems/{item_id}", headers=headers)
+    requests.post(f"{JELLYFIN_URL}/Sessions/Playing/Stopped", headers=headers, json={
         "ItemId": item_id,
         "PositionTicks": runtime - 1,
         "PlaySessionId": "",
         "CanSeek": True
-    }})
+    })
 EOF
 
 chmod +x "$TARGET_SCRIPT"
@@ -119,6 +131,7 @@ chmod +x "$TARGET_SCRIPT"
 # 3. Setup Systemd User Service and Timer
 print "${GREEN}--- Setting up Systemd User Services ---${NC}"
 mkdir -p "$SERVICE_PATH"
+
 tee "$SERVICE_PATH/hideme_tag.service" > /dev/null << EOF
 [Unit]
 Description=Run Jellyfin HideMe

@@ -1,42 +1,61 @@
-#!/usr/bin/zsh
+#!/bin/zsh
 # ------------------------------------------------------------------------------
 # Audio Cover Art Embedder (Kid3 Wrapper)
+# Recursively embeds cover art (cover.jpg/png) into audio files using kid3-cli.
+# ------------------------------------------------------------------------------
+#
+# DEVELOPMENT RULES (Read before editing):
+# 1. Formatting: Keep layout compact. No vertical whitespace inside blocks.
+# 2. Separators: Use double dotted lines (# ------) for major sections.
+# 3. Idempotency: Scripts must be safe to re-run. Check state before changes.
+# 4. Safety: Use 'setopt ERR_EXIT NO_UNSET PIPE_FAIL'.
+# 5. Context: Hardcoded for AMD Ryzen 7000/Radeon 7000. No hardcoded secrets.
+# 6. Syntax: Use Zsh native modifiers (e.g. ${VAR:h}) over subshells.
+# 7. Output: Use 'print'. Do NOT use 'echo'.
+#
 # ------------------------------------------------------------------------------
 
 # Safety Options
-setopt ERR_EXIT
-setopt NO_UNSET
-setopt PIPE_FAIL
+setopt ERR_EXIT     # Exit on error
+setopt NO_UNSET     # Error on unset variables
+setopt PIPE_FAIL    # Fail if any part of a pipe fails
 
 # Logic Options
 setopt globstarshort
 setopt nullglob
 
+# Load Colours
+autoload -Uz colors && colors
+GREEN="${fg[green]}"
+YELLOW="${fg[yellow]}"
+RED="${fg[red]}"
+BLUE="${fg[blue]}"
+NC="${reset_color}"
+
 # Check for dependency
 if ! (( $+commands[kid3-cli] )); then
-    print -P "%F{red}Error: kid3-cli is not installed.%f"
+    print "${RED}Error: kid3-cli is not installed.${NC}"
     exit 1
 fi
 
 # Ensure we use the Absolute Path of the target directory
 TARGET_DIR="${1:-$PWD}"
 TARGET_DIR=${TARGET_DIR:A} # Zsh modifier for absolute path (realpath)
-print -P "%F{blue}Scanning: $TARGET_DIR%f"
+print "${BLUE}Scanning: $TARGET_DIR${NC}"
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
 # 1. Discovery
 # Define the condition for a "valid" folder (contains any of the 4 image types)
-local match_code='[[ -f $REPLY/cover.jpg || \
--f $REPLY/cover.png || -f $REPLY/folder.jpg || -f $REPLY/folder.png ]]'
+local match_code='[[ -f $REPLY/cover.jpg || -f $REPLY/cover.png || -f $REPLY/folder.jpg || -f $REPLY/folder.png ]]'
 
 # Build list of target folders
 local -a target_folders
 target_folders=("$TARGET_DIR" "$TARGET_DIR"/**/*(/e:"$match_code":))
 
 if (( ${#target_folders} == 0 )); then
-    print -P "%F{yellow}No directories with valid cover art found.%f"
+    print "${YELLOW}No directories with valid cover art found.${NC}"
     exit 0
 fi
 
@@ -63,16 +82,15 @@ for folder in $target_folders; do
     audio_files=("$folder"/*.{mp3,flac,m4a,ogg}(N))
 
     if (( ${#audio_files} > 0 )); then
-        print -P "%F{green}Processing: ${folder:t}%f"
-        print -P "  Source: ${cover_img:t}"
+        print "${GREEN}Processing: ${folder:t}${NC}"
+        print "  Source: ${cover_img:t}"
 
         for file in $audio_files; do
             # Embed image using absolute path
             if output=$(kid3-cli -c "set picture:\"$cover_img\" \"\"" "$file" 2>&1); then
-                 # Success - silent
-                 :
+                 : # Success - silent
             else
-                 print -P "%F{red}    Failed: ${file:t} -> $output%f"
+                 print "${RED}    Failed: ${file:t} -> $output${NC}"
             fi
         done
 
@@ -81,4 +99,4 @@ for folder in $target_folders; do
     fi
 done
 
-print -P "%F{blue}Batch operation complete.%f"
+print "${BLUE}Batch operation complete.${NC}"

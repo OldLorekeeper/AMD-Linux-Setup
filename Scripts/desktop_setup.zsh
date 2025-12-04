@@ -389,7 +389,7 @@ sudo sysctl --system
 # 6. Local Binaries
 print "${GREEN}--- Configuring Local Binaries ---${NC}"
 mkdir -p "$HOME/.local/bin"
-SOURCE_SCRIPT="$REPO_ROOT/5-Resources/Local-Scripts/fix-cover-art.zsh"
+SOURCE_SCRIPT="$REPO_ROOT/5-Resources/Jellyfin/fix-cover-art.zsh"
 TARGET_LINK="$HOME/.local/bin/fix-cover-art"
 
 if [[ -f "$SOURCE_SCRIPT" ]]; then
