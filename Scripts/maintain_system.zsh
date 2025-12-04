@@ -107,14 +107,15 @@ if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
         if ! sudo grep -q '"umask": 2' "$TRANS_CONFIG"; then
             print "${YELLOW}Detected incorrect Transmission umask. Fixing...${NC}"
             sudo systemctl stop transmission
-            sudo python - <<EOF
-import json
-with open('$TRANS_CONFIG', 'r') as f:
-    data = json.load(f)
-data['umask'] = 2
-with open('$TRANS_CONFIG', 'w') as f:
-    json.dump(data, f, indent=4)
-EOF
+
+            # Safe Backup: Only create if it doesn't exist to preserve the original state
+            if [[ ! -f "${TRANS_CONFIG}.original" ]]; then
+                sudo cp "$TRANS_CONFIG" "${TRANS_CONFIG}.original"
+            fi
+
+            # Use sed to safely replace the integer value for umask
+            sudo sed -i 's/"umask": [0-9]\+/"umask": 2/' "$TRANS_CONFIG"
+
             sudo systemctl start transmission
             print "Fixed Transmission settings."
         else
