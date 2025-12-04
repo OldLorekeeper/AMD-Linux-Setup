@@ -73,6 +73,7 @@
         "cmake-extras",
         "cpupower",
         "cups",
+        "dkms",
         "dnsmasq",
         "dosfstools",
         "edk2-ovmf",
