@@ -105,43 +105,9 @@ fi
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
-# 4. Media Integrity Checks (Desktop Only)
 if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
     print "${GREEN}--- Media Integrity Checks ---${NC}"
 
-    # A. Transmission Config Check
-    # Updated: Casts value to int() to handle "2" (string) vs 2 (integer) mismatch.
-    TRANS_CONFIG="/var/lib/transmission/.config/transmission-daemon/settings.json"
-    if sudo test -f "$TRANS_CONFIG"; then
-        if ! sudo python3 -c "import json, sys; sys.exit(0 if int(json.load(open('$TRANS_CONFIG')).get('umask', 18)) == 2 else 1)"; then
-            print "${YELLOW}Detected incorrect Transmission umask. Fixing...${NC}"
-            sudo systemctl stop transmission
-            sudo python - <<EOF
-import json
-path = '$TRANS_CONFIG'
-try:
-    with open(path, 'r') as f:
-        data = json.load(f)
-
-    # Force integer 2
-    data['umask'] = 2
-
-    with open(path, 'w') as f:
-        json.dump(data, f, indent=4)
-    print("Success: Updated Transmission umask to 2")
-except Exception as e:
-    print(f"Error patching JSON: {e}")
-EOF
-            sudo systemctl start transmission
-            print "Fixed Transmission settings."
-        else
-            print "Transmission Settings: ${GREEN}OK${NC}"
-        fi
-    else
-        print "${YELLOW}Transmission config not found (Skipping check).${NC}"
-    fi
-
-    # B. Service Group Membership (Anti-Drift)
     SERVICES=("sonarr" "radarr" "lidarr" "prowlarr" "jellyfin" "transmission" "slskd")
     print "Verifying service group memberships..."
 
@@ -155,34 +121,14 @@ EOF
     done
     print "Service Memberships: ${GREEN}OK${NC}"
 
-    # C. Filesystem Permissions
     TARGET="/mnt/Media"
     if grep -q "$TARGET" /proc/mounts; then
-        print "Verifying Media Drive permissions..."
-
-        # 1. Fix Group Ownership
-        if sudo find "$TARGET" -not -group media -print -quit | grep -q .; then
-            print "${YELLOW}Fixing group ownership on $TARGET...${NC}"
-            sudo chown -R :media "$TARGET"
-        fi
-
-        # 2. Fix Directory Permissions (SetGID)
-        if sudo find "$TARGET" -type d -not -perm -2775 -print -quit | grep -q .; then
-            print "${YELLOW}Fixing directory permissions (SetGID)...${NC}"
-            sudo find "$TARGET" -type d -not -perm -2775 -exec chmod 2775 {} +
-        fi
-
-        # 3. Fix File Permissions
-        DOWNLOADS="$TARGET/Downloads"
-        if [[ -d "$DOWNLOADS" ]]; then
-            if sudo find "$DOWNLOADS" -type f -not -perm -0664 -print -quit | grep -q .; then
-                print "${YELLOW}Fixing file permissions in Downloads...${NC}"
-                sudo find "$DOWNLOADS" -type f -not -perm -0664 -exec chmod 0664 {} +
-            fi
-        fi
-        print "Filesystem Permissions: ${GREEN}OK${NC}"
+        print "Enforcing Access Control Lists (ACLs)..."
+        sudo setfacl -R -m g:media:rwX "$TARGET"
+        sudo setfacl -R -m d:g:media:rwX "$TARGET"
+        print "ACLs Enforced: ${GREEN}OK${NC}"
     else
-        print "${YELLOW}Media drive not mounted. Skipping filesystem checks.${NC}"
+        print "${YELLOW}Media drive not mounted. Skipping ACL checks.${NC}"
     fi
 fi
 

@@ -102,51 +102,17 @@ for svc in $SERVICES slskd; do
     id "$svc" &>/dev/null && sudo usermod -aG media "$svc"
 done
 
-# Transmission Pre-Configuration (Priming)
-# We must start it once to generate settings.json, but WITHOUT mount dependencies
-print "Priming Transmission configuration..."
-sudo systemctl start transmission
+# Transmission Service Override
+print "Configuring Transmission Service Override..."
+sudo mkdir -p /etc/systemd/system/transmission.service.d
 
-TRANS_CONFIG="/var/lib/transmission/.config/transmission-daemon/settings.json"
-print "Waiting for Transmission to generate config..."
-for i in {1..10}; do
-    sudo test -f "$TRANS_CONFIG" && break
-    sleep 2
-done
-
-# Stop to release lock and apply fixes
-sudo systemctl stop transmission
-
-if sudo test -f "$TRANS_CONFIG"; then
-    print "Applying Transmission settings..."
-    sudo python - <<EOF
-import json
-path = "$TRANS_CONFIG"
-try:
-    with open(path, 'r') as f:
-        data = json.load(f)
-
-    changed = False
-    if data.get('umask') != 2:
-        data['umask'] = 2
-        changed = True
-    # Optional: Set download dir to media drive now to avoid later UI work
-    if data.get('download-dir') != "/mnt/Media/Downloads/transmission":
-        data['download-dir'] = "/mnt/Media/Downloads/transmission"
-        changed = True
-
-    if changed:
-        with open(path, 'w') as f:
-            json.dump(data, f, indent=4)
-        print("Success: Updated Transmission config")
-    else:
-        print("Config is already correct.")
-except Exception as e:
-    print(f"Error editing JSON: {e}")
+cat <<EOF | sudo tee /etc/systemd/system/transmission.service.d/override.conf > /dev/null
+[Service]
+ExecStart=
+ExecStart=/usr/bin/transmission-daemon -f --log-error --umask 2
 EOF
-else
-    print "${YELLOW}Warning: Transmission config failed to generate.${NC}"
-fi
+
+sudo systemctl daemon-reload
 
 # Sunshine User Service (Independent of Media Mount)
 REAL_SUNSHINE_PATH=$(readlink -f "$(command -v sunshine)")
@@ -304,9 +270,8 @@ else
             print "\n# Media Drive\nUUID=$MEDIA_UUID\t/mnt/Media\tbtrfs\t$MOUNT_OPTS\t0 0" | sudo tee -a /etc/fstab > /dev/null
             sudo systemctl daemon-reload
             if sudo mount /mnt/Media 2>/dev/null; then
-                print "${GREEN}Drive mounted. Applying structure and permissions...${NC}"
+                print "${GREEN}Drive mounted. Applying structure and ACLs...${NC}"
 
-                # Create Structure (Added 'transmission' to ensure existence for config)
                 sudo mkdir -p /mnt/Media/{Films,TV,Music/{Maintained,Manual},Downloads/{lidarr,radarr,slskd,sonarr,transmission}}
 
                 if ! lsattr -d /mnt/Media/Downloads | grep -q "C"; then
@@ -314,15 +279,11 @@ else
                     print "Applied No-CoW (+C) attribute to /mnt/Media/Downloads"
                 fi
 
-                # Set Ownership (User + Media Group)
-                # 'media' group was created in Section 2, so this applies it to the filesystem
-                print "Applying ownership and permissions..."
+                print "Applying Access Control Lists..."
                 sudo chown -R "$USER:media" /mnt/Media
-
-                # Directories: 2775 (SetGID = New files inherit 'media' group)
-                sudo find /mnt/Media -type d -exec chmod 2775 {} +
-                # Files: 664 (Group Writeable)
-                sudo find /mnt/Media -type f -exec chmod 664 {} +
+                sudo chmod -R 775 /mnt/Media
+                sudo setfacl -R -m g:media:rwX /mnt/Media
+                sudo setfacl -R -m d:g:media:rwX /mnt/Media
             else
                 print "${RED}Warning: Mount failed. Check UUID.${NC}"
             fi
