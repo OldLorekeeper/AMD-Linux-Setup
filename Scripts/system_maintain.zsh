@@ -110,18 +110,27 @@ if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
     print "${GREEN}--- Media Integrity Checks ---${NC}"
 
     # A. Transmission Config Check
+    # Updated: Casts value to int() to handle "2" (string) vs 2 (integer) mismatch.
     TRANS_CONFIG="/var/lib/transmission/.config/transmission-daemon/settings.json"
     if sudo test -f "$TRANS_CONFIG"; then
-        if ! sudo python3 -c "import json, sys; sys.exit(0 if json.load(open('$TRANS_CONFIG')).get('umask') == 2 else 1)"; then
+        if ! sudo python3 -c "import json, sys; sys.exit(0 if int(json.load(open('$TRANS_CONFIG')).get('umask', 18)) == 2 else 1)"; then
             print "${YELLOW}Detected incorrect Transmission umask. Fixing...${NC}"
             sudo systemctl stop transmission
             sudo python - <<EOF
 import json
-with open('$TRANS_CONFIG', 'r') as f:
-    data = json.load(f)
-data['umask'] = 2
-with open('$TRANS_CONFIG', 'w') as f:
-    json.dump(data, f, indent=4)
+path = '$TRANS_CONFIG'
+try:
+    with open(path, 'r') as f:
+        data = json.load(f)
+
+    # Force integer 2
+    data['umask'] = 2
+
+    with open(path, 'w') as f:
+        json.dump(data, f, indent=4)
+    print("Success: Updated Transmission umask to 2")
+except Exception as e:
+    print(f"Error patching JSON: {e}")
 EOF
             sudo systemctl start transmission
             print "Fixed Transmission settings."
@@ -133,7 +142,6 @@ EOF
     fi
 
     # B. Service Group Membership (Anti-Drift)
-    # Ensures services haven't lost 'media' access due to updates/resets
     SERVICES=("sonarr" "radarr" "lidarr" "prowlarr" "jellyfin" "transmission" "slskd")
     print "Verifying service group memberships..."
 
@@ -148,26 +156,23 @@ EOF
     print "Service Memberships: ${GREEN}OK${NC}"
 
     # C. Filesystem Permissions
-    # Enforces group write access and setgid on the drive
     TARGET="/mnt/Media"
     if grep -q "$TARGET" /proc/mounts; then
         print "Verifying Media Drive permissions..."
 
-        # 1. Fix Group Ownership (Recursive)
+        # 1. Fix Group Ownership
         if sudo find "$TARGET" -not -group media -print -quit | grep -q .; then
             print "${YELLOW}Fixing group ownership on $TARGET...${NC}"
             sudo chown -R :media "$TARGET"
         fi
 
-        # 2. Fix Directory Permissions (SetGID + Group Write)
+        # 2. Fix Directory Permissions (SetGID)
         if sudo find "$TARGET" -type d -not -perm -2775 -print -quit | grep -q .; then
             print "${YELLOW}Fixing directory permissions (SetGID)...${NC}"
             sudo find "$TARGET" -type d -not -perm -2775 -exec chmod 2775 {} +
         fi
 
-        # 3. Fix File Permissions (Group Write) in Downloads/Active areas
-        # We focus on Downloads to avoid scanning terabytes of static media unnecessarily,
-        # but you can expand this to "$TARGET" if strict enforcement is required.
+        # 3. Fix File Permissions
         DOWNLOADS="$TARGET/Downloads"
         if [[ -d "$DOWNLOADS" ]]; then
             if sudo find "$DOWNLOADS" -type f -not -perm -0664 -print -quit | grep -q .; then
@@ -197,12 +202,13 @@ EXPORT_DIR="$REPO_ROOT/Resources/Konsave"
 
 if (( $+commands[konsave] )); then
     print "Saving profile internally: $PROFILE_NAME"
-    konsave -s "$PROFILE_NAME" -f
+    # Suppress Python warnings (pkg_resources deprecated)
+    PYTHONWARNINGS="ignore" konsave -s "$PROFILE_NAME" -f
 
     # Export to Repository
     if [[ -d "$EXPORT_DIR" ]]; then
         print "Exporting to repo: $EXPORT_DIR"
-        konsave -e "$PROFILE_NAME" -d "$EXPORT_DIR" -f
+        PYTHONWARNINGS="ignore" konsave -e "$PROFILE_NAME" -d "$EXPORT_DIR" -f
     else
         print "${YELLOW}Warning: Export directory not found at $EXPORT_DIR${NC}"
     fi
@@ -216,7 +222,7 @@ if (( $+commands[konsave] )); then
         if (( ${#internal_profiles} > 3 )); then
             print "Pruning internal profiles (keeping newest 3)..."
             for path in "${internal_profiles[@][4,-1]}"; do
-                konsave -r "${path:t}" -f
+                PYTHONWARNINGS="ignore" konsave -r "${path:t}" -f
             done
         fi
     fi
