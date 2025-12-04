@@ -101,22 +101,27 @@ sudo systemctl daemon-reload
 
 # Transmission JSON Configuration (Optimised Idempotency)
 # LINKAGE: This logic is replicated in system_maintain.zsh (Section 4A). Changes must
-print "Checking Transmission internal settings..."
+print "Configuring Transmission internal settings..."
+sudo systemctl stop transmission
 TRANS_CONFIG="/var/lib/transmission/.config/transmission-daemon/settings.json"
 
 if [[ -f "$TRANS_CONFIG" ]]; then
-    if ! sudo grep -q '"umask": 2' "$TRANS_CONFIG"; then
-        print "Updating Transmission umask..."
-        sudo systemctl stop transmission
-        [[ ! -f "${TRANS_CONFIG}.original" ]] && sudo cp "$TRANS_CONFIG" "${TRANS_CONFIG}.original"
-        sudo sed -i 's/"umask": [0-9]\+/"umask": 2/' "$TRANS_CONFIG"
-        sudo systemctl start transmission
-        print "${GREEN}Updated Transmission umask to 2.${NC}"
-    else
-        print "${YELLOW}Transmission umask already set to 2. Skipping.${NC}"
-    fi
+    # Use python to safely update JSON without breaking syntax
+    sudo python - <<EOF
+import json
+path = "$TRANS_CONFIG"
+with open(path, 'r') as f:
+    data = json.load(f)
+
+if data.get('umask') != 2:
+    data['umask'] = 2
+    with open(path, 'w') as f:
+        json.dump(data, f, indent=4)
+    print("Updated Transmission umask to 2")
+EOF
+    sudo systemctl start transmission
 else
-    print "${RED}Warning: Transmission config not found at $TRANS_CONFIG${NC}"
+    print "${YELLOW}Warning: Transmission config not found at $TRANS_CONFIG${NC}"
 fi
 
 # Sunshine User Service
