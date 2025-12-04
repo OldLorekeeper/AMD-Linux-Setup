@@ -431,7 +431,8 @@ grep -q 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.zshrc" || print 'export P
 print "${GREEN}--- Applying Visual Profile ---${NC}"
 KONSAVE_DIR="$REPO_ROOT/5-Resources/Konsave"
 
-# Find profile: Match "Desktop Dock*.knsv", Sort by Name Descending (.On), Pick 1st
+# Find profile: Match "Desktop Dock*.knsv"
+# LINKAGE: Matches naming convention defined in maintain_system.zsh (Section 5).
 PROFILE_FILE=( "$KONSAVE_DIR"/Desktop\ Dock*.knsv(.On[1]) )
 
 if [[ -n "$PROFILE_FILE" && -f "$PROFILE_FILE" ]]; then

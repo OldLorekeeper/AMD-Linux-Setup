@@ -67,7 +67,8 @@ print "${GREEN}--- Applying Visual Profile ---${NC}"
 REPO_ROOT=${SCRIPT_DIR:h}
 KONSAVE_DIR="$REPO_ROOT/5-Resources/Konsave"
 
-# Find profile: Match "Laptop Dock*.knsv", Sort by Name Descending (.On), Pick 1st
+# Find profile: Match "Laptop Dock*.knsv"
+# LINKAGE: Matches naming convention defined in maintain_system.zsh (Section 5).
 PROFILE_FILE=( "$KONSAVE_DIR"/Laptop\ Dock*.knsv(.On[1]) )
 
 if [[ -n "$PROFILE_FILE" && -f "$PROFILE_FILE" ]]; then

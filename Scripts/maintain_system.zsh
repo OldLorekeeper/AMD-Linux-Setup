@@ -161,6 +161,7 @@ fi
 # 5. Visual Backup (Konsave)
 print "${GREEN}--- Visual Backup (Konsave) ---${NC}"
 zmodload zsh/datetime; strftime -s DATE_STR '%Y-%m-%d' $EPOCHSECONDS
+# LINKAGE: Naming convention ("$PROFILE_TYPE Dock...") is matched by regex in desktop_setup.zsh / laptop_setup.zsh.
 PROFILE_NAME="$PROFILE_TYPE Dock $DATE_STR"
 
 # Define Repo Export Path (Relative to Script Location)
