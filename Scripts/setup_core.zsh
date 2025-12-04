@@ -33,8 +33,9 @@ sudo -v
 SUDO_PID=$!
 trap 'kill $SUDO_PID' EXIT
 
-# Path Modifier :a:h = absolute path : head (dirname)
+# Path Resolution
 SCRIPT_DIR=${0:a:h}
+REPO_ROOT=${SCRIPT_DIR:h}
 
 print "${GREEN}--- Starting Core Setup ---${NC}"
 
@@ -48,8 +49,8 @@ print "2) Laptop"
 read "device_choice?Choice [1-2]: "
 
 case $device_choice in
-    1) DEVICE_SCRIPT="$SCRIPT_DIR/desktop_setup.zsh"; DEVICE_NAME="Desktop" ;;
-    2) DEVICE_SCRIPT="$SCRIPT_DIR/laptop_setup.zsh"; DEVICE_NAME="Laptop" ;;
+    1) DEVICE_SCRIPT="$SCRIPT_DIR/setup_desktop.zsh"; DEVICE_NAME="Desktop" ;; # UPDATED
+    2) DEVICE_SCRIPT="$SCRIPT_DIR/setup_laptop.zsh"; DEVICE_NAME="Laptop" ;;   # UPDATED
     *) print "${RED}Invalid selection. Core only.${NC}"; DEVICE_SCRIPT="" ;;
 esac
 
@@ -131,7 +132,7 @@ for pkg in linux linux-headers; do
 done
 # Remove Discover (Cleanup)
 sudo pacman -Rdd --noconfirm discover || true
-yay -S --needed --noconfirm - < "$SCRIPT_DIR/core_pkg.txt"
+yay -S --needed --noconfirm - < "$REPO_ROOT/Resources/Packages/core_pkg.txt"
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
@@ -261,7 +262,7 @@ fi
 
 # Transmission Monitor Plasmoid
 TRANS_WIDGET_DIR="$HOME/.local/share/plasma/plasmoids/com.oldlorekeeper.transmission"
-TRANS_ARCHIVE="${SCRIPT_DIR:h}/5-Resources/Transmission-Plasmoid/transmission-plasmoid.tar.gz"
+TRANS_ARCHIVE="$REPO_ROOT/Resources/Plasmoids/transmission-plasmoid.tar.gz"
 
 if [[ ! -d "$TRANS_WIDGET_DIR" ]]; then
     if [[ -f "$TRANS_ARCHIVE" ]]; then
@@ -299,9 +300,9 @@ update-kwin() {
     cd "\$HOME/Obsidian/AMD-Linux-Setup" || return
 
     # Auto-commit common fragment changes
-    if git status --porcelain 5-Resources/Window-Rules/common.kwinrule.fragment | grep -q '^ M'; then
+    if git status --porcelain Resources/Kwin/common.kwinrule.fragment | grep -q '^ M'; then
         print -P "%F{yellow}Committing changes to common.kwinrule.fragment...%f"
-        git add 5-Resources/Window-Rules/common.kwinrule.fragment
+        git add Resources/Kwin/common.kwinrule.fragment
         git commit -m "AUTOSYNC: KWin common fragment update from \${HOST}"
     fi
 
@@ -311,14 +312,14 @@ update-kwin() {
         return 1
     fi
 
-    # Run Zsh script (corrected extension)
-    ./Scripts/apply_kwin_rules.zsh "\$target"
+    # Run Zsh script (corrected extension and path)
+    ./Scripts/kwin_apply_rules.zsh "\$target"
     cd "\$current_dir"
 }
 
 edit-kwin() {
     local target="\${1:-\$KWIN_PROFILE}"
-    local repo_dir="\$HOME/Obsidian/AMD-Linux-Setup/5-Resources/Window-Rules"
+    local repo_dir="\$HOME/Obsidian/AMD-Linux-Setup/Resources/Kwin"
     local file_path=""
 
     case "\$target" in

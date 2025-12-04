@@ -48,7 +48,7 @@ print "${GREEN}--- Configuring Sunshine & Repos ---${NC}"
 sudo tee /usr/local/bin/replace-sunshine-icons.sh > /dev/null << EOF
 #!/bin/bash
 DEST="/usr/share/icons/hicolor/scalable/status"
-SRC="$REPO_ROOT/5-Resources/Icons/Sunshine-Tray-Icons"
+SRC="$REPO_ROOT/Resources/Icons/Sunshine"
 [[ -d "\$SRC" ]] && cp "\$SRC"/*.svg "\$DEST/"
 SUNSHINE_PATH=\$(command -v sunshine)
 [[ -n "\$SUNSHINE_PATH" ]] && setcap cap_sys_admin+p "\$SUNSHINE_PATH"
@@ -86,7 +86,7 @@ fi
 
 # 2. Packages & Services
 print "${GREEN}--- Packages & Services ---${NC}"
-yay -S --needed --noconfirm - < "$SCRIPT_DIR/desktop_pkg.txt"
+yay -S --needed --noconfirm - < "$REPO_ROOT/Resources/Packages/desktop_pkg.txt"
 
 SERVICES=("sonarr" "radarr" "lidarr" "prowlarr" "jellyfin" "transmission")
 sudo systemctl enable --now $SERVICES
@@ -100,7 +100,7 @@ done
 sudo systemctl daemon-reload
 
 # Transmission JSON Configuration (Optimised Idempotency)
-# LINKAGE: This logic is replicated in maintain_system.zsh (Section 4A). Changes must
+# LINKAGE: This logic is replicated in system_maintain.zsh (Section 4A). Changes must
 print "Checking Transmission internal settings..."
 TRANS_CONFIG="/var/lib/transmission/.config/transmission-daemon/settings.json"
 
@@ -318,9 +318,9 @@ fi
 # 5. Sunshine Performance
 print "${GREEN}--- Configuring Sunshine Performance ---${NC}"
 
-BOOST_SCRIPT="$REPO_ROOT/5-Resources/Sunshine/sunshine-gpu-boost.zsh"
-HDR_SCRIPT="$REPO_ROOT/5-Resources/Sunshine/sunshine_hdr.zsh"
-RES_SCRIPT="$REPO_ROOT/5-Resources/Sunshine/sunshine_res.zsh"
+BOOST_SCRIPT="$REPO_ROOT/Scripts/sunshine_gpu_boost.zsh"
+HDR_SCRIPT="$REPO_ROOT/Scripts/sunshine_hdr.zsh"
+RES_SCRIPT="$REPO_ROOT/Scripts/sunshine_res.zsh"
 
 # Detect RX 7900 XT (Navi 31) using the PCI Device ID from the 'device' file
 CARD_PATH=$(grep -lE "0x744(c|d)" /sys/class/drm/card*/device/device 2>/dev/null | head -n 1)
@@ -393,7 +393,7 @@ fi
 # 6. Local Binaries
 print "${GREEN}--- Configuring Local Binaries ---${NC}"
 mkdir -p "$HOME/.local/bin"
-SOURCE_SCRIPT="$REPO_ROOT/5-Resources/Local-Scripts/fix-cover-art.zsh"
+SOURCE_SCRIPT="$REPO_ROOT/Scripts/jellyfin_fix_cover_art.zsh"
 TARGET_LINK="$HOME/.local/bin/fix-cover-art"
 
 if [[ -f "$SOURCE_SCRIPT" ]]; then
@@ -410,14 +410,14 @@ fi
 # 7. KDE Integration
 print "${GREEN}--- KDE Rules ---${NC}"
 grep -q 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.zshrc" || print 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.zshrc"
-[[ -f "$SCRIPT_DIR/apply_kwin_rules.zsh" ]] && chmod +x "$SCRIPT_DIR/apply_kwin_rules.zsh" && "$SCRIPT_DIR/apply_kwin_rules.zsh" desktop
+[[ -f "$SCRIPT_DIR/kwin_apply_rules.zsh" ]] && chmod +x "$SCRIPT_DIR/kwin_apply_rules.zsh" && "$SCRIPT_DIR/kwin_apply_rules.zsh" desktop
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
 # 8. Theming (Konsave)
 print "${GREEN}--- Applying Visual Profile ---${NC}"
-KONSAVE_DIR="$REPO_ROOT/5-Resources/Konsave"
+KONSAVE_DIR="$REPO_ROOT/Resources/Konsave"
 
 # Find profile: Match "Desktop Dock*.knsv", Sort by Name Descending (.On), Pick 1st
 PROFILE_FILE=( "$KONSAVE_DIR"/Desktop\ Dock*.knsv(.On[1]) )

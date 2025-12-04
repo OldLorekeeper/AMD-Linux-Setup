@@ -110,7 +110,7 @@ if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
     print "${GREEN}--- Media drive permission checks ---${NC}"
 
     # A. Transmission Config Check
-    # LINKAGE: This logic is replicated in desktop_setup.zsh (Section 2). Changes must be synced.
+    # LINKAGE: This logic is replicated in setup_desktop.zsh (Section 2). Changes must be synced.
     TRANS_CONFIG="/var/lib/transmission/.config/transmission-daemon/settings.json"
     if [[ -f "$TRANS_CONFIG" ]]; then
         if ! sudo grep -q '"umask": 2' "$TRANS_CONFIG"; then
@@ -160,12 +160,12 @@ fi
 print "${GREEN}--- Visual Backup (Konsave) ---${NC}"
 zmodload zsh/datetime; strftime -s DATE_STR '%Y-%m-%d' $EPOCHSECONDS
 
-# LINKAGE: Naming convention ("$PROFILE_TYPE Dock...") is matched by regex in desktop_setup.zsh / laptop_setup.zsh.
+# LINKAGE: Naming convention ("$PROFILE_TYPE Dock...") is matched by regex in setup_desktop.zsh / setup_laptop.zsh.
 PROFILE_NAME="$PROFILE_TYPE Dock $DATE_STR"
 
 # Define Repo Export Path (Relative to Script Location)
 REPO_ROOT=${SCRIPT_DIR:h}
-EXPORT_DIR="$REPO_ROOT/5-Resources/Konsave"
+EXPORT_DIR="$REPO_ROOT/Resources/Konsave"
 
 if (( $+commands[konsave] )); then
     print "Saving profile internally: $PROFILE_NAME"

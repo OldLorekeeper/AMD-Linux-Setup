@@ -166,7 +166,8 @@ git() {
 
 # System maintenance shortcut
 maintain() {
-    local script="$HOME/Obsidian/AMD-Linux-Setup/Scripts/maintain_system.zsh"
+    # UPDATED: Pointing to system_maintain.zsh
+    local script="$HOME/Obsidian/AMD-Linux-Setup/Scripts/system_maintain.zsh"
 
     if [[ -f "$script" ]]; then
         # Ensure it is executable before running
@@ -188,10 +189,14 @@ fi
 # 6. Konsole Profiles
 echo -e "${GREEN}--- Installing Konsole Profiles ---${NC}"
 mkdir -p "$HOME/.local/share/konsole"
-if [ -d "$REPO_DIR/5-Resources/Konsole" ]; then
-    cp -f "$REPO_DIR/5-Resources/Konsole"/* "$HOME/.local/share/konsole/" 2>/dev/null
+# UPDATED: Path to Resources/Konsole
+if [ -d "$REPO_DIR/Resources/Konsole" ]; then
+    cp -f "$REPO_DIR/Resources/Konsole"/* "$HOME/.local/share/konsole/" 2>/dev/null
 else
     echo -e "${YELLOW}Warning: Konsole resources not found.${NC}"
 fi
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 echo -e "${GREEN}--- Home Setup Complete. Relogin to apply ZSH changes. ---${NC}"

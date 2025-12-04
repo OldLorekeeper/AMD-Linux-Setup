@@ -34,6 +34,7 @@ SUDO_PID=$!
 trap 'kill $SUDO_PID' EXIT
 
 SCRIPT_DIR=${0:a:h}
+REPO_ROOT=${SCRIPT_DIR:h}
 
 print "${GREEN}--- Starting Laptop Setup ---${NC}"
 
@@ -42,7 +43,7 @@ print "${GREEN}--- Starting Laptop Setup ---${NC}"
 
 # 1. Packages
 print "${GREEN}--- Installing Packages ---${NC}"
-yay -S --needed --noconfirm - < "$SCRIPT_DIR/laptop_pkg.txt"
+yay -S --needed --noconfirm - < "$REPO_ROOT/Resources/Packages/laptop_pkg.txt"
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
@@ -73,18 +74,17 @@ sudo sysctl --system
 
 # 3. KDE Integration
 print "${GREEN}--- KDE Rules ---${NC}"
-[[ -f "$SCRIPT_DIR/apply_kwin_rules.zsh" ]] && chmod +x "$SCRIPT_DIR/apply_kwin_rules.zsh" && "$SCRIPT_DIR/apply_kwin_rules.zsh" laptop
+[[ -f "$SCRIPT_DIR/kwin_apply_rules.zsh" ]] && chmod +x "$SCRIPT_DIR/kwin_apply_rules.zsh" && "$SCRIPT_DIR/kwin_apply_rules.zsh" laptop
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
 # 4. Theming (Konsave)
 print "${GREEN}--- Applying Visual Profile ---${NC}"
-REPO_ROOT=${SCRIPT_DIR:h}
-KONSAVE_DIR="$REPO_ROOT/5-Resources/Konsave"
+KONSAVE_DIR="$REPO_ROOT/Resources/Konsave"
 
 # Find profile: Match "Laptop Dock*.knsv"
-# LINKAGE: Matches naming convention defined in maintain_system.zsh (Section 5).
+# LINKAGE: Matches naming convention defined in system_maintain.zsh (Section 5).
 PROFILE_FILE=( "$KONSAVE_DIR"/Laptop\ Dock*.knsv(.On[1]) )
 
 if [[ -n "$PROFILE_FILE" && -f "$PROFILE_FILE" ]]; then

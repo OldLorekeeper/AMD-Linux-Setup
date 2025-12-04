@@ -41,8 +41,7 @@ reflector --country GB,IE,NL,DE,FR,EU --age 12 --protocol https --sort rate --fa
 
 # 3. Fetch Config & Update Installer
 echo -e "${GREEN}--- Preparing Installer ---${NC}"
-curl -sL -o /root/archinstall_config.json "https://raw.githubusercontent.com/OldLorekeeper/AMD-Linux-Setup/main/Scripts/archinstall_config.json"
-# Update keyring first to prevent signature errors on older ISOs
+curl -sL -o /root/setup_config.json "https://raw.githubusercontent.com/OldLorekeeper/AMD-Linux-Setup/main/Scripts/setup_config.json"
 pacman -Sy --noconfirm archlinux-keyring
 pacman -S --noconfirm archinstall
 
@@ -51,4 +50,4 @@ pacman -S --noconfirm archinstall
 
 # 4. Launch
 echo -e "${YELLOW}--- Launching archinstall ---${NC}"
-archinstall --config /root/archinstall_config.json
+archinstall --config /root/setup_config.json

@@ -36,7 +36,7 @@ fi
 
 SCRIPT_DIR=${0:a:h}
 REPO_ROOT=${SCRIPT_DIR:h}
-RULES_DIR="$REPO_ROOT/5-Resources/Window-Rules"
+RULES_DIR="$REPO_ROOT/Resources/Kwin"
 TEMPLATE="$RULES_DIR/${PROFILE}.rule.template"
 COMMON="$RULES_DIR/common.kwinrule.fragment"
 GENERATED="$RULES_DIR/${PROFILE}.generated.kwinrule"
