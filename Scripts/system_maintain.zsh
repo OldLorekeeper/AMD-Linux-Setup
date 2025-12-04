@@ -113,7 +113,7 @@ if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
     # LINKAGE: This logic is replicated in setup_desktop.zsh (Section 2). Changes must be synced.
     TRANS_CONFIG="/var/lib/transmission/.config/transmission-daemon/settings.json"
     if sudo test -f "$TRANS_CONFIG"; then
-        if ! sudo grep -q '"umask": 2' "$TRANS_CONFIG"; then
+            if ! sudo python3 -c "import json, sys; sys.exit(0 if json.load(open('$TRANS_CONFIG')).get('umask') == 2 else 1)"; then
             print "${YELLOW}Detected incorrect Transmission umask. Fixing...${NC}"
             sudo systemctl stop transmission
             sudo python - <<EOF
