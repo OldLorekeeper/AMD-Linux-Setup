@@ -138,7 +138,7 @@ yay -S --needed --noconfirm - < "$SCRIPT_DIR/core_pkg.txt"
 
 # 6. Services & Configs
 print "${GREEN}--- Applying System Configs ---${NC}"
-sudo systemctl enable --now transmission bluetooth timeshift-hourly.timer lactd btrfs-scrub@-.timer fwupd.service
+sudo systemctl enable --now transmission bluetooth timeshift-hourly.timer btrfs-scrub@-.timer fwupd.service
 
 # Firmware Refresh
 fwupdmgr refresh --force || print "${YELLOW}Warning: Firmware refresh failed.${NC}"
@@ -261,6 +261,21 @@ if [[ ! -d "$GEMINI_DIR" ]]; then
     sed -i '/profile: geminiProfile/a \                onFeaturePermissionRequested: { if (feature === WebEngineView.ClipboardReadWrite) { geminiwebview.grantFeaturePermission(securityOrigin, feature, true); } else { geminiwebview.grantFeaturePermission(securityOrigin, feature, false); } }' "$QML"
 fi
 
+# Transmission Monitor Plasmoid
+TRANS_WIDGET_DIR="$HOME/.local/share/plasma/plasmoids/com.oldlorekeeper.transmission"
+TRANS_ARCHIVE="${SCRIPT_DIR:h}/5-Resources/Transmission-Plasmoid/transmission-plasmoid.tar.gz"
+
+if [[ ! -d "$TRANS_WIDGET_DIR" ]]; then
+    if [[ -f "$TRANS_ARCHIVE" ]]; then
+        print "Installing Transmission Monitor Plasmoid..."
+        # Extract into the parent 'plasmoids' folder because archive already contains the widget folder
+        mkdir -p "${TRANS_WIDGET_DIR:h}"
+        tar -xf "$TRANS_ARCHIVE" -C "${TRANS_WIDGET_DIR:h}"
+    else
+        print "${YELLOW}Warning: Transmission Plasmoid archive not found at $TRANS_ARCHIVE${NC}"
+    fi
+fi
+
 # --- KWin Functions Injection ---
 print "${GREEN}--- Configuring KWin Management ---${NC}"
 
@@ -339,7 +354,7 @@ if [[ -f "$DEVICE_SCRIPT" ]]; then
 WRAPPER_SCRIPT="$HOME/.local/bin/run_device_setup_once.zsh"
 AUTOSTART_FILE="$HOME/.config/autostart/device-setup-once.desktop"
 
-# 1. Create a self-deleting wrapper script.
+# Create a self-deleting wrapper script.
 cat << EOF > "$WRAPPER_SCRIPT"
 #!/usr/bin/zsh
 # ------------------------------------------------------------------------------
@@ -369,7 +384,7 @@ EOF
 
 chmod +x "$WRAPPER_SCRIPT"
 
-# 2. Create the simplified autostart .desktop file
+# Create the simplified autostart .desktop file
 mkdir -p "$HOME/.config/autostart"
 
 # Exec now only calls konsole to run the simple wrapper script.

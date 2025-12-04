@@ -77,12 +77,40 @@ yay -S --needed --noconfirm - < "$SCRIPT_DIR/desktop_pkg.txt"
 SERVICES=("sonarr" "radarr" "lidarr" "prowlarr" "jellyfin" "transmission")
 sudo systemctl enable --now $SERVICES
 
-# Shutdown Safety
+# Service Overrides (Mounts & Permissions)
 for service in $SERVICES; do
     sudo mkdir -p "/etc/systemd/system/$service.service.d"
+    # Prevent start until mount is ready
     print "[Unit]\nRequiresMountsFor=/mnt/Media" | sudo tee "/etc/systemd/system/$service.service.d/media-mount.conf" > /dev/null
+    # Force Group Write Permissions (002 = 775/664)
+    print "[Service]\nUMask=0002" | sudo tee "/etc/systemd/system/$service.service.d/permissions.conf" > /dev/null
 done
 sudo systemctl daemon-reload
+
+# Transmission JSON Configuration (Internal Umask Override)
+# Ensures Transmission respects group permissions defined above
+print "Configuring Transmission internal settings..."
+sudo systemctl stop transmission
+TRANS_CONFIG="/var/lib/transmission/.config/transmission-daemon/settings.json"
+
+if [[ -f "$TRANS_CONFIG" ]]; then
+    # Use python to safely update JSON without breaking syntax
+    sudo python - <<EOF
+import json
+path = "$TRANS_CONFIG"
+with open(path, 'r') as f:
+    data = json.load(f)
+
+if data.get('umask') != 2:
+    data['umask'] = 2
+    with open(path, 'w') as f:
+        json.dump(data, f, indent=4)
+    print("Updated Transmission umask to 2")
+EOF
+    sudo systemctl start transmission
+else
+    print "${YELLOW}Warning: Transmission config not found at $TRANS_CONFIG${NC}"
+fi
 
 # Sunshine User Service
 REAL_SUNSHINE_PATH=$(readlink -f "$(command -v sunshine)")
@@ -123,8 +151,8 @@ web:
     username: $SLSKD_USER
     password: $SLSKD_PASS
 directories:
-  downloads: /mnt/Media/Torrents/slskd/Complete
-  incomplete: /mnt/Media/Torrents/slskd/Incomplete
+  downloads: /mnt/Media/Downloads/slskd/Complete
+  incomplete: /mnt/Media/Downloads/slskd/Incomplete
 soulseek:
   username: $SOULSEEK_USER
   password: $SOULSEEK_PASS
@@ -141,6 +169,7 @@ sudo tee /etc/systemd/system/slskd.service.d/override.conf > /dev/null << EOF
 RequiresMountsFor=/mnt/Media
 
 [Service]
+UMask=0002
 ExecStart=
 ExecStart=/usr/lib/slskd/slskd --config /etc/slskd/slskd.yml
 EOF
@@ -178,13 +207,14 @@ RequiresMountsFor=/mnt/Media
 Type=oneshot
 User=$USER
 Group=$(id -gn "$USER")
+UMask=0002
 WorkingDirectory=/opt/soularr
 ExecStart=/usr/bin/python /opt/soularr/soularr.py --config-dir /opt/soularr/config --no-lock-file
 NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=full
 ProtectHome=read-only
-ReadWritePaths=/opt/soularr /var/log /mnt/Media/Torrents/slskd/Complete/
+ReadWritePaths=/opt/soularr /var/log /mnt/Media/Downloads/slskd/Complete/
 EOF
 
 # Soularr Timer (Every 30m)
@@ -233,37 +263,60 @@ print 'ACTION=="add|change", KERNEL=="nvme[0-9]n[0-9]", ATTR{queue/scheduler}="k
 sudo udevadm control --reload-rules && sudo udevadm trigger
 
 ## Media drive setup
-print "${YELLOW}--- Media Drive Setup (Optional) ---${NC}"
+print "${YELLOW}--- Media Drive Setup ---${NC}"
+
+MOUNT_OPTS="rw,nosuid,nodev,noatime,nofail,x-gvfs-hide,x-systemd.automount,compress=zstd:3,discard=async"
+
 if grep -q "/mnt/Media" /etc/fstab; then
-    print "${YELLOW}/mnt/Media already configured in fstab. Skipping.${NC}"
+    print "${YELLOW}/mnt/Media already configured in fstab. Skipping mount injection.${NC}"
 else
-    # Allow user to continue with setup (Y) or skip (N, default)
-    print "This step configures the dedicated media drive"
-    print "Choosing 'Yes' will list partitions and prompt for a UUID to permanently mount at /mnt/Media."
-    print "Choosing 'No' will skip this step"
+    # User interaction (option to skip)
+    print "This step configures the dedicated media drive (NVMe/Btrfs)"
+    print "Choosing 'Yes' will list partitions and prompt for a UUID."
     read "SETUP_MEDIA?Set up media drive now (Y)es/(N)o? "
-    if [[ "$SETUP_MEDIA" == "y" || "$SETUP_MEDIA" == "Y" ]]; then
+
+    if [[ "$SETUP_MEDIA" =~ ^[Yy]$ ]]; then
         print "Available Partitions:"
-        # List partitions, excluding Loop (7) and ROM (11) devices
         lsblk -o NAME,SIZE,FSTYPE,LABEL,UUID -e 7,11
         read "MEDIA_UUID?Enter UUID of Media Partition (copy from above): "
+
         if [[ -n "$MEDIA_UUID" ]]; then
             sudo mkdir -p /mnt/Media
             sudo cp /etc/fstab /etc/fstab.bak
-            # Append entry using tab separation for cleaner fstab formatting
-            print "\n# Media Drive\nUUID=$MEDIA_UUID\t/mnt/Media\tauto\trw,nosuid,nodev,noatime,nofail,x-gvfs-hide,x-systemd.automount\t0 0" | sudo tee -a /etc/fstab > /dev/null
+            print "\n# Media Drive\nUUID=$MEDIA_UUID\t/mnt/Media\tbtrfs\t$MOUNT_OPTS\t0 0" | sudo tee -a /etc/fstab > /dev/null
             sudo systemctl daemon-reload
-            # Attempt mount; warn on failure but do not exit script
             if sudo mount /mnt/Media 2>/dev/null; then
-                print "Media drive configured and mounted."
+                print "${GREEN}Drive mounted. Applying structure and permissions...${NC}"
+                sudo mkdir -p /mnt/Media/{Films,TV,Music/{Maintained,Manual},Downloads/{lidarr,radarr,slskd,sonarr}}
+                if ! lsattr -d /mnt/Media/Downloads | grep -q "C"; then
+                    sudo chattr +C /mnt/Media/Downloads
+                    print "Applied No-CoW (+C) attribute to /mnt/Media/Downloads"
+                fi
+                print "Configuring 'media' group and permissions..."
+                sudo groupadd -f media
+                sudo usermod -aG media "$USER"
+
+                # Add services to media group
+                for svc in sonarr radarr lidarr prowlarr jellyfin transmission slskd; do
+                    id "$svc" &>/dev/null && sudo usermod -aG media "$svc"
+                done
+
+                # Set Ownership (User + Media Group)
+                sudo chown -R "$USER:media" /mnt/Media
+
+                # Directories: 2775 (SetGID = New files inherit 'media' group)
+                sudo find /mnt/Media -type d -exec chmod 2775 {} +
+
+                # Files: 664 (Group Writeable)
+                sudo find /mnt/Media -type f -exec chmod 664 {} +
             else
-                print "${RED}Warning: Mount failed. Check UUID or filesystem type.${NC}"
+                print "${RED}Warning: Mount failed. Check UUID.${NC}"
             fi
         else
             print "${RED}Skipping Media drive setup (No UUID provided).${NC}"
         fi
     else
-        print "${RED}Skipping Media drive setup as requested. Continue manual steps to mount it later.${NC}"
+        print "${RED}Skipping Media drive setup as requested.${NC}"
     fi
 fi
 
