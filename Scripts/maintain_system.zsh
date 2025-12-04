@@ -97,7 +97,66 @@ fi
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
-# 4. Visual Backup (Konsave)
+# 4. Media drive permission checks (Desktop Only)
+if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
+    print "${GREEN}--- Media drive permission checks ---${NC}"
+
+    # A. Transmission Config Check
+    TRANS_CONFIG="/var/lib/transmission/.config/transmission-daemon/settings.json"
+    if [[ -f "$TRANS_CONFIG" ]]; then
+        if ! sudo grep -q '"umask": 2' "$TRANS_CONFIG"; then
+            print "${YELLOW}Detected incorrect Transmission umask. Fixing...${NC}"
+            sudo systemctl stop transmission
+            sudo python - <<EOF
+import json
+with open('$TRANS_CONFIG', 'r') as f:
+    data = json.load(f)
+data['umask'] = 2
+with open('$TRANS_CONFIG', 'w') as f:
+    json.dump(data, f, indent=4)
+EOF
+            sudo systemctl start transmission
+            print "Fixed Transmission settings."
+        else
+            print "Transmission Settings: ${GREEN}OK${NC}"
+        fi
+    fi
+
+    # B. Media Drive Permissions (Smart Fix)
+    TARGET="/mnt/Media"
+    if [[ -d "$TARGET" ]]; then
+        print "Verifying Media permissions..."
+
+        # 1. Fix Group Ownership (if not 'media')
+        if sudo find "$TARGET" -not -group media -print -quit | grep -q .; then
+            print "${YELLOW}Fixing group ownership...${NC}"
+            sudo find "$TARGET" -not -group media -exec chown :media {} +
+        fi
+
+        # 2. Fix Directory Permissions (if not 2775/SetGID)
+        if sudo find "$TARGET" -type d -not -perm -2775 -print -quit | grep -q .; then
+            print "${YELLOW}Fixing directory permissions (SetGID)...${NC}"
+            sudo find "$TARGET" -type d -not -perm -2775 -exec chmod 2775 {} +
+        fi
+
+        # 3. Fix File Permissions (if not 664/Group Write)
+        DOWNLOADS="$TARGET/Downloads"
+        if [[ -d "$DOWNLOADS" ]]; then
+            if sudo find "$DOWNLOADS" -type f -not -perm -0664 -print -quit | grep -q .; then
+                print "${YELLOW}Fixing file permissions in Downloads...${NC}"
+                sudo find "$DOWNLOADS" -type f -not -perm -0664 -exec chmod 0664 {} +
+            fi
+        fi
+        print "Media Permissions: ${GREEN}OK${NC}"
+    else
+        print "${YELLOW}Media drive not mounted. Skipping checks.${NC}"
+    fi
+fi
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
+# 5. Visual Backup (Konsave)
 print "${GREEN}--- Visual Backup (Konsave) ---${NC}"
 zmodload zsh/datetime; strftime -s DATE_STR '%Y-%m-%d' $EPOCHSECONDS
 PROFILE_NAME="$PROFILE_TYPE Dock $DATE_STR"

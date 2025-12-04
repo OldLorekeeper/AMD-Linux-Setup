@@ -87,6 +87,31 @@ for service in $SERVICES; do
 done
 sudo systemctl daemon-reload
 
+# Transmission JSON Configuration (Internal Umask Override)
+# Ensures Transmission respects group permissions defined above
+print "Configuring Transmission internal settings..."
+sudo systemctl stop transmission
+TRANS_CONFIG="/var/lib/transmission/.config/transmission-daemon/settings.json"
+
+if [[ -f "$TRANS_CONFIG" ]]; then
+    # Use python to safely update JSON without breaking syntax
+    sudo python - <<EOF
+import json
+path = "$TRANS_CONFIG"
+with open(path, 'r') as f:
+    data = json.load(f)
+
+if data.get('umask') != 2:
+    data['umask'] = 2
+    with open(path, 'w') as f:
+        json.dump(data, f, indent=4)
+    print("Updated Transmission umask to 2")
+EOF
+    sudo systemctl start transmission
+else
+    print "${YELLOW}Warning: Transmission config not found at $TRANS_CONFIG${NC}"
+fi
+
 # Sunshine User Service
 REAL_SUNSHINE_PATH=$(readlink -f "$(command -v sunshine)")
 sudo setcap cap_sys_admin+p "$REAL_SUNSHINE_PATH"
