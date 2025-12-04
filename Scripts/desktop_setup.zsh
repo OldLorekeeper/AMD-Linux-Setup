@@ -322,18 +322,28 @@ BOOST_SCRIPT="$REPO_ROOT/5-Resources/Sunshine/sunshine-gpu-boost.zsh"
 HDR_SCRIPT="$REPO_ROOT/5-Resources/Sunshine/sunshine_hdr.zsh"
 RES_SCRIPT="$REPO_ROOT/5-Resources/Sunshine/sunshine_res.zsh"
 
-# Detect RX 7900 XT (Navi 31)
-CARD_PATH=$(grep -lE "0x744(c|d)" /sys/class/drm/card*/device/device 2>/dev/null | head -n 1 || true)
+# Detect RX 7900 XT (Navi 31) using the PCI Device ID from the 'device' file
+CARD_PATH=$(grep -lE "0x744(c|d)" /sys/class/drm/card*/device/device 2>/dev/null | head -n 1)
 
 if [[ -n "$CARD_PATH" ]]; then
-    print "Detected RX 7900 XT"
+    print "Detected RX 7900 XT at: ${CARD_PATH:h}"
+
     if [[ -f "$BOOST_SCRIPT" ]]; then
         chmod +x "$BOOST_SCRIPT"
+
+        # Dynamically update the script to match this machine's card path
+        # Uses :h to strip '/device' filename, leaving '.../card1/device'
+        DETECTED_SYSFS="${CARD_PATH:h}/power_dpm_force_performance_level"
+        print "Updating boost script with path: $DETECTED_SYSFS"
+        sed -i 's|^GPU_SYSFS=.*|GPU_SYSFS="'"$DETECTED_SYSFS"'"|' "$BOOST_SCRIPT"
+
         # Sudoers Rule pointing to REPO path
         print "$USER ALL=(ALL) NOPASSWD: $BOOST_SCRIPT" | sudo tee /etc/sudoers.d/90-sunshine-boost > /dev/null
         sudo chmod 440 /etc/sudoers.d/90-sunshine-boost
+
         # Symlink to /usr/local/bin
         sudo ln -sf "$BOOST_SCRIPT" "/usr/local/bin/sunshine-gpu-boost"
+
         print "Configured GPU Boost in repo: $BOOST_SCRIPT"
     else
         print "${YELLOW}Warning: Source script $BOOST_SCRIPT not found.${NC}"
@@ -380,16 +390,10 @@ fi
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
-# 5.5 Ensure Kernel Configs from Core Setup are applied now that new kernel is running
-sudo sysctl --system
-
-# ------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------
-
 # 6. Local Binaries
 print "${GREEN}--- Configuring Local Binaries ---${NC}"
 mkdir -p "$HOME/.local/bin"
-SOURCE_SCRIPT="$REPO_ROOT/5-Resources/Jellyfin/fix-cover-art.zsh"
+SOURCE_SCRIPT="$REPO_ROOT/5-Resources/Local-Scripts/fix-cover-art.zsh"
 TARGET_LINK="$HOME/.local/bin/fix-cover-art"
 
 if [[ -f "$SOURCE_SCRIPT" ]]; then
