@@ -338,9 +338,7 @@ print "${GREEN}--- Configuring Sunshine Performance ---${NC}"
 BOOST_SCRIPT="$REPO_ROOT/Scripts/sunshine_gpu_boost.zsh"
 HDR_SCRIPT="$REPO_ROOT/Scripts/sunshine_hdr.zsh"
 RES_SCRIPT="$REPO_ROOT/Scripts/sunshine_res.zsh"
-
-# Detect RX 7900 XT (Navi 31) using the PCI Device ID from the 'device' file
-CARD_PATH=$(grep -lE "0x744(c|d)" /sys/class/drm/card*/device/device 2>/dev/null | head -n 1)
+CARD_PATH="/sys/class/drm/card1/device/device"
 
 if [[ -n "$CARD_PATH" ]]; then
     print "Detected RX 7900 XT at: ${CARD_PATH:h}"
@@ -355,7 +353,7 @@ if [[ -n "$CARD_PATH" ]]; then
         sed -i 's|^GPU_SYSFS=.*|GPU_SYSFS="'"$DETECTED_SYSFS"'"|' "$BOOST_SCRIPT"
 
         # Sudoers Rule pointing to REPO path
-        print "$USER ALL=(ALL) NOPASSWD: $BOOST_SCRIPT" | sudo tee /etc/sudoers.d/90-sunshine-boost > /dev/null
+        print "$USER ALL=(ALL) NOPASSWD: /usr/local/bin/sunshine_gpu_boost" | sudo tee /etc/sudoers.d/90-sunshine-boost > /dev/null
         sudo chmod 440 /etc/sudoers.d/90-sunshine-boost
 
         # Symlink to /usr/local/bin
