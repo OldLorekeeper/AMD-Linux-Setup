@@ -23,8 +23,15 @@ setopt PIPE_FAIL    # Fail if any part of a pipe fails
 # Load Date Module
 zmodload zsh/datetime
 
-# Construct Sysfs Path (strip /device/device, append power path)
-GPU_SYSFS="/sys/class/drm/card1/device/power_dpm_force_performance_level"
+# Dynamic Detection: Find the card path for the RX 7900 XT (Navi 31)
+# 0x744c = 7900 XT, 0x744d = 7900 XTX (Cover both variants)
+# This finds the 'device' file containing the ID (e.g. .../card1/device/device)
+CARD_PATH=$(grep -lE "0x744(c|d)" /sys/class/drm/card*/device/device 2>/dev/null | head -n 1)
+
+# Construct Sysfs Path:
+# Use :h (head) to get the directory of the ID file (.../card1/device)
+# Then append the power control filename.
+GPU_SYSFS="${CARD_PATH:h}/power_dpm_force_performance_level"
 LOG_FILE="/tmp/sunshine_gpu_boost.log"
 
 # ------------------------------------------------------------------------------
