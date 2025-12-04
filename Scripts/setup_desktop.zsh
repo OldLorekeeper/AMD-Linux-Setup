@@ -84,23 +84,29 @@ fi
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
-# 2. Packages & Services
+# 2. Packages & Services (Preparation)
 print "${GREEN}--- Packages & Services ---${NC}"
 yay -S --needed --noconfirm - < "$REPO_ROOT/Resources/Packages/desktop_pkg.txt"
 
+# Media Group Setup
+# Must run before ANY service starts so GID is inherited
+print "Configuring 'media' group..."
+sudo groupadd -f media
+sudo usermod -aG media "$USER"
+
+# Define Service List (Activation deferred to Sec 4b)
 SERVICES=("sonarr" "radarr" "lidarr" "prowlarr" "jellyfin" "transmission")
-sudo systemctl enable --now $SERVICES
 
-# Service Overrides (Mounts & Permissions)
-for service in $SERVICES; do
-    sudo mkdir -p "/etc/systemd/system/$service.service.d"
-    print "[Unit]\nRequiresMountsFor=/mnt/Media" | sudo tee "/etc/systemd/system/$service.service.d/media-mount.conf" > /dev/null
-    print "[Service]\nUMask=0002" | sudo tee "/etc/systemd/system/$service.service.d/permissions.conf" > /dev/null
+# Add services to group
+for svc in $SERVICES slskd; do
+    id "$svc" &>/dev/null && sudo usermod -aG media "$svc"
 done
-sudo systemctl daemon-reload
 
-# Transmission JSON Configuration (internal umask override)
-# LINKAGE: This logic is replicated in system_maintain.zsh (Section 4A). Changes must
+# Transmission Pre-Configuration (Priming)
+# We must start it once to generate settings.json, but WITHOUT mount dependencies
+print "Priming Transmission configuration..."
+sudo systemctl start transmission
+
 TRANS_CONFIG="/var/lib/transmission/.config/transmission-daemon/settings.json"
 print "Waiting for Transmission to generate config..."
 for i in {1..10}; do
@@ -108,11 +114,11 @@ for i in {1..10}; do
     sleep 2
 done
 
-# 2. Stop service to edit safely
+# Stop to release lock and apply fixes
 sudo systemctl stop transmission
 
-# 3. Edit the file if it exists (using sudo checks)
 if sudo test -f "$TRANS_CONFIG"; then
+    print "Applying Transmission settings..."
     sudo python - <<EOF
 import json
 path = "$TRANS_CONFIG"
@@ -120,23 +126,29 @@ try:
     with open(path, 'r') as f:
         data = json.load(f)
 
+    changed = False
     if data.get('umask') != 2:
         data['umask'] = 2
+        changed = True
+    # Optional: Set download dir to media drive now to avoid later UI work
+    if data.get('download-dir') != "/mnt/Media/Downloads/transmission":
+        data['download-dir'] = "/mnt/Media/Downloads/transmission"
+        changed = True
+
+    if changed:
         with open(path, 'w') as f:
             json.dump(data, f, indent=4)
-        print("Success: Updated Transmission umask to 2")
+        print("Success: Updated Transmission config")
     else:
         print("Config is already correct.")
 except Exception as e:
     print(f"Error editing JSON: {e}")
 EOF
 else
-    print "${YELLOW}Warning: Transmission config still not found at $TRANS_CONFIG${NC}"
+    print "${YELLOW}Warning: Transmission config failed to generate.${NC}"
 fi
 
-sudo systemctl start transmission
-
-# Sunshine User Service
+# Sunshine User Service (Independent of Media Mount)
 REAL_SUNSHINE_PATH=$(readlink -f "$(command -v sunshine)")
 sudo setcap cap_sys_admin+p "$REAL_SUNSHINE_PATH"
 systemctl --user enable --now sunshine
@@ -148,7 +160,7 @@ sudo udevadm control --reload-rules && sudo udevadm trigger
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
-# 3. Custom Tools
+# 3. Custom Tools Configuration
 print "${GREEN}--- Configuring Tools ---${NC}"
 
 # Slskd (Idempotent)
@@ -183,7 +195,7 @@ else
     print "${YELLOW}slskd.yml exists. Skipping overwrite.${NC}"
 fi
 
-# Slskd Service Override
+# Slskd Service Override (File creation only - Activation deferred)
 sudo mkdir -p /etc/systemd/system/slskd.service.d
 sudo tee /etc/systemd/system/slskd.service.d/override.conf > /dev/null << EOF
 [Unit]
@@ -193,8 +205,6 @@ UMask=0002
 ExecStart=
 ExecStart=/usr/lib/slskd/slskd --config /etc/slskd/slskd.yml
 EOF
-sudo systemctl daemon-reload
-sudo systemctl enable --now slskd
 
 # Soularr (Idempotent)
 print "Configuring Soularr..."
@@ -210,7 +220,7 @@ sudo pip install --break-system-packages -r /opt/soularr/requirements.txt
 sudo mkdir -p /opt/soularr/config
 [[ ! -f /opt/soularr/config/config.ini ]] && sudo cp /opt/soularr/config.ini /opt/soularr/config/config.ini
 
-# Soularr Service (OneShot)
+# Soularr Service & Timer (Unit creation only - Activation deferred)
 sudo tee /etc/systemd/system/soularr.service > /dev/null << EOF
 [Unit]
 Description=Soularr (Lidarr <-> Slskd automation)
@@ -232,7 +242,6 @@ ProtectHome=read-only
 ReadWritePaths=/opt/soularr /var/log /mnt/Media/Downloads/slskd/Complete/
 EOF
 
-# Soularr Timer (Every 30m)
 sudo tee /etc/systemd/system/soularr.timer > /dev/null << EOF
 [Unit]
 Description=Run Soularr every 30 minutes
@@ -243,8 +252,6 @@ AccuracySec=1min
 [Install]
 WantedBy=timers.target
 EOF
-sudo systemctl daemon-reload
-sudo systemctl enable --now soularr.timer
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
@@ -298,22 +305,20 @@ else
             sudo systemctl daemon-reload
             if sudo mount /mnt/Media 2>/dev/null; then
                 print "${GREEN}Drive mounted. Applying structure and permissions...${NC}"
-                sudo mkdir -p /mnt/Media/{Films,TV,Music/{Maintained,Manual},Downloads/{lidarr,radarr,slskd,sonarr}}
+
+                # Create Structure (Added 'transmission' to ensure existence for config)
+                sudo mkdir -p /mnt/Media/{Films,TV,Music/{Maintained,Manual},Downloads/{lidarr,radarr,slskd,sonarr,transmission}}
+
                 if ! lsattr -d /mnt/Media/Downloads | grep -q "C"; then
                     sudo chattr +C /mnt/Media/Downloads
                     print "Applied No-CoW (+C) attribute to /mnt/Media/Downloads"
                 fi
-                print "Configuring 'media' group and permissions..."
-                sudo groupadd -f media
-                sudo usermod -aG media "$USER"
-
-                # Add services to media group
-                for svc in sonarr radarr lidarr prowlarr jellyfin transmission slskd; do
-                    id "$svc" &>/dev/null && sudo usermod -aG media "$svc"
-                done
 
                 # Set Ownership (User + Media Group)
+                # 'media' group was created in Section 2, so this applies it to the filesystem
+                print "Applying ownership and permissions..."
                 sudo chown -R "$USER:media" /mnt/Media
+
                 # Directories: 2775 (SetGID = New files inherit 'media' group)
                 sudo find /mnt/Media -type d -exec chmod 2775 {} +
                 # Files: 664 (Group Writeable)
@@ -328,6 +333,31 @@ else
         print "${RED}Skipping Media drive setup as requested.${NC}"
     fi
 fi
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
+# 4b. Service Finalization
+# Now that the drive is mounted, we can safely add mount dependencies and start services.
+print "${GREEN}--- Finalizing Services ---${NC}"
+
+# Apply Overrides to Standard Services
+for service in $SERVICES; do
+    sudo mkdir -p "/etc/systemd/system/$service.service.d"
+    # Write overrides now that mount exists
+    print "[Unit]\nRequiresMountsFor=/mnt/Media" | sudo tee "/etc/systemd/system/$service.service.d/media-mount.conf" > /dev/null
+    print "[Service]\nUMask=0002" | sudo tee "/etc/systemd/system/$service.service.d/permissions.conf" > /dev/null
+done
+
+sudo systemctl daemon-reload
+
+print "Enabling and starting media stack..."
+# Enable Standard Services
+sudo systemctl enable --now $SERVICES
+
+# Enable Custom Tools (Configured in Sec 3)
+sudo systemctl enable --now slskd
+sudo systemctl enable --now soularr.timer
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------

@@ -105,15 +105,14 @@ fi
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
-# 4. Media drive permission checks (Desktop Only)
+# 4. Media Integrity Checks (Desktop Only)
 if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
-    print "${GREEN}--- Media drive permission checks ---${NC}"
+    print "${GREEN}--- Media Integrity Checks ---${NC}"
 
     # A. Transmission Config Check
-    # LINKAGE: This logic is replicated in setup_desktop.zsh (Section 2). Changes must be synced.
     TRANS_CONFIG="/var/lib/transmission/.config/transmission-daemon/settings.json"
     if sudo test -f "$TRANS_CONFIG"; then
-            if ! sudo python3 -c "import json, sys; sys.exit(0 if json.load(open('$TRANS_CONFIG')).get('umask') == 2 else 1)"; then
+        if ! sudo python3 -c "import json, sys; sys.exit(0 if json.load(open('$TRANS_CONFIG')).get('umask') == 2 else 1)"; then
             print "${YELLOW}Detected incorrect Transmission umask. Fixing...${NC}"
             sudo systemctl stop transmission
             sudo python - <<EOF
@@ -133,21 +132,42 @@ EOF
         print "${YELLOW}Transmission config not found (Skipping check).${NC}"
     fi
 
-    # B. Media Drive Permissions (Smart Fix)
-    TARGET="/mnt/Media"
-    if [[ -d "$TARGET" ]]; then
-        print "Verifying Media permissions..."
-        # 1. Fix Group Ownership (if not 'media')
-        if sudo find "$TARGET" -not -group media -print -quit | grep -q .; then
-            print "${YELLOW}Fixing group ownership...${NC}"
-            sudo find "$TARGET" -not -group media -exec chown :media {} +
+    # B. Service Group Membership (Anti-Drift)
+    # Ensures services haven't lost 'media' access due to updates/resets
+    SERVICES=("sonarr" "radarr" "lidarr" "prowlarr" "jellyfin" "transmission" "slskd")
+    print "Verifying service group memberships..."
+
+    for svc in $SERVICES; do
+        if id "$svc" &>/dev/null; then
+            if ! id -nG "$svc" | grep -qw "media"; then
+                print "${YELLOW}Fixing missing 'media' group for $svc...${NC}"
+                sudo usermod -aG media "$svc"
+            fi
         fi
-        # 2. Fix Directory Permissions (if not 2775/SetGID)
+    done
+    print "Service Memberships: ${GREEN}OK${NC}"
+
+    # C. Filesystem Permissions
+    # Enforces group write access and setgid on the drive
+    TARGET="/mnt/Media"
+    if grep -q "$TARGET" /proc/mounts; then
+        print "Verifying Media Drive permissions..."
+
+        # 1. Fix Group Ownership (Recursive)
+        if sudo find "$TARGET" -not -group media -print -quit | grep -q .; then
+            print "${YELLOW}Fixing group ownership on $TARGET...${NC}"
+            sudo chown -R :media "$TARGET"
+        fi
+
+        # 2. Fix Directory Permissions (SetGID + Group Write)
         if sudo find "$TARGET" -type d -not -perm -2775 -print -quit | grep -q .; then
             print "${YELLOW}Fixing directory permissions (SetGID)...${NC}"
             sudo find "$TARGET" -type d -not -perm -2775 -exec chmod 2775 {} +
         fi
-        # 3. Fix File Permissions (if not 664/Group Write)
+
+        # 3. Fix File Permissions (Group Write) in Downloads/Active areas
+        # We focus on Downloads to avoid scanning terabytes of static media unnecessarily,
+        # but you can expand this to "$TARGET" if strict enforcement is required.
         DOWNLOADS="$TARGET/Downloads"
         if [[ -d "$DOWNLOADS" ]]; then
             if sudo find "$DOWNLOADS" -type f -not -perm -0664 -print -quit | grep -q .; then
@@ -155,9 +175,9 @@ EOF
                 sudo find "$DOWNLOADS" -type f -not -perm -0664 -exec chmod 0664 {} +
             fi
         fi
-        print "Media Permissions: ${GREEN}OK${NC}"
+        print "Filesystem Permissions: ${GREEN}OK${NC}"
     else
-        print "${YELLOW}Media drive not mounted. Skipping checks.${NC}"
+        print "${YELLOW}Media drive not mounted. Skipping filesystem checks.${NC}"
     fi
 fi
 
