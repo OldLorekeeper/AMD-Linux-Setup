@@ -99,30 +99,42 @@ for service in $SERVICES; do
 done
 sudo systemctl daemon-reload
 
-# Transmission JSON Configuration (Optimised Idempotency)
+# Transmission JSON Configuration (internal umask override)
 # LINKAGE: This logic is replicated in system_maintain.zsh (Section 4A). Changes must
-print "Configuring Transmission internal settings..."
-sudo systemctl stop transmission
 TRANS_CONFIG="/var/lib/transmission/.config/transmission-daemon/settings.json"
+print "Waiting for Transmission to generate config..."
+for i in {1..10}; do
+    sudo test -f "$TRANS_CONFIG" && break
+    sleep 2
+done
 
-if [[ -f "$TRANS_CONFIG" ]]; then
-    # Use python to safely update JSON without breaking syntax
+# 2. Stop service to edit safely
+sudo systemctl stop transmission
+
+# 3. Edit the file if it exists (using sudo checks)
+if sudo test -f "$TRANS_CONFIG"; then
     sudo python - <<EOF
 import json
 path = "$TRANS_CONFIG"
-with open(path, 'r') as f:
-    data = json.load(f)
+try:
+    with open(path, 'r') as f:
+        data = json.load(f)
 
-if data.get('umask') != 2:
-    data['umask'] = 2
-    with open(path, 'w') as f:
-        json.dump(data, f, indent=4)
-    print("Updated Transmission umask to 2")
+    if data.get('umask') != 2:
+        data['umask'] = 2
+        with open(path, 'w') as f:
+            json.dump(data, f, indent=4)
+        print("Success: Updated Transmission umask to 2")
+    else:
+        print("Config is already correct.")
+except Exception as e:
+    print(f"Error editing JSON: {e}")
 EOF
-    sudo systemctl start transmission
 else
-    print "${YELLOW}Warning: Transmission config not found at $TRANS_CONFIG${NC}"
+    print "${YELLOW}Warning: Transmission config still not found at $TRANS_CONFIG${NC}"
 fi
+
+sudo systemctl start transmission
 
 # Sunshine User Service
 REAL_SUNSHINE_PATH=$(readlink -f "$(command -v sunshine)")

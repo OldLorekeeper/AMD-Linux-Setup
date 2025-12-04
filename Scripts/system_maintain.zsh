@@ -112,7 +112,7 @@ if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
     # A. Transmission Config Check
     # LINKAGE: This logic is replicated in setup_desktop.zsh (Section 2). Changes must be synced.
     TRANS_CONFIG="/var/lib/transmission/.config/transmission-daemon/settings.json"
-    if [[ -f "$TRANS_CONFIG" ]]; then
+    if sudo test -f "$TRANS_CONFIG"; then
         if ! sudo grep -q '"umask": 2' "$TRANS_CONFIG"; then
             print "${YELLOW}Detected incorrect Transmission umask. Fixing...${NC}"
             sudo systemctl stop transmission
@@ -129,6 +129,8 @@ EOF
         else
             print "Transmission Settings: ${GREEN}OK${NC}"
         fi
+    else
+        print "${YELLOW}Transmission config not found (Skipping check).${NC}"
     fi
 
     # B. Media Drive Permissions (Smart Fix)
