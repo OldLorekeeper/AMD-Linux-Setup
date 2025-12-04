@@ -342,7 +342,7 @@ if [[ -n "$CARD_PATH" ]]; then
         sudo chmod 440 /etc/sudoers.d/90-sunshine-boost
 
         # Symlink to /usr/local/bin
-        sudo ln -sf "$BOOST_SCRIPT" "/usr/local/bin/sunshine-gpu-boost"
+        sudo ln -sf "$BOOST_SCRIPT" "/usr/local/bin/sunshine_gpu_boost"
 
         print "Configured GPU Boost in repo: $BOOST_SCRIPT"
     else
@@ -394,12 +394,12 @@ fi
 print "${GREEN}--- Configuring Local Binaries ---${NC}"
 mkdir -p "$HOME/.local/bin"
 SOURCE_SCRIPT="$REPO_ROOT/Scripts/jellyfin_fix_cover_art.zsh"
-TARGET_LINK="$HOME/.local/bin/fix-cover-art"
+TARGET_LINK="$HOME/.local/bin/fix_cover_art"
 
 if [[ -f "$SOURCE_SCRIPT" ]]; then
     ln -sf "$SOURCE_SCRIPT" "$TARGET_LINK"
     chmod +x "$TARGET_LINK"
-    print "Symlinked fix-cover-art to ~/.local/bin."
+    print "Symlinked jellyfin_fix_cover_art to ~/.local/bin."
 else
     print "${YELLOW}Warning: $SOURCE_SCRIPT not found.${NC}"
 fi
