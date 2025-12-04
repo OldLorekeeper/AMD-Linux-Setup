@@ -138,7 +138,7 @@ yay -S --needed --noconfirm - < "$SCRIPT_DIR/core_pkg.txt"
 
 # 6. Services & Configs
 print "${GREEN}--- Applying System Configs ---${NC}"
-sudo systemctl enable --now transmission bluetooth timeshift-hourly.timer lactd btrfs-scrub@-.timer fwupd.service
+sudo systemctl enable --now transmission bluetooth timeshift-hourly.timer btrfs-scrub@-.timer fwupd.service
 
 # Firmware Refresh
 fwupdmgr refresh --force || print "${YELLOW}Warning: Firmware refresh failed.${NC}"
