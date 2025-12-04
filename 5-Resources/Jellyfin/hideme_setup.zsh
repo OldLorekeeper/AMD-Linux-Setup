@@ -61,7 +61,7 @@ SERVICE_PATH="$HOME/.config/systemd/user"
 
 # Generate Python Script
 print "Generating executable Python script at: $TARGET_SCRIPT"
-# Note: Variables like $JF_API are shell-expanded. Python f-strings use single braces {var}.
+# Note: $JF_API/$JF_USER are shell-expanded. Python f-string vars (e.g. \${name}) are escaped.
 tee "$TARGET_SCRIPT" > /dev/null << EOF
 #!/usr/bin/env python3
 import requests
@@ -91,7 +91,7 @@ except StopIteration:
 
 # Find tagged items
 try:
-    resp = requests.get(f"{JELLYFIN_URL}/Users/{user_id}/Items", params={
+    resp = requests.get(f"{JELLYFIN_URL}/Users/\${user_id}/Items", params={
         "Recursive": "true",
         "IncludeItemTypes": "Episode,Movie",
         "Tags": HIDE_TAG
@@ -109,12 +109,12 @@ for item in items:
     runtime = item.get("RunTimeTicks")
 
     if not runtime:
-        print(f"Skipping {name} (no duration info)")
+        print(f"Skipping \${name} (no duration info)")
         continue
 
-    print(f"Marking as played: {name}")
+    print(f"Marking as played: \${name}")
 
-    requests.post(f"{JELLYFIN_URL}/Users/{user_id}/PlayedItems/{item_id}", headers=headers)
+    requests.post(f"{JELLYFIN_URL}/Users/\${user_id}/PlayedItems/\${item_id}", headers=headers)
     requests.post(f"{JELLYFIN_URL}/Sessions/Playing/Stopped", headers=headers, json={
         "ItemId": item_id,
         "PositionTicks": runtime - 1,

@@ -62,8 +62,8 @@ if ! grep -q "numlock" /etc/mkinitcpio.conf; then
 fi
 
 # Services
-# NOTE: Ensure valid services are listed here or remove the line if empty to avoid errors.
-sudo systemctl enable --now
+# NOTE: Add services here (e.g. 'power-profiles-daemon'). Empty command commented out to prevent error.
+# sudo systemctl enable --now
 
 # 2.5 Ensure Kernel Configs from Core Setup are applied now that new kernel is running
 sudo sysctl --system
