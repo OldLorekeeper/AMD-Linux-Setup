@@ -1,7 +1,7 @@
 #!/bin/zsh
 # ------------------------------------------------------------------------------
-# Sunshine HDR & Resolution Switcher
-# Toggles HDR, resolution, and scaling modes using kscreen-doctor.
+# Sunshine Resolution Switcher (No HDR)
+# Toggles resolution and scaling modes using kscreen-doctor (SDR only).
 # ------------------------------------------------------------------------------
 #
 # DEVELOPMENT RULES (Read before editing):
@@ -22,7 +22,7 @@ setopt PIPE_FAIL    # Fail if any part of a pipe fails
 
 # Configuration (Targeted by configure_sunshine.zsh - Do NOT change variable names)
 MONITOR="DP-2"
-STREAM_MODE="8"
+STREAM_MODE="6"
 DEFAULT_MODE="1"
 
 # ------------------------------------------------------------------------------
@@ -30,12 +30,12 @@ DEFAULT_MODE="1"
 
 case "$1" in
     enable)
-        # Set Stream Mode, Enable HDR and Scale to 120%
-        kscreen-doctor output.$MONITOR.mode.$STREAM_MODE output.$MONITOR.hdr.enable output.$MONITOR.scale.1.2
+        # Set Stream Mode and Scale (Adjust scale if needed, e.g., 1.0 or 1.2)
+        kscreen-doctor output.$MONITOR.mode.$STREAM_MODE output.$MONITOR.scale.1.2
         ;;
     disable)
-        # Disable HDR, Revert Mode and Scale to 100%
-        kscreen-doctor output.$MONITOR.hdr.disable output.$MONITOR.mode.$DEFAULT_MODE output.$MONITOR.scale.1.0
+        # Revert Mode and Scale
+        kscreen-doctor output.$MONITOR.mode.$DEFAULT_MODE output.$MONITOR.scale.1.0
         ;;
     *)
         exit 1

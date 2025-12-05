@@ -22,7 +22,7 @@ setopt PIPE_FAIL    # Fail if any part of a pipe fails
 
 # Configuration (Targeted by configure_sunshine.zsh - Do NOT change variable names)
 MONITOR="DP-2"
-STREAM_MODE="7"
+STREAM_MODE="8"
 DEFAULT_MODE="1"
 
 # ------------------------------------------------------------------------------
