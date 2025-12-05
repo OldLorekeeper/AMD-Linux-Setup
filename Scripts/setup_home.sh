@@ -86,7 +86,7 @@ else
 
     # Mount and set permissions
     sudo systemctl daemon-reload
-    sudo mount "$MOUNT_POINT" 2>/dev/null || true
+    mountpoint -q "$MOUNT_POINT" || sudo mount "$MOUNT_POINT"
     sudo chown -R "$USER:$(id -gn "$USER")" "$MOUNT_POINT"
 
     # OPTIMISATION: Disable CoW for Games to prevent fragmentation/stuttering
