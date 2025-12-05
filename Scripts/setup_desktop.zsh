@@ -102,17 +102,27 @@ for svc in $SERVICES slskd; do
     id "$svc" &>/dev/null && sudo usermod -aG media "$svc"
 done
 
-# Transmission Service Override
-print "Configuring Transmission Service Override..."
-sudo mkdir -p /etc/systemd/system/transmission.service.d
+# Transmission permission fix
+print "Configuring Transmission Permissions..."
 
-cat <<EOF | sudo tee /etc/systemd/system/transmission.service.d/override.conf > /dev/null
-[Service]
-ExecStart=
-ExecStart=/usr/bin/transmission-daemon -f --log-error --umask 2
-EOF
+# 1. Stop service to release lock on settings.json
+sudo systemctl stop transmission-daemon
 
+# 2. Programmatically update umask in settings.json
+# Usage: Reads file, sets 'umask' to integer 2, saves file.
+sudo python -c "
+import json
+from pathlib import Path
+path = Path('/var/lib/transmission/.config/transmission-daemon/settings.json')
+if path.exists():
+    data = json.loads(path.read_text())
+    data['umask'] = 2
+    path.write_text(json.dumps(data, indent=4))
+"
+
+# 4. Apply changes
 sudo systemctl daemon-reload
+sudo systemctl start transmission-daemon
 
 # Sunshine User Service (Independent of Media Mount)
 REAL_SUNSHINE_PATH=$(readlink -f "$(command -v sunshine)")
