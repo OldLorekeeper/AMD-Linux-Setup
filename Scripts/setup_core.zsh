@@ -203,7 +203,7 @@ print "net.core.default_qdisc = cake\nnet.ipv4.tcp_congestion_control = bbr" | s
 
 # Mkinitcpio
 sudo sed -i 's|^MODULES=.*|MODULES=(amdgpu nvme)|' /etc/mkinitcpio.conf
-sudo sed -i 's/^#COMPRESSION="lz4"/COMPRESSION="lz4"/' /etc/mkinitcpio.conf
+sudo sed -i 's/^#COMPRESSION="zstd"/COMPRESSION="lz4"/' /etc/mkinitcpio.conf
 sudo sed -i 's|^HOOKS=.*|HOOKS=(base udev autodetect modconf kms keyboard keymap consolefont block btrfs filesystems)|' /etc/mkinitcpio.conf
 sudo mkinitcpio -P
 
@@ -247,7 +247,7 @@ EOF
 
 # 8. UI & Visuals
 print "${GREEN}--- Configuring UI & Visuals ---${NC}"
-papirus-folders -C breeze --theme Papirus-Dark
+sudo papirus-folders -C breeze --theme Papirus-Dark
 
 # Gemini Plasmoid (Idempotent)
 GEMINI_DIR="$HOME/.local/share/plasma/plasmoids/com.samirgaire10.google_gemini-plasma6"
