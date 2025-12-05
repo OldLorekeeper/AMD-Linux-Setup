@@ -69,6 +69,15 @@ fi
 # 2.5 Ensure Kernel Configs from Core Setup are applied now that new kernel is running
 sudo sysctl --system
 
+# WiFi Power Save (Dispatcher Method)
+# Replicates the logic from setup_desktop.zsh
+sudo tee /etc/NetworkManager/dispatcher.d/disable-wifi-powersave > /dev/null << 'EOF'
+#!/bin/sh
+[[ "$1" == wl* ]] && [[ "$2" == "up" ]] && /usr/bin/iw dev "$1" set power_save off
+EOF
+sudo chmod +x /etc/NetworkManager/dispatcher.d/disable-wifi-powersave
+nmcli radio wifi off && sleep 2 && nmcli radio wifi on
+
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
