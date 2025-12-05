@@ -251,6 +251,7 @@ sudo tee /etc/NetworkManager/dispatcher.d/disable-wifi-powersave > /dev/null << 
 [[ "$1" == wl* ]] && [[ "$2" == "up" ]] && /usr/bin/iw dev "$1" set power_save off
 EOF
 sudo chmod +x /etc/NetworkManager/dispatcher.d/disable-wifi-powersave
+nmcli radio wifi off && sleep 2 && nmcli radio wifi on
 
 # Kernel Params
 NEW_CMDLINE='GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=3440x1440@60 amd_pstate=active"'
