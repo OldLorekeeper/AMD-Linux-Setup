@@ -102,6 +102,10 @@ for svc in $SERVICES slskd; do
     id "$svc" &>/dev/null && sudo usermod -aG media "$svc"
 done
 
+# Jellyfin Hardware Access (VA-API/Transcoding)
+print "Configuring Jellyfin Hardware Access..."
+id "jellyfin" &>/dev/null && sudo usermod -aG render,video jellyfin
+
 # Transmission permission fix
 print "Configuring Transmission Permissions..."
 
