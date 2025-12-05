@@ -32,6 +32,7 @@ NC="${reset_color}"
 SCRIPT_DIR=${0:a:h}
 HDR_SCRIPT="$SCRIPT_DIR/sunshine_hdr.zsh"
 RES_SCRIPT="$SCRIPT_DIR/sunshine_res.zsh"
+LAPTOP_SCRIPT="$SCRIPT_DIR/sunshine_laptop.zsh"
 
 print "${GREEN}--- Sunshine Configuration Helper ---${NC}"
 
@@ -44,7 +45,7 @@ if ! (( $+commands[kscreen-doctor] )); then
     exit 1
 fi
 
-if [[ ! -f "$HDR_SCRIPT" || ! -f "$RES_SCRIPT" ]]; then
+if [[ ! -f "$HDR_SCRIPT" || ! -f "$RES_SCRIPT" || ! -f "$LAPTOP_SCRIPT" ]]; then
     print "${RED}Error: Target Sunshine scripts not found in $SCRIPT_DIR${NC}"
     exit 1
 fi
@@ -68,14 +69,14 @@ read "DEFAULT_IDX?3. Default Desktop Mode Index (e.g. 1): "
 # 3. Apply Configuration
 if [[ -n "$MON_ID" && -n "$STREAM_IDX" && -n "$DEFAULT_IDX" ]]; then
     print "\n${GREEN}Applying settings...${NC}"
-    for file in "$HDR_SCRIPT" "$RES_SCRIPT"; do
+    for file in "$HDR_SCRIPT" "$RES_SCRIPT" "$LAPTOP_SCRIPT"; do
         sed -i 's/^MONITOR=.*/MONITOR="'"$MON_ID"'"/' "$file"
         sed -i 's/^STREAM_MODE=.*/STREAM_MODE="'"$STREAM_IDX"'"/' "$file"
         sed -i 's/^DEFAULT_MODE=.*/DEFAULT_MODE="'"$DEFAULT_IDX"'"/' "$file"
         print "Updated: ${file:t}"
     done
     print "${GREEN}Configuration complete.${NC}"
-    print "Note: You must re-run 'desktop_setup.zsh' or manually copy these scripts to /usr/local/bin/ for changes to take effect system-wide."
+    print "Note: You must re-run 'setup_desktop.zsh' or manually copy these scripts to /usr/local/bin/ for changes to take effect system-wide."
 else
     print "${RED}Error: Invalid input. All fields are required.${NC}"
     exit 1

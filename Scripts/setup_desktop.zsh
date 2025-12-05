@@ -253,14 +253,77 @@ EOF
 sudo chmod +x /etc/NetworkManager/dispatcher.d/disable-wifi-powersave
 nmcli radio wifi off && sleep 2 && nmcli radio wifi on
 
-# Kernel Params
-NEW_CMDLINE='GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=3440x1440@60 amd_pstate=active"'
-sudo sed -i 's|^GRUB_CMDLINE_LINUX_DEFAULT=.*|'"$NEW_CMDLINE"'|' /etc/default/grub
-sudo grub-mkconfig -o /boot/grub/grub.cfg
-
 # Kyber I/O
 print 'ACTION=="add|change", KERNEL=="nvme[0-9]n[0-9]", ATTR{queue/scheduler}="kyber"' | sudo tee /etc/udev/rules.d/60-iosched.rules > /dev/null
 sudo udevadm control --reload-rules && sudo udevadm trigger
+
+# Kernel and EDID configuration
+
+print "${YELLOW}--- Kernel & Monitor Configuration ---${NC}"
+BASE_CMDLINE="loglevel=3 quiet amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=3440x1440@60 amd_pstate=active"
+FINAL_CMDLINE="$BASE_CMDLINE"
+
+# Interactive EDID Setup
+print "Hardware Detection:"
+print "1. Monitor: iiyama G-Master GB3461WQSU-B1 (3440 x 1440)"
+print "2. Client:  Slimbook EXCALIBUR-16 (2560 x 1600)"
+read "INSTALL_EDID?Enable custom EDID for Moonlight streaming to Slimbook? [y/N]: "
+
+if [[ "$INSTALL_EDID" =~ ^[Yy]$ ]]; then
+    EDID_SRC="$REPO_ROOT/Resources/Sunshine/custom_2560x1600.bin"
+    EDID_DEST="/usr/lib/firmware/edid/custom_2560x1600.bin"
+
+    if [[ -f "$EDID_SRC" ]]; then
+        print "${GREEN}Installing custom EDID firmware...${NC}"
+        sudo mkdir -p "${EDID_DEST:h}"
+        sudo cp "$EDID_SRC" "$EDID_DEST"
+
+        # Add to Initramfs (mkinitcpio)
+        if ! grep -q "custom_2560x1600.bin" /etc/mkinitcpio.conf; then
+            print "Adding EDID to initramfs configuration..."
+            sudo sed -i 's|^FILES=(|FILES=(/usr/lib/firmware/edid/custom_2560x1600.bin |' /etc/mkinitcpio.conf
+            print "Rebuilding initramfs..."
+            sudo mkinitcpio -P
+        fi
+
+        # Detect Active Monitor for GRUB
+        # Scans connected ports and strips 'cardX-' prefix
+        CONNECTED_PORTS=($(find /sys/class/drm/*/status -maxdepth 1 -exec grep -l "^connected$" {} + | xargs -n 1 dirname | xargs -n 1 basename | sed -E 's/^card[0-9]+-//'))
+
+        TARGET_PORT=""
+        if [[ ${#CONNECTED_PORTS[@]} -eq 1 ]]; then
+            TARGET_PORT="${CONNECTED_PORTS[1]}"
+            print "Detected single monitor: ${GREEN}$TARGET_PORT${NC}"
+        elif [[ ${#CONNECTED_PORTS[@]} -gt 1 ]]; then
+            print "${YELLOW}Multiple monitors detected:${NC}"
+            select opt in "${CONNECTED_PORTS[@]}"; do
+                [[ -n "$opt" ]] && TARGET_PORT="$opt" && break
+                print "${RED}Invalid selection.${NC}"
+            done
+        else
+            print "${RED}No monitors detected automatically.${NC}"
+            read "TARGET_PORT?Enter monitor identifier manually (e.g., DP-2): "
+        fi
+
+        if [[ -n "$TARGET_PORT" ]]; then
+            print "Applying EDID override to port: ${GREEN}$TARGET_PORT${NC}"
+            # Append EDID parameter to command line
+            FINAL_CMDLINE="$BASE_CMDLINE drm.edid_firmware=${TARGET_PORT}:edid/custom_2560x1600.bin"
+        else
+            print "${RED}Error: No port selected. Skipping EDID parameter.${NC}"
+        fi
+    else
+        print "${YELLOW}Warning: EDID file not found at $EDID_SRC${NC}"
+    fi
+else
+    print "Skipping custom EDID installation."
+fi
+
+# Apply GRUB Configuration
+print "Updating GRUB with parameters:"
+print "${YELLOW}$FINAL_CMDLINE${NC}"
+sudo sed -i 's|^GRUB_CMDLINE_LINUX_DEFAULT=.*|GRUB_CMDLINE_LINUX_DEFAULT="'"$FINAL_CMDLINE"'"|' /etc/default/grub
+sudo grub-mkconfig -o /boot/grub/grub.cfg
 
 ## Media drive setup
 print "${YELLOW}--- Media Drive Setup ---${NC}"
@@ -344,6 +407,7 @@ print "${GREEN}--- Configuring Sunshine Performance ---${NC}"
 BOOST_SCRIPT="$REPO_ROOT/Scripts/sunshine_gpu_boost.zsh"
 HDR_SCRIPT="$REPO_ROOT/Scripts/sunshine_hdr.zsh"
 RES_SCRIPT="$REPO_ROOT/Scripts/sunshine_res.zsh"
+LAPTOP_SCRIPT="$REPO_ROOT/Scripts/sunshine_laptop.zsh"
 CARD_PATH="/sys/class/drm/card1/device/device"
 
 if [[ -n "$CARD_PATH" ]]; then
@@ -373,11 +437,11 @@ else
     print "${YELLOW}Warning: RX 7900 XT not found. Skipping GPU Boost setup.${NC}"
 fi
 
-# Install HDR/Resolution Scripts
-for script in "$HDR_SCRIPT" "$RES_SCRIPT"; do
+# Install HDR/Resolution/Laptop Scripts
+for script in "$HDR_SCRIPT" "$RES_SCRIPT" "$LAPTOP_SCRIPT"; do
     if [[ -f "$script" ]]; then
         chmod +x "$script"
-        # Symlink to /usr/local/bin without extension (e.g., sunshine_hdr)
+        # Symlink to /usr/local/bin without extension
         sudo ln -sf "$script" "/usr/local/bin/${${script:t}:r}"
         print "Symlinked ${${script:t}:r} to /usr/local/bin"
     fi
@@ -396,7 +460,7 @@ if (( $+commands[kscreen-doctor] )); then
         read "DEFAULT_IDX?Enter Default Mode Index (e.g. 1): "
 
         if [[ -n "$MON_ID" && -n "$STREAM_IDX" && -n "$DEFAULT_IDX" ]]; then
-            for file in "$HDR_SCRIPT" "$RES_SCRIPT"; do
+            for file in "$HDR_SCRIPT" "$RES_SCRIPT" "$LAPTOP_SCRIPT"; do
                 sed -i 's/^MONITOR=.*/MONITOR="'"$MON_ID"'"/' "$file"
                 sed -i 's/^STREAM_MODE=.*/STREAM_MODE="'"$STREAM_IDX"'"/' "$file"
                 sed -i 's/^DEFAULT_MODE=.*/DEFAULT_MODE="'"$DEFAULT_IDX"'"/' "$file"
