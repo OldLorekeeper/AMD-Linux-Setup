@@ -94,6 +94,17 @@ print "Configuring 'media' group..."
 sudo groupadd -f media
 sudo usermod -aG media "$USER"
 
+# Jellyfin Btrfs Optimization (Must run BEFORE service start)
+# Forces No-CoW on data directory to prevent database fragmentation/corruption
+print "Optimising Jellyfin for Btrfs..."
+sudo mkdir -p /var/lib/jellyfin
+if ! lsattr -d /var/lib/jellyfin | grep -q "C"; then
+    sudo chattr +C /var/lib/jellyfin
+    print "Applied No-CoW (+C) attribute to /var/lib/jellyfin"
+fi
+# Ensure correct ownership now that package is installed
+sudo chown -R jellyfin:jellyfin /var/lib/jellyfin
+
 # Define Service List (Activation deferred to Sec 4b)
 SERVICES=("sonarr" "radarr" "lidarr" "prowlarr" "jellyfin" "transmission")
 
@@ -105,6 +116,11 @@ done
 # Jellyfin Hardware Access (VA-API/Transcoding)
 print "Configuring Jellyfin Hardware Access..."
 id "jellyfin" &>/dev/null && sudo usermod -aG render,video jellyfin
+
+# Jellyfin Transcoding (RAM Disk)
+# Creates /dev/shm/jellyfin on boot for high-speed temporary transcoding
+print "Configuring Jellyfin Transcoding (RAM Disk)..."
+print "d /dev/shm/jellyfin 0755 jellyfin jellyfin -" | sudo tee /etc/tmpfiles.d/jellyfin-transcode.conf > /dev/null
 
 # Transmission permission fix
 print "Configuring Transmission Permissions..."
@@ -385,7 +401,11 @@ for service in $SERVICES; do
     sudo mkdir -p "/etc/systemd/system/$service.service.d"
     # Write overrides now that mount exists
     print "[Unit]\nRequiresMountsFor=/mnt/Media" | sudo tee "/etc/systemd/system/$service.service.d/media-mount.conf" > /dev/null
-    print "[Service]\nUMask=0002" | sudo tee "/etc/systemd/system/$service.service.d/permissions.conf" > /dev/null
+
+    # Apply UMask override to all EXCEPT Jellyfin (which uses defaults)
+    if [[ "$service" != "jellyfin" ]]; then
+        print "[Service]\nUMask=0002" | sudo tee "/etc/systemd/system/$service.service.d/permissions.conf" > /dev/null
+    fi
 done
 
 sudo systemctl daemon-reload
