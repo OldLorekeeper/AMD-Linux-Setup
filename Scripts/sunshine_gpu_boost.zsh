@@ -1,36 +1,41 @@
 #!/bin/zsh
 # ------------------------------------------------------------------------------
-# Sunshine GPU Boost (AMD Power DPM)
+# 4. Utility. Sunshine GPU Boost
 # Forces AMD RX 7900 XT into high performance mode during Sunshine streaming.
 # ------------------------------------------------------------------------------
 #
 # DEVELOPMENT RULES (Read before editing):
 # 1. Formatting: Keep layout compact. No vertical whitespace inside blocks.
-# 2. Separators: Use double dotted lines (# ------) for major sections.
+# 2. Separators: Use 'Sandwich' headers (# ------) with strict spacing (1 line before, 0 lines after).
 # 3. Idempotency: Scripts must be safe to re-run. Check state before changes.
 # 4. Safety: Use 'setopt ERR_EXIT NO_UNSET PIPE_FAIL'.
 # 5. Context: Hardcoded for AMD Ryzen 7000/Radeon 7000. No hardcoded secrets.
 # 6. Syntax: Use Zsh native modifiers (e.g. ${VAR:h}) over subshells.
 # 7. Output: Use 'print'. Do NOT use 'echo'.
+# 8. Documentation: Precede sections with 'Purpose'/'Rationale'. No meta-comments inside code blocks.
 #
 # ------------------------------------------------------------------------------
 
-# Safety Options
-setopt ERR_EXIT     # Exit on error
-setopt NO_UNSET     # Error on unset variables
-setopt PIPE_FAIL    # Fail if any part of a pipe fails
+setopt ERR_EXIT NO_UNSET PIPE_FAIL
 
-# Load Date Module
 zmodload zsh/datetime
 
-# Configuration (Hardcoded for verified working path)
+# ------------------------------------------------------------------------------
+# 1. Configuration
+# ------------------------------------------------------------------------------
+
+# Purpose: Define sysfs path for GPU power control.
+# - Path: Hardcoded to 'card1' because dynamic enumeration proved unreliable on this specific hardware config.
+
 GPU_SYSFS="/sys/class/drm/card1/device/power_dpm_force_performance_level"
 LOG_FILE="/tmp/sunshine_gpu_boost.log"
 
 # ------------------------------------------------------------------------------
+# 2. Logic
 # ------------------------------------------------------------------------------
 
-# Logic
+# Purpose: Toggle GPU performance level based on argument.
+
 strftime -s DATE_STR '%Y-%m-%d %H:%M:%S' $EPOCHSECONDS
 
 case "$1" in
@@ -42,7 +47,8 @@ case "$1" in
         print "auto" > "$GPU_SYSFS"
         print "[$DATE_STR] GPU set to AUTO performance ($GPU_SYSFS)" >> "$LOG_FILE"
         ;;
-    *)
-        exit 1
-        ;;
 esac
+
+# ------------------------------------------------------------------------------
+# End
+# ------------------------------------------------------------------------------

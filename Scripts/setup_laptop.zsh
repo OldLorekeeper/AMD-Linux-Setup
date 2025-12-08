@@ -15,19 +15,8 @@
 #
 # ------------------------------------------------------------------------------
 
-# Safety Options
-setopt ERR_EXIT     # Exit on error
-setopt NO_UNSET     # Error on unset variables
-setopt PIPE_FAIL    # Fail if any part of a pipe fails
+setopt ERR_EXIT NO_UNSET PIPE_FAIL
 
-# Load Colours
-autoload -Uz colors && colors
-GREEN="${fg[green]}"
-YELLOW="${fg[yellow]}"
-RED="${fg[red]}"
-NC="${reset_color}"
-
-# Sudo Keep-Alive
 sudo -v
 ( while true; do sudo -v; sleep 60; done; ) &
 SUDO_PID=$!
@@ -36,41 +25,39 @@ trap 'kill $SUDO_PID' EXIT
 SCRIPT_DIR=${0:a:h}
 REPO_ROOT=${SCRIPT_DIR:h}
 
-print "${GREEN}--- Starting Laptop Setup ---${NC}"
+print -P "%F{green}--- Starting Laptop Setup ---%f"
 
 # ------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------
-
 # 1. Packages
-print "${GREEN}--- Installing Packages ---${NC}"
+# ------------------------------------------------------------------------------
+
+# Purpose: Install laptop-specific packages from laptop_pkg.txt
+
+print -P "%F{green}--- Installing Packages ---%f"
 yay -S --needed --noconfirm - < "$REPO_ROOT/Resources/Packages/laptop_pkg.txt"
 
 # ------------------------------------------------------------------------------
+# 2. Kernel & Hardware
 # ------------------------------------------------------------------------------
 
-# 2. Kernel & Hardware
-print "${GREEN}--- Configuring Hardware ---${NC}"
+# Purpose: Optimize for battery life and integrated display.
+# - GRUB: Sets resolution to 2560x1600 (16:10) and enables power-saving features.
+# - Initramfs: Injects 'numlock' hook (specific to this laptop's keyboard).
+# - WiFi: Disables power save to prevent connection drops on this chipset.
 
-# Kernel Params
+print -P "%F{green}--- Configuring Hardware ---%f"
+
 NEW_CMDLINE='GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=2560x1600@60 amd_pstate=active"'
 sudo sed -i 's|^GRUB_CMDLINE_LINUX_DEFAULT=.*|'"$NEW_CMDLINE"'|' /etc/default/grub
 sudo grub-mkconfig -o /boot/grub/grub.cfg
 
-# Numlock Hook
 if ! grep -q "numlock" /etc/mkinitcpio.conf; then
     sudo sed -i 's/HOOKS=(\(.*\))/HOOKS=(\1 numlock)/' /etc/mkinitcpio.conf
     sudo mkinitcpio -P
 fi
 
-# Services
-# NOTE: Add services here (e.g. 'power-profiles-daemon'). Empty command commented out to prevent error.
-# sudo systemctl enable --now
-
-# 2.5 Ensure Kernel Configs from Core Setup are applied now that new kernel is running
 sudo sysctl --system
 
-# WiFi Power Save (Dispatcher Method)
-# Replicates the logic from setup_desktop.zsh
 sudo tee /etc/NetworkManager/dispatcher.d/disable-wifi-powersave > /dev/null << 'EOF'
 #!/bin/sh
 [[ "$1" == wl* ]] && [[ "$2" == "up" ]] && /usr/bin/iw dev "$1" set power_save off
@@ -79,40 +66,42 @@ sudo chmod +x /etc/NetworkManager/dispatcher.d/disable-wifi-powersave
 nmcli radio wifi off && sleep 2 && nmcli radio wifi on
 
 # ------------------------------------------------------------------------------
+# 3. KDE Integration
 # ------------------------------------------------------------------------------
 
-# 3. KDE Integration
-print "${GREEN}--- KDE Rules ---${NC}"
+# Purpose: Apply laptop-specific window rules.
+# - Rules: Executes kwin_apply_rules.zsh with 'laptop' profile.
+
+print -P "%F{green}--- KDE Rules ---%f"
 [[ -f "$SCRIPT_DIR/kwin_apply_rules.zsh" ]] && chmod +x "$SCRIPT_DIR/kwin_apply_rules.zsh" && "$SCRIPT_DIR/kwin_apply_rules.zsh" laptop
 
 # ------------------------------------------------------------------------------
+# 4. Theming (Konsave)
 # ------------------------------------------------------------------------------
 
-# 4. Theming (Konsave)
-print "${GREEN}--- Applying Visual Profile ---${NC}"
-KONSAVE_DIR="$REPO_ROOT/Resources/Konsave"
+# Purpose: Apply the visual laptop profile.
+# - Konsave: Imports and applies the 'Laptop Dock' profile.
 
-# Find profile: Match "Laptop Dock*.knsv"
-# LINKAGE: Matches naming convention defined in system_maintain.zsh (Section 5).
+print -P "%F{green}--- Applying Visual Profile ---%f"
+KONSAVE_DIR="$REPO_ROOT/Resources/Konsave"
 PROFILE_FILE=( "$KONSAVE_DIR"/Laptop\ Dock*.knsv(.On[1]) )
 
 if [[ -n "$PROFILE_FILE" && -f "$PROFILE_FILE" ]]; then
     PROFILE_NAME="${${PROFILE_FILE:t}:r}"
     print "Found profile: $PROFILE_NAME"
-    # Remove existing profile to force update
     konsave -r "$PROFILE_NAME" 2>/dev/null || true
-    # Import and Apply (suppress deprecation warnings)
     if konsave -i "$PROFILE_FILE" >/dev/null 2>&1; then
         konsave -a "$PROFILE_NAME" >/dev/null 2>&1
         print "Successfully applied profile: $PROFILE_NAME"
     else
-        print "${RED}Error: Failed to import profile.${NC}"
+        print -P "%F{red}Error: Failed to import profile.%f"
     fi
 else
-    print "${YELLOW}Warning: No 'Laptop Dock' profile found in $KONSAVE_DIR${NC}"
+    print -P "%F{yellow}Warning: No 'Laptop Dock' profile found in $KONSAVE_DIR%f"
 fi
 
 # ------------------------------------------------------------------------------
+# End - Reboot
 # ------------------------------------------------------------------------------
 
-print "${GREEN}--- Laptop Setup Complete. Reboot Required. ---${NC}"
+print -P "%F{green}--- Laptop Setup Complete. Reboot Required. ---%f"

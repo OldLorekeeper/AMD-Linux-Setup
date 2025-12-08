@@ -6,62 +6,59 @@
 #
 # DEVELOPMENT RULES (Read before editing):
 # 1. Formatting: Keep layout compact. No vertical whitespace inside blocks.
-# 2. Separators: Use double dotted lines (# ------) for major sections.
+# 2. Separators: Use 'Sandwich' headers (# ------) with strict spacing (1 line before, 0 lines after).
 # 3. Idempotency: Scripts must be safe to re-run. Check state before changes.
 # 4. Safety: Use 'setopt ERR_EXIT NO_UNSET PIPE_FAIL'.
 # 5. Context: Hardcoded for AMD Ryzen 7000/Radeon 7000. No hardcoded secrets.
 # 6. Syntax: Use Zsh native modifiers (e.g. ${VAR:h}) over subshells.
 # 7. Output: Use 'print'. Do NOT use 'echo'.
+# 8. Documentation: Precede sections with 'Purpose'/'Rationale'. No meta-comments inside code blocks.
 #
 # ------------------------------------------------------------------------------
 
-# Safety Options
-setopt ERR_EXIT     # Exit on error
-setopt NO_UNSET     # Error on unset variables
-setopt PIPE_FAIL    # Fail if any part of a pipe fails
+setopt ERR_EXIT NO_UNSET PIPE_FAIL
 
-# Load Colours
-autoload -Uz colors && colors
-GREEN="${fg[green]}"
-YELLOW="${fg[yellow]}"
-RED="${fg[red]}"
-NC="${reset_color}"
-
-# Sudo Keep-Alive
 sudo -v
 ( while true; do sudo -v; sleep 60; done; ) &
 SUDO_PID=$!
 trap 'kill $SUDO_PID' EXIT
 
-# Path Resolution
 SCRIPT_DIR=${0:a:h}
 REPO_ROOT=${SCRIPT_DIR:h}
 
-print "${GREEN}--- Starting Core Setup ---${NC}"
+print -P "%F{green}--- Starting Core Setup ---%f"
 
 # ------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------
-
 # 1. Device Selection
-print "${YELLOW}Select Device Type:${NC}"
+# ------------------------------------------------------------------------------
+
+# Purpose: Identify hardware form factor to determine subsequent setup logic.
+# - Logic: Prompts user to select Desktop or Laptop.
+# - Outcome: Sets DEVICE_SCRIPT path for the next stage.
+
+print -P "%F{yellow}Select Device Type:%f"
 print "1) Desktop"
 print "2) Laptop"
 read "device_choice?Choice [1-2]: "
 
 case $device_choice in
-    1) DEVICE_SCRIPT="$SCRIPT_DIR/setup_desktop.zsh"; DEVICE_NAME="Desktop" ;; # UPDATED
-    2) DEVICE_SCRIPT="$SCRIPT_DIR/setup_laptop.zsh"; DEVICE_NAME="Laptop" ;;   # UPDATED
-    *) print "${RED}Invalid selection. Core only.${NC}"; DEVICE_SCRIPT="" ;;
+    1) DEVICE_SCRIPT="$SCRIPT_DIR/setup_desktop.zsh"; DEVICE_NAME="Desktop" ;;
+    2) DEVICE_SCRIPT="$SCRIPT_DIR/setup_laptop.zsh"; DEVICE_NAME="Laptop" ;;
+    *) print -P "%F{red}Invalid selection. Core only.%f"; DEVICE_SCRIPT="" ;;
 esac
 
 # ------------------------------------------------------------------------------
+# 2. Build Environment
 # ------------------------------------------------------------------------------
 
-# 2. Build Environment
-print "${GREEN}--- Optimising Build Settings ---${NC}"
-# Use Zsh to check if yay is in path without 'command -v'
+# Purpose: Optimize compilation settings for Ryzen 7000 series.
+# - Tooling: Installs yay (AUR helper) if missing.
+# - Makepkg: Configures parallel builds (-j$(nproc)), native architecture, and tmpfs usage.
+# - Rust: Injects target-cpu=native flags.
+
+print -P "%F{green}--- Optimising Build Settings ---%f"
 if (( $+commands[yay] )); then
-    print "${YELLOW}yay already installed.${NC}"
+    print -P "%F{yellow}yay already installed.%f"
 else
     sudo pacman -S --needed --noconfirm git base-devel
     rm -rf "$HOME/Make/yay"
@@ -74,23 +71,30 @@ sudo sed -i "s/^#*MAKEFLAGS=.*/MAKEFLAGS=\"-j$(nproc)\"/" /etc/makepkg.conf
 if [[ "$(findmnt -n -o FSTYPE /tmp)" == "tmpfs" ]]; then
     sudo sed -i 's/^#*\(BUILDDIR=\/tmp\/makepkg\)/\1/' /etc/makepkg.conf
 fi
-# Optimize Rust builds for Zen 4 / Native Arch
 if ! grep -q "RUSTFLAGS" /etc/makepkg.conf; then
     print 'RUSTFLAGS="-C target-cpu=native"' | sudo tee -a /etc/makepkg.conf > /dev/null
 fi
 
 # ------------------------------------------------------------------------------
+# 3. Mirrors
 # ------------------------------------------------------------------------------
 
-# 3. Mirrors
-print "${GREEN}--- Updating Mirrors ---${NC}"
+# Purpose: Optimize package download speeds.
+# - Action: Uses reflector to find fastest HTTPS mirrors.
+# - Regions: GB, IE, NL, DE, FR, EU.
+
+print -P "%F{green}--- Updating Mirrors ---%f"
 sudo reflector --country GB,IE,NL,DE,FR,EU --age 6 --protocol https --sort rate --fastest 10 --save /etc/pacman.d/mirrorlist
 
 # ------------------------------------------------------------------------------
+# 5. Kernel & Packages
 # ------------------------------------------------------------------------------
 
-# 4. CachyOS Repositories
-print "${GREEN}--- Configuring CachyOS (Zen 4) ---${NC}"
+# Purpose: Replace stock kernel with CachyOS and install baseline software.
+# - Kernel: Swaps linux for linux-cachyos (SCHED_EXT, etc.).
+# - Packages: Installs essential tools defined in core_pkg.txt.
+
+print -P "%F{green}--- Configuring CachyOS (Zen 4) ---%f"
 sudo pacman-key --recv-keys F3B607488DB35A47 --keyserver keyserver.ubuntu.com
 sudo pacman-key --lsign-key F3B607488DB35A47
 sudo pacman -U --noconfirm \
@@ -98,12 +102,10 @@ sudo pacman -U --noconfirm \
 'https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-mirrorlist-22-1-any.pkg.tar.zst' \
 'https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-v4-mirrorlist-22-1-any.pkg.tar.zst'
 
-# Enable Architecture (Idempotent)
 if ! grep -q "Architecture = auto x86_64_v4" /etc/pacman.conf; then
     sudo sed -i 's/^Architecture = auto/Architecture = auto x86_64_v4/' /etc/pacman.conf
 fi
 
-# Append Repos (must always be at bottom of pacman.conf)
 if ! grep -q "\[cachyos-znver4\]" /etc/pacman.conf; then
     cat <<EOF | sudo tee -a /etc/pacman.conf > /dev/null
 
@@ -119,31 +121,29 @@ EOF
 fi
 sudo pacman -Syy --noconfirm
 
-# ------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------
-
-# 5. Kernel & Packages
-print "${GREEN}--- Installing Kernel & Packages ---${NC}"
+print -P "%F{green}--- Installing Kernel & Packages ---%f"
 sudo pacman -S --noconfirm linux-cachyos linux-cachyos-headers
 
-# Clean loop without subshells
 for pkg in linux linux-headers; do
     pacman -Qq "$pkg" &>/dev/null && sudo pacman -Rns --noconfirm "$pkg"
 done
-# Remove Discover (Cleanup)
 sudo pacman -Rdd --noconfirm discover || true
 yay -S --needed --noconfirm - < "$REPO_ROOT/Resources/Packages/core_pkg.txt"
 
 # ------------------------------------------------------------------------------
+# 6. Services & Configs
 # ------------------------------------------------------------------------------
 
-# 6. Services & Configs
-print "${GREEN}--- Applying System Configs ---${NC}"
-sudo systemctl enable --now transmission bluetooth timeshift-hourly.timer btrfs-scrub@-.timer fwupd.service
-# Firmware Refresh
-fwupdmgr refresh --force || print "${YELLOW}Warning: Firmware refresh failed.${NC}"
+# Purpose: Configure system daemon and low-level tuning.
+# - Btrfs: Sets up maintenance timers (scrub/balance) and grub-btrfsd.
+# - Network: Optimizes TCP (BBR) and queue discipline (Cake).
+# - ZRAM: Configures swap-on-ram with lz4 compression.
+# - Initramfs: Sets compression to lz4 for faster boot.
 
-# Grub-Btrfsd
+print -P "%F{green}--- Applying System Configs ---%f"
+sudo systemctl enable --now transmission bluetooth timeshift-hourly.timer btrfs-scrub@-.timer fwupd.service
+fwupdmgr refresh --force || print -P "%F{yellow}Warning: Firmware refresh failed.%f"
+
 if [[ -f /usr/lib/systemd/system/grub-btrfsd.service ]]; then
     sudo cp /usr/lib/systemd/system/grub-btrfsd.service /etc/systemd/system/grub-btrfsd.service
     sudo sed -i 's|^ExecStart=.*|ExecStart=/usr/bin/grub-btrfsd --syslog --timeshift-auto|' /etc/systemd/system/grub-btrfsd.service
@@ -151,7 +151,6 @@ if [[ -f /usr/lib/systemd/system/grub-btrfsd.service ]]; then
     sudo systemctl enable --now grub-btrfsd
 fi
 
-# Btrfs Maintenance: Monthly Balance to prevent metadata full errors
 if ! systemctl list-timers | grep -q "btrfs-balance"; then
     print "Configuring monthly Btrfs balance..."
     sudo tee /etc/systemd/system/btrfs-balance.service > /dev/null << EOF
@@ -173,10 +172,8 @@ EOF
     sudo systemctl enable --now btrfs-balance.timer
 fi
 
-# Bluetooth Experimental
 sudo sed -i 's/^#*\(Experimental = \).*/\1true/' /etc/bluetooth/main.conf
 
-# Reflector Timer
 sudo tee /etc/xdg/reflector/reflector.conf > /dev/null << 'EOF'
 --country GB,IE,NL,DE,FR,EU
 --age 6
@@ -187,31 +184,31 @@ sudo tee /etc/xdg/reflector/reflector.conf > /dev/null << 'EOF'
 EOF
 sudo systemctl enable --now reflector.timer
 
-# Locale (Fixed Regex)
 sudo sed -i 's/^#*\(en_US\.UTF-8\)/\1/' /etc/locale.gen
 sudo locale-gen
 
-# Env Vars
 if ! grep -q "LIBVA_DRIVER_NAME" /etc/environment; then
     print "\nLIBVA_DRIVER_NAME=radeonsi\nVDPAU_DRIVER=radeonsi\nWINEFSYNC=1" | sudo tee -a /etc/environment > /dev/null
 fi
 
-# ZRAM & Sysctl
 print "[zram0]\nzram-size = ram / 2\ncompression-algorithm = lz4\nswap-priority = 100" | sudo tee /etc/systemd/zram-generator.conf > /dev/null
 print "vm.swappiness = 150\nvm.page-cluster = 0" | sudo tee /etc/sysctl.d/99-swappiness.conf > /dev/null
 print "net.core.default_qdisc = cake\nnet.ipv4.tcp_congestion_control = bbr" | sudo tee /etc/sysctl.d/99-bbr.conf > /dev/null
 
-# Mkinitcpio
 sudo sed -i 's|^MODULES=.*|MODULES=(amdgpu nvme)|' /etc/mkinitcpio.conf
 sudo sed -i 's/^#COMPRESSION="zstd"/COMPRESSION="lz4"/' /etc/mkinitcpio.conf
 sudo sed -i 's|^HOOKS=.*|HOOKS=(base udev autodetect modconf kms keyboard keymap consolefont block btrfs filesystems)|' /etc/mkinitcpio.conf
 sudo mkinitcpio -P
 
 # ------------------------------------------------------------------------------
+# 7. Pacman Hooks
 # ------------------------------------------------------------------------------
 
-# 7. Pacman Hooks
-print "${GREEN}--- Installing Hooks ---${NC}"
+# Purpose: Automate bootloader and initramfs updates.
+# - Initramfs: Triggers rebuild on kernel/firmware updates.
+# - Grub: Triggers config update on kernel install/remove.
+
+print -P "%F{green}--- Installing Hooks ---%f"
 sudo mkdir -p /etc/pacman.d/hooks
 
 sudo tee /etc/pacman.d/hooks/98-rebuild-initramfs.hook > /dev/null << 'EOF'
@@ -243,13 +240,17 @@ Exec = /usr/bin/grub-mkconfig -o /boot/grub/grub.cfg
 EOF
 
 # ------------------------------------------------------------------------------
+# 8. UI & Visuals
 # ------------------------------------------------------------------------------
 
-# 8. UI & Visuals
-print "${GREEN}--- Configuring UI & Visuals ---${NC}"
+# Purpose: Apply aesthetics and desktop integration tools.
+# - Theme: Sets Papirus-Dark.
+# - Gemini: Installs/Configures Google Gemini widget.
+# - KWin: Injects rule syncing scripts into .zshrc.
+
+print -P "%F{green}--- Configuring UI & Visuals ---%f"
 sudo papirus-folders -C breeze --theme Papirus-Dark
 
-# Gemini Plasmoid (Idempotent)
 GEMINI_DIR="$HOME/.local/share/plasma/plasmoids/com.samirgaire10.google_gemini-plasma6"
 if [[ ! -d "$GEMINI_DIR" ]]; then
     git clone https://github.com/samirgaire10/com.samirgaire10.google_gemini-plasma6.git "$HOME/Make/gemini"
@@ -260,7 +261,6 @@ if [[ ! -d "$GEMINI_DIR" ]]; then
     sed -i '/profile: geminiProfile/a \                onFeaturePermissionRequested: { if (feature === WebEngineView.ClipboardReadWrite) { geminiwebview.grantFeaturePermission(securityOrigin, feature, true); } else { geminiwebview.grantFeaturePermission(securityOrigin, feature, false); } }' "$QML"
 fi
 
-# Transmission Monitor Plasmoid
 TRANS_WIDGET_DIR="$HOME/.local/share/plasma/plasmoids/com.oldlorekeeper.transmission"
 TRANS_ARCHIVE="$REPO_ROOT/Resources/Plasmoids/transmission-plasmoid.tar.gz"
 
@@ -270,14 +270,11 @@ if [[ ! -d "$TRANS_WIDGET_DIR" ]]; then
         mkdir -p "${TRANS_WIDGET_DIR:h}"
         tar -xf "$TRANS_ARCHIVE" -C "${TRANS_WIDGET_DIR:h}"
     else
-        print "${YELLOW}Warning: Transmission Plasmoid archive not found at $TRANS_ARCHIVE${NC}"
+        print -P "%F{yellow}Warning: Transmission Plasmoid archive not found at $TRANS_ARCHIVE%f"
     fi
 fi
 
-# --- KWin Functions Injection ---
-print "${GREEN}--- Configuring KWin Management ---${NC}"
-
-# Handle potential unset DEVICE_NAME if 'Core only' was selected
+print -P "%F{green}--- Configuring KWin Management ---%f"
 if [[ -z "${DEVICE_NAME:-}" ]]; then
     TARGET_PROFILE=""
 else
@@ -288,24 +285,17 @@ ZSHRC="$HOME/.zshrc"
 START_MARKER="# Start KWin Management"
 END_MARKER="# End KWin Management"
 
-# Idempotency: Remove existing block if present to prevent duplicates
 if [[ -f "$ZSHRC" ]]; then
-    # Use sed to delete the block between (and including) markers
-    # Escaping brackets [ ] for sed regex
     sed -i '/# \Start KWin Management/,/# \End KWin Management/d' "$ZSHRC"
 fi
 
-# Append new block with markers
 cat <<EOF >> "$ZSHRC"
 $START_MARKER
-# Shortcuts to manage custom KWIN rules
 
 export KWIN_PROFILE="$TARGET_PROFILE"
 
 update-kwin() {
-    # Default to KWIN_PROFILE if set, otherwise require argument
     local target="\${1:-\$KWIN_PROFILE}"
-
     if [[ -z "\$target" ]]; then
         print -u2 "Error: No profile specified and KWIN_PROFILE not set."
         return 1
@@ -313,11 +303,8 @@ update-kwin() {
 
     print -P "%F{green}--- Syncing and Updating for Profile: \$target ---%f"
     local current_dir=\$PWD
-
-    # Target the repo root derived from where setup_core was run
     cd "$REPO_ROOT" || return
 
-    # Auto-commit common fragment changes
     if git status --porcelain Resources/Kwin/common.kwinrule.fragment | grep -q '^ M'; then
         print -P "%F{yellow}Committing changes to common.kwinrule.fragment...%f"
         git add Resources/Kwin/common.kwinrule.fragment
@@ -330,7 +317,6 @@ update-kwin() {
         return 1
     fi
 
-    # Run Zsh script
     ./Scripts/kwin_apply_rules.zsh "\$target"
     cd "\$current_dir"
 }
@@ -354,45 +340,41 @@ edit-kwin() {
         print -u2 "Error: File not found: \$file_path"
     fi
 }
-
 $END_MARKER
 EOF
-
 print "KWin management functions injected into $ZSHRC"
 
 # ------------------------------------------------------------------------------
+# 9. Finalisation & Deferred Setup (Interactive Console)
 # ------------------------------------------------------------------------------
 
-# 9. Finalisation & Deferred Setup (Interactive Console)
-print "${GREEN}--- Finalisation & Deferred Setup - Interactive ---${NC}"
+# Purpose: Prepare for the device-specific stage.
+# - Bootloader: Updates GRUB configuration.
+# - Autostart: Creates a self-destructing wrapper to run the device script (Laptop/Desktop) on next login.
+
+print -P "%F{green}--- Finalisation & Deferred Setup - Interactive ---%f"
 sudo grub-mkconfig -o /boot/grub/grub.cfg
 
 if [[ -f "$DEVICE_SCRIPT" ]]; then
     WRAPPER_SCRIPT="$HOME/.local/bin/run_device_setup_once.zsh"
     AUTOSTART_FILE="$HOME/.config/autostart/device-setup-once.desktop"
 
-    # Create a self-deleting wrapper script.
     cat << EOF > "$WRAPPER_SCRIPT"
 #!/usr/bin/zsh
 # ------------------------------------------------------------------------------
 # INTERACTIVE DEVICE SETUP WRAPPER (Self-Deleting)
 # ------------------------------------------------------------------------------
-# This script runs the final setup, waits for user input, performs cleanup, and reboots.
 autoload -Uz colors && colors
-YELLOW="${fg[yellow]}"
-RED="${fg[red]}"
-NC="${reset_color}"
 zsh '$DEVICE_SCRIPT:A'
-print "\n\n${YELLOW}--- Setup Complete. Press any key to initiate final reboot. ---${NC}"
+print -P "\n\n%F{yellow}--- Setup Complete. Press any key to initiate final reboot. ---%f"
 read -k1
 rm -f '$AUTOSTART_FILE'
 rm -f "\$0"
-print "${RED}--- Initiating System Reboot ---${NC}"
+print -P "%F{red}--- Initiating System Reboot ---%f"
 sudo reboot
 EOF
     chmod +x "$WRAPPER_SCRIPT"
 
-    # Create the simplified autostart .desktop file
     mkdir -p "$HOME/.config/autostart"
     cat << EOF > "$AUTOSTART_FILE"
 [Desktop Entry]
@@ -406,13 +388,13 @@ Terminal=false
 X-KDE-Autostart-Phase=Desktop
 X-GNOME-Autostart-enabled=true
 EOF
-    print "${GREEN}Configured to launch '$DEVICE_NAME Setup' interactively on next login.${NC}"
+    print -P "%F{green}Configured to launch '$DEVICE_NAME Setup' interactively on next login.%f"
 fi
 
 # ------------------------------------------------------------------------------
+# End - Reboot
 # ------------------------------------------------------------------------------
 
-# 10. Reboot
-print "${RED}New kernel installed. Rebooting now to complete device setup...${NC}"
+print -P "%F{red}New kernel installed. Rebooting now to complete device setup...%f"
 sleep 5
 sudo reboot
