@@ -126,7 +126,7 @@ print "d /dev/shm/jellyfin 0755 jellyfin jellyfin -" | sudo tee /etc/tmpfiles.d/
 print "Configuring Transmission Permissions..."
 
 # 1. Stop service to release lock on settings.json
-sudo systemctl stop transmission-daemon
+sudo systemctl stop transmission
 
 # 2. Programmatically update umask in settings.json
 # Usage: Reads file, sets 'umask' to integer 2, saves file.
@@ -142,7 +142,7 @@ if path.exists():
 
 # 4. Apply changes
 sudo systemctl daemon-reload
-sudo systemctl start transmission-daemon
+sudo systemctl start transmission
 
 # Sunshine User Service (Independent of Media Mount)
 REAL_SUNSHINE_PATH=$(readlink -f "$(command -v sunshine)")

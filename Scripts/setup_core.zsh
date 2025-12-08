@@ -285,14 +285,14 @@ else
 fi
 
 ZSHRC="$HOME/.zshrc"
-START_MARKER="# [START] KWin Management"
-END_MARKER="# [END] KWin Management"
+START_MARKER="# Start KWin Management"
+END_MARKER="# End KWin Management"
 
 # Idempotency: Remove existing block if present to prevent duplicates
 if [[ -f "$ZSHRC" ]]; then
     # Use sed to delete the block between (and including) markers
     # Escaping brackets [ ] for sed regex
-    sed -i '/# \[START\] KWin Management/,/# \[END\] KWin Management/d' "$ZSHRC"
+    sed -i '/# \Start KWin Management/,/# \End KWin Management/d' "$ZSHRC"
 fi
 
 # Append new block with markers
@@ -354,6 +354,7 @@ edit-kwin() {
         print -u2 "Error: File not found: \$file_path"
     fi
 }
+
 $END_MARKER
 EOF
 

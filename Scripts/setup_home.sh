@@ -90,7 +90,8 @@ else
     sudo chown -R "$USER:$(id -gn "$USER")" "$MOUNT_POINT"
 
     # OPTIMISATION: Disable CoW for Games to prevent fragmentation/stuttering
-    if ! lsattr -d "$MOUNT_POINT" | grep -q "\-C\-"; then
+    # FIX: Use awk to check attribute column specifically, avoiding 'grep' backslash warnings
+    if ! lsattr -d "$MOUNT_POINT" | awk '{print $1}' | grep -q 'C'; then
         sudo chattr +C "$MOUNT_POINT"
         echo -e "${GREEN}--- Applied No-CoW (+C) attribute to $MOUNT_POINT ---${NC}"
     else
@@ -111,12 +112,10 @@ else
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 fi
 
-# Install for Root (and symlink)
+# Link for Root
+# FIX: Do NOT run installer for root. It fails if the folder exists, and we delete it anyway.
+# We just force the symlinks directly.
 echo "Setting up Oh-My-Zsh for root (via symlinks)..."
-if [ ! -d "/root/.oh-my-zsh" ]; then
-    sudo sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
-fi
-# Remove default root files and symlink to user's config
 sudo rm -f /root/.zshrc
 sudo rm -rf /root/.oh-my-zsh
 sudo ln -sf "$HOME/.oh-my-zsh" /root/.oh-my-zsh
@@ -138,18 +137,30 @@ done
 # .zshrc Customisation
 sed -i 's/^plugins=(git)$/plugins=(git archlinux zsh-autosuggestions zsh-syntax-highlighting)/' "$HOME/.zshrc"
 
-if ! grep -q "Custom Aliases" "$HOME/.zshrc"; then
-    echo -e "${GREEN}--- Injecting Custom Aliases ---${NC}"
+echo -e "${GREEN}--- Updating Custom Aliases ---${NC}"
 
-# Static Aliases & Git Wrapper (Quoted heredoc to preserve internal variables)
-cat << 'EOF' >> "$HOME/.zshrc"
+# Define Markers
+START_MARKER="# Start Custom Aliases"
+END_MARKER="# End Custom Aliases"
+ZSHRC="$HOME/.zshrc"
 
+# Clean up existing block (Idempotency)
+if grep -qF "$START_MARKER" "$ZSHRC"; then
+    sed -i "/$START_MARKER/,/$END_MARKER/d" "$ZSHRC"
+fi
+
+# Inject fresh block
+# Note: We split this into two parts.
+# Part 1: Quoted heredoc (<< 'EOF') for 'git' function to PROTECT Zsh variables (${2:t}) from Bash expansion.
+# Part 2: Unquoted heredoc (<< EOF) for 'maintain' alias to EXPAND $REPO_DIR from this script.
+
+cat << 'EOF' >> "$ZSHRC"
+# Start Custom Aliases
 export PATH="$HOME/.local/bin:$PATH"
 
 alias mkinit="sudo mkinitcpio -P"
 alias mkgrub="sudo grub-mkconfig -o /boot/grub/grub.cfg"
 
-# Auto-clone to ~/Make if not using sudo
 git() {
     if (( EUID == 0 )); then
         command git "$@"
@@ -169,10 +180,8 @@ git() {
 }
 EOF
 
-# Dynamic Maintain Alias (Unquoted heredoc to burn in REPO_DIR)
-cat << EOF >> "$HOME/.zshrc"
+cat << EOF >> "$ZSHRC"
 
-# System maintenance shortcut
 maintain() {
     local script="$REPO_DIR/Scripts/system_maintain.zsh"
 
@@ -184,11 +193,10 @@ maintain() {
         return 1
     fi
 }
-
+# End Custom Aliases
 EOF
 
-    echo -e "${GREEN}Aliases injected into .zshrc${NC}"
-fi
+echo -e "${GREEN}Aliases injected/updated in .zshrc${NC}"
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
@@ -196,7 +204,6 @@ fi
 # 6. Konsole Profiles
 echo -e "${GREEN}--- Installing Konsole Profiles ---${NC}"
 mkdir -p "$HOME/.local/share/konsole"
-# UPDATED: Path to Resources/Konsole
 if [ -d "$REPO_DIR/Resources/Konsole" ]; then
     cp -f "$REPO_DIR/Resources/Konsole"/* "$HOME/.local/share/konsole/" 2>/dev/null
 else
