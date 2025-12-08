@@ -167,8 +167,8 @@ if (( $+commands[konsave] )); then
         internal_profiles=( "$KONSAVE_CONFIG"/"$PROFILE_TYPE Dock "*(-/On) )
         if (( ${#internal_profiles} > 3 )); then
             print "Pruning internal profiles (keeping newest 3)..."
-            for path in "${internal_profiles[@][4,-1]}"; do
-                PYTHONWARNINGS="ignore" konsave -r "${path:t}" -f
+            for profile_path in "${internal_profiles[@][4,-1]}"; do
+                PYTHONWARNINGS="ignore" konsave -r "${profile_path:t}" -f
             done
         fi
     fi
