@@ -276,13 +276,29 @@ fi
 
 # --- KWin Functions Injection ---
 print "${GREEN}--- Configuring KWin Management ---${NC}"
-# Convert DEVICE_NAME to lowercase (Zsh modifier :l) for the profile
-TARGET_PROFILE="${DEVICE_NAME:l}"
 
-# Append functions to .zshrc using a heredoc
-cat <<EOF >> "$HOME/.zshrc"
+# Handle potential unset DEVICE_NAME if 'Core only' was selected
+if [[ -z "${DEVICE_NAME:-}" ]]; then
+    TARGET_PROFILE=""
+else
+    TARGET_PROFILE="${DEVICE_NAME:l}"
+fi
 
-#Shortcuts to manage custom KWIN rules
+ZSHRC="$HOME/.zshrc"
+START_MARKER="# [START] KWin Management"
+END_MARKER="# [END] KWin Management"
+
+# Idempotency: Remove existing block if present to prevent duplicates
+if [[ -f "$ZSHRC" ]]; then
+    # Use sed to delete the block between (and including) markers
+    # Escaping brackets [ ] for sed regex
+    sed -i '/# \[START\] KWin Management/,/# \[END\] KWin Management/d' "$ZSHRC"
+fi
+
+# Append new block with markers
+cat <<EOF >> "$ZSHRC"
+$START_MARKER
+# Shortcuts to manage custom KWIN rules
 
 export KWIN_PROFILE="$TARGET_PROFILE"
 
@@ -297,7 +313,9 @@ update-kwin() {
 
     print -P "%F{green}--- Syncing and Updating for Profile: \$target ---%f"
     local current_dir=\$PWD
-    cd "\$HOME/Obsidian/AMD-Linux-Setup" || return
+
+    # Target the repo root derived from where setup_core was run
+    cd "$REPO_ROOT" || return
 
     # Auto-commit common fragment changes
     if git status --porcelain Resources/Kwin/common.kwinrule.fragment | grep -q '^ M'; then
@@ -312,14 +330,14 @@ update-kwin() {
         return 1
     fi
 
-    # Run Zsh script (corrected extension and path)
+    # Run Zsh script
     ./Scripts/kwin_apply_rules.zsh "\$target"
     cd "\$current_dir"
 }
 
 edit-kwin() {
     local target="\${1:-\$KWIN_PROFILE}"
-    local repo_dir="\$HOME/Obsidian/AMD-Linux-Setup/Resources/Kwin"
+    local repo_dir="$REPO_ROOT/Resources/Kwin"
     local file_path=""
 
     case "\$target" in
@@ -336,7 +354,10 @@ edit-kwin() {
         print -u2 "Error: File not found: \$file_path"
     fi
 }
+$END_MARKER
 EOF
+
+print "KWin management functions injected into $ZSHRC"
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------

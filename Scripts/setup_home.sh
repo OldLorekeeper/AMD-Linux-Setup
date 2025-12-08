@@ -137,8 +137,12 @@ done
 
 # .zshrc Customisation
 sed -i 's/^plugins=(git)$/plugins=(git archlinux zsh-autosuggestions zsh-syntax-highlighting)/' "$HOME/.zshrc"
+
 if ! grep -q "Custom Aliases" "$HOME/.zshrc"; then
-    cat << 'EOF' >> "$HOME/.zshrc"
+    echo -e "${GREEN}--- Injecting Custom Aliases ---${NC}"
+
+# Static Aliases & Git Wrapper (Quoted heredoc to preserve internal variables)
+cat << 'EOF' >> "$HOME/.zshrc"
 
 export PATH="$HOME/.local/bin:$PATH"
 
@@ -163,24 +167,27 @@ git() {
         command git "$@"
     fi
 }
+EOF
+
+# Dynamic Maintain Alias (Unquoted heredoc to burn in REPO_DIR)
+cat << EOF >> "$HOME/.zshrc"
 
 # System maintenance shortcut
 maintain() {
-    # UPDATED: Pointing to system_maintain.zsh
-    local script="$HOME/Obsidian/AMD-Linux-Setup/Scripts/system_maintain.zsh"
+    local script="$REPO_DIR/Scripts/system_maintain.zsh"
 
-    if [[ -f "$script" ]]; then
-        # Ensure it is executable before running
-        [[ -x "$script" ]] || chmod +x "$script"
-
-        # Execute directly
-        "$script"
+    if [[ -f "\$script" ]]; then
+        [[ -x "\$script" ]] || chmod +x "\$script"
+        "\$script"
     else
-        print -P "%F{red}Error: Maintenance script not found at:%f\n$script"
+        print -P "%F{red}Error: Maintenance script not found at:%f\n\$script"
         return 1
     fi
 }
+
 EOF
+
+    echo -e "${GREEN}Aliases injected into .zshrc${NC}"
 fi
 
 # ------------------------------------------------------------------------------
