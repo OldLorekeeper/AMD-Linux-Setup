@@ -1,4 +1,5 @@
 darkly-bin
+ethtool
 geekbench
 google-chrome
 gwenview
@@ -10,5 +11,6 @@ papirus-folders
 plasma6-applets-panel-colorizer
 protontricks
 protonup-qt
+tailscale
 timeshift-systemd-timer
 xpadneo-dkms

@@ -194,6 +194,13 @@ fi
 print "[zram0]\nzram-size = ram / 2\ncompression-algorithm = lz4\nswap-priority = 100" | sudo tee /etc/systemd/zram-generator.conf > /dev/null
 print "vm.swappiness = 150\nvm.page-cluster = 0" | sudo tee /etc/sysctl.d/99-swappiness.conf > /dev/null
 print "net.core.default_qdisc = cake\nnet.ipv4.tcp_congestion_control = bbr" | sudo tee /etc/sysctl.d/99-bbr.conf > /dev/null
+print "net.ipv4.ip_forward = 1\nnet.ipv6.conf.all.forwarding = 1" | sudo tee /etc/sysctl.d/99-tailscale.conf > /dev/null
+sudo mkdir -p /etc/NetworkManager/dispatcher.d
+sudo tee /etc/NetworkManager/dispatcher.d/99-tailscale-gro > /dev/null << 'EOF'
+#!/bin/zsh
+[[ "$2" == "up" ]] && /usr/bin/ethtool -K "$1" rx-udp-gro-forwarding on rx-gro-list off 2>/dev/null || true
+EOF
+sudo chmod +x /etc/NetworkManager/dispatcher.d/99-tailscale-gro
 
 sudo sed -i 's|^MODULES=.*|MODULES=(amdgpu nvme)|' /etc/mkinitcpio.conf
 sudo sed -i 's/^#COMPRESSION="zstd"/COMPRESSION="lz4"/' /etc/mkinitcpio.conf

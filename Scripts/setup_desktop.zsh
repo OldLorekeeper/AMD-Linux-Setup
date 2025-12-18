@@ -377,7 +377,19 @@ sudo systemctl enable --now slskd
 sudo systemctl enable --now soularr.timer
 
 # ------------------------------------------------------------------------------
-# 6. Sunshine Performance
+# 6. Tailscale Network
+# ------------------------------------------------------------------------------
+
+# Purpose: Establish secure mesh connectivity and exit node status.
+# - Service: Ensures tailscaled is enabled and running.
+# - Exit Node: Advertises the Desktop as a gateway for the Laptop.
+
+print -P "%F{green}--- Configuring Tailscale Exit Node ---%f"
+sudo systemctl enable --now tailscaled
+sudo tailscale up --advertise-exit-node
+
+# ------------------------------------------------------------------------------
+# 7. Sunshine Performance
 # ------------------------------------------------------------------------------
 
 # Purpose: Tune GPU performance for streaming.
@@ -442,7 +454,7 @@ if (( $+commands[kscreen-doctor] )); then
 fi
 
 # ------------------------------------------------------------------------------
-# 7. Local Binaries
+# 8. Local Binaries
 # ------------------------------------------------------------------------------
 
 # Purpose: Install utility scripts.
@@ -462,7 +474,7 @@ else
 fi
 
 # ------------------------------------------------------------------------------
-# 8. KDE Integration
+# 9. KDE Integration
 # ------------------------------------------------------------------------------
 
 # Purpose: Apply desktop-specific window rules.
@@ -473,7 +485,7 @@ grep -q 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.zshrc" || print 'export P
 [[ -f "$SCRIPT_DIR/kwin_apply_rules.zsh" ]] && chmod +x "$SCRIPT_DIR/kwin_apply_rules.zsh" && "$SCRIPT_DIR/kwin_apply_rules.zsh" desktop
 
 # ------------------------------------------------------------------------------
-# 9. Theming (Konsave)
+# 10. Theming (Konsave)
 # ------------------------------------------------------------------------------
 
 # Purpose: Apply the visual desktop profile.
