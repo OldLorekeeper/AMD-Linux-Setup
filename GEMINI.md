@@ -29,41 +29,216 @@ Follow the tiered execution order for all maintenance tasks:
 - **Optimisation:** Target `-march=native` for all compilation. Use `lz4` for ZRAM and initramfs compression.
 - **Visuals:** Manage KDE Plasma state via `konsave` profiles (e.g. "Desktop Dock") and KWin rule fragments in `Resources/Kwin/`.
 
-## 4. MCP Integration & Resource Usage
-
-Always use the following URI schemes to retrieve system data before generating scripts or advice: 
-### Documentation & News
-
-- `archwiki://<page>`: Direct documentation for RDNA 3 or Btrfs optimisations.
-- `archnews://critical`: Check for manual intervention requirements before repository tier execution. 
-### Package & System State
-
-- `pacman://installed` / `pacman://orphans`: Audit system bloat and explicit package lists.
-- `system://info` / `system://logs/boot`: Verify Zen 4 thermal/clock health and boot-time service failures. 
-- `config://pacman` / `config://makepkg`: Ensure `-march=native` and parallel downloads are active.
-
-### Maintenance & Updates (Tiers 0-3)
-
-- **Safety Check:** Run `check_critical_news` and `get_news_since_last_update`.
-- **Environment Audit:** Verify disk space via `check_disk_space` (specifically for Btrfs snapshots).
-- **Execution:** Proposals must be idempotent Zsh scripts using `setopt ERR_EXIT NO_UNSET PIPE_FAIL`.
-
-### Package Installation (AUR/Repo)
-
-- **Discovery:** Use `search_aur` or `get_official_package_info`.
-- **Security Audit:** Mandatory `analyze_pkgbuild_safety` and `analyze_package_metadata_risk` for all non-official packages.
-- **Integrity:** Use `verify_package_integrity` if unexpected behaviour occurs post-installation.
-
-### Troubleshooting
-
-- **Log Analysis:** Retrieve diagnostics via `get_boot_logs` and `check_failed_services`.
-- **Ownership:** Use `find_package_owner` to resolve conflicts in `/usr/lib/` or `/etc/`.
-- **History:** Trace regressions using `get_transaction_history` and `find_when_installed`.
-
-## 5. Response Guidelines
+## 4. Response Guidelines
 
 - Use British English.
 - Be concise.
 - Do not use emoji.
 - Use "e.g." without a following comma.
 - Prioritise hardware-specific optimisations for Ryzen 7000 and RDNA 3.
+
+## 5. MCP Integration & Resource Usage
+
+Always use the following URI schemes, executable tools and/or workflows to retrieve system data before generating scripts or advice: 
+
+### 5.1 URI Schemes
+
+#### Documentation & Search
+
+- **`archwiki://`** (Example: `archwiki://Installation_guide`) – Returns Markdown-formatted Wiki page.
+    
+
+#### Package Information
+
+- **`archrepo://`** (Example: `archrepo://vim`) – Returns official repository package details.
+    
+- **`aur://*/info`** (Example: `aur://yay/info`) – Returns AUR package metadata (e.g. votes, maintainer, dates).
+    
+- **`aur://*/pkgbuild`** (Example: `aur://yay/pkgbuild`) – Returns raw PKGBUILD with safety analysis.
+    
+
+#### System Packages (Arch only)
+
+- **`pacman://installed`** – List of system installed packages.
+    
+- **`pacman://orphans`** – List of orphaned packages.
+    
+- **`pacman://explicit`** – List of explicitly installed packages.
+    
+- **`pacman://groups`** – List of all package groups.
+    
+- **`pacman://group/*`** (Example: `pacman://group/base-devel`) – Returns packages in a specific group.
+    
+- **`pacman://database/freshness`** – Returns package database sync status.
+    
+
+#### System Monitoring & Logs
+
+- **`system://info`** – System information including kernel, memory, and uptime.
+    
+- **`system://disk`** – Disk space usage statistics.
+    
+- **`system://services/failed`** – List of failed systemd services.
+    
+- **`system://logs/boot`** – Recent boot logs.
+    
+- **`pacman://log/recent`** – Recent package transactions.
+    
+- **`pacman://log/failed`** – Failed package transactions.
+    
+
+#### News & Updates
+
+- **`archnews://latest`** – Latest Arch Linux news.
+    
+- **`archnews://critical`** – Critical news requiring manual intervention.
+    
+- **`archnews://since-update`** – News published since the last system update.
+    
+
+#### Configuration
+
+- **`config://pacman`** – Parsed `pacman.conf` configuration.
+    
+- **`config://makepkg`** – Parsed `makepkg.conf` configuration.
+    
+- **`mirrors://active`** – Currently configured mirrors.
+    
+- **`mirrors://health`** – Mirror configuration health status.
+    
+
+---
+
+### 5.2 Executable Tools
+
+#### Package Search & Information
+
+- **`search_archwiki`** (Any) – Query Arch Wiki with ranked results.
+    
+- **`search_aur`** (Any) – Search AUR by relevance, votes, popularity, or modified date.
+    
+- **`get_official_package_info`** (Any) – Get official package details using hybrid local/remote data.
+    
+
+#### Package Lifecycle Management (Arch only)
+
+- **`check_updates_dry_run`** – Check for available updates.
+    
+- **`install_package_secure`** – Install with security checks to block malicious packages.
+    
+- **`remove_package`** – Remove a single package with dependencies or forced.
+    
+- **`remove_packages_batch`** – Remove multiple packages efficiently.
+    
+
+#### Package Analysis & Maintenance (Arch only)
+
+- **`list_orphan_packages`** – Find orphaned packages.
+    
+- **`remove_orphans`** – Clean orphans with dry-run and exclusion options.
+    
+- **`verify_package_integrity`** – Check file integrity for modified or missing files.
+    
+- **`list_explicit_packages`** – List user-installed packages.
+    
+- **`mark_as_explicit`** – Prevent a package from being orphaned.
+    
+- **`mark_as_dependency`** – Allow a package to be orphaned.
+    
+
+#### Package Organisation (Arch only)
+
+- **`find_package_owner`** – Find which package owns a specific file.
+    
+- **`list_package_files`** – List files in a package with regex filtering.
+    
+- **`search_package_files`** – Search for files across all packages.
+    
+- **`list_package_groups`** – List all groups (e.g. base, base-devel).
+    
+- **`list_group_packages`** – Show packages within a specific group.
+    
+
+#### System Monitoring & Diagnostics
+
+- **`get_system_info`** (Any) – System info including kernel, memory, and uptime.
+    
+- **`check_disk_space`** (Any) – Disk usage with warnings.
+    
+- **`get_pacman_cache_stats`** (Arch only) – Package cache size and age.
+    
+- **`check_failed_services`** (systemd) – Find failed systemd services.
+    
+- **`get_boot_logs`** (systemd) – Retrieve journalctl boot logs.
+    
+- **`check_database_freshness`** (Arch only) – Check package database sync status.
+    
+
+#### Transaction History & Logs (Arch only)
+
+- **`get_transaction_history`** – Recent package transactions (install/upgrade/remove).
+    
+- **`find_when_installed`** – Package installation history.
+    
+- **`find_failed_transactions`** – Failed package operations.
+    
+- **`get_database_sync_history`** – Database sync events.
+    
+
+#### News & Safety Checks
+
+- **`get_latest_news`** (Any) – Fetch Arch Linux news from RSS.
+    
+- **`check_critical_news`** (Any) – Find critical news requiring manual intervention.
+    
+- **`get_news_since_last_update`** (Arch only) – News posted since the last system update.
+    
+
+#### Mirror Management
+
+- **`list_active_mirrors`** (Arch only) – Show configured mirrors.
+    
+- **`test_mirror_speed`** (Arch only) – Test mirror latency.
+    
+- **`suggest_fastest_mirrors`** (Any) – Recommend optimal mirrors by location.
+    
+- **`check_mirrorlist_health`** (Arch only) – Verify mirror configuration.
+    
+
+#### Configuration Management (Arch only)
+
+- **`analyze_pacman_conf`** – Parse `pacman.conf` settings.
+    
+- **`analyze_makepkg_conf`** – Parse `makepkg.conf` settings.
+    
+- **`check_ignored_packages`** – List ignored packages and warn on critical ones.
+    
+- **`get_parallel_downloads_setting`** – Get parallel download configuration.
+    
+
+#### Security Analysis (Any)
+
+- **`analyze_pkgbuild_safety`** – Comprehensive PKGBUILD analysis for 50+ red flags.
+    
+- **`analyze_package_metadata_risk`** – Package trust scoring based on votes, maintainer, and age.
+    
+
+---
+
+### 5.3 Guided Workflows (Prompts)
+
+- **`troubleshoot_issue`** – Diagnose system errors.
+    
+    - _Workflow:_ Extract keywords → Search Wiki → Context-aware suggestions.
+        
+- **`audit_aur_package`** – Pre-installation safety audit.
+    
+    - _Workflow:_ Fetch metadata → Analyse PKGBUILD → Security recommendations.
+        
+- **`analyze_dependencies`** – Installation planning.
+    
+    - _Workflow:_ Check repos → Map dependencies → Suggest install order.
+        
+- **`safe_system_update`** – Safe update workflow.
+    
+    - _Workflow:_ Check critical news → Verify disk space → List updates → Check services → Recommendations.
