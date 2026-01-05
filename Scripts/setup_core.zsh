@@ -247,7 +247,28 @@ Exec = /usr/bin/grub-mkconfig -o /boot/grub/grub.cfg
 EOF
 
 # ------------------------------------------------------------------------------
-# 8. UI & Visuals
+# 8. Gemini Configuration
+# ------------------------------------------------------------------------------
+
+# Purpose: Configure the Gemini CLI environment and MCP servers.
+# - Gemini: Sets up ~/.gemini/settings.json.
+# - MCP: Registers 'arch-ops' via uvx.
+
+print -P "%F{green}--- Configuring Gemini Environment ---%f"
+GEMINI_SETTINGS="$HOME/.gemini/settings.json"
+mkdir -p "${GEMINI_SETTINGS:h}"
+[[ -f "$GEMINI_SETTINGS" ]] || print "{}" > "$GEMINI_SETTINGS"
+
+# Upsert arch-ops configuration
+if jq -e . "$GEMINI_SETTINGS" >/dev/null 2>&1; then
+    jq '.mcpServers."arch-ops" = {"command": "uvx", "args": ["arch-ops-server"]}' "$GEMINI_SETTINGS" > "${GEMINI_SETTINGS}.tmp" && mv "${GEMINI_SETTINGS}.tmp" "$GEMINI_SETTINGS"
+else
+    print "{}" > "$GEMINI_SETTINGS"
+    jq '.mcpServers."arch-ops" = {"command": "uvx", "args": ["arch-ops-server"]}' "$GEMINI_SETTINGS" > "${GEMINI_SETTINGS}.tmp" && mv "${GEMINI_SETTINGS}.tmp" "$GEMINI_SETTINGS"
+fi
+
+# ------------------------------------------------------------------------------
+# 9. UI & Visuals
 # ------------------------------------------------------------------------------
 
 # Purpose: Apply aesthetics and desktop integration tools.
@@ -352,7 +373,7 @@ EOF
 print "KWin management functions injected into $ZSHRC"
 
 # ------------------------------------------------------------------------------
-# 9. Finalisation & Deferred Setup (Interactive Console)
+# 10. Finalisation & Deferred Setup (Interactive Console)
 # ------------------------------------------------------------------------------
 
 # Purpose: Prepare for the device-specific stage.
