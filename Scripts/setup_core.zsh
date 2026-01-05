@@ -279,16 +279,6 @@ fi
 print -P "%F{green}--- Configuring UI & Visuals ---%f"
 sudo papirus-folders -C breeze --theme Papirus-Dark
 
-GEMINI_DIR="$HOME/.local/share/plasma/plasmoids/com.samirgaire10.google_gemini-plasma6"
-if [[ ! -d "$GEMINI_DIR" ]]; then
-    git clone https://github.com/samirgaire10/com.samirgaire10.google_gemini-plasma6.git "$HOME/Make/gemini"
-    mkdir -p "${GEMINI_DIR:h}"
-    mv "$HOME/Make/gemini" "$GEMINI_DIR"
-    QML="$GEMINI_DIR/contents/ui/main.qml"
-    sed -i '/Component.onCompleted: url = plasmoid.configuration.url;/c\                Timer { id: sT; interval: 3000; repeat: false; onTriggered: geminiwebview.url = plasmoid.configuration.url } Component.onCompleted: sT.start()' "$QML"
-    sed -i '/profile: geminiProfile/a \                onFeaturePermissionRequested: { if (feature === WebEngineView.ClipboardReadWrite) { geminiwebview.grantFeaturePermission(securityOrigin, feature, true); } else { geminiwebview.grantFeaturePermission(securityOrigin, feature, false); } }' "$QML"
-fi
-
 TRANS_WIDGET_DIR="$HOME/.local/share/plasma/plasmoids/com.oldlorekeeper.transmission"
 TRANS_ARCHIVE="$REPO_ROOT/Resources/Plasmoids/transmission-plasmoid.tar.gz"
 
