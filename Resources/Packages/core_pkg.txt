@@ -6,7 +6,7 @@ gwenview
 jq
 kio-gdrive
 konsave
-kwin-effects-forceblur
+kwin-effects-better-blur-dx
 mkinitcpio-firmware
 papirus-folders
 plasma6-applets-panel-colorizer
