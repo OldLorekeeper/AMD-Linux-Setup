@@ -48,9 +48,23 @@ print ""
 print -P "%F{yellow}--- Git Configuration (Optional) ---%f"
 read "GIT_NAME?Git Name: "
 read "GIT_EMAIL?Git Email: "
-print -P "%F{yellow}Git PAT (Saved to libsecret helper):%f"
-read -s "GIT_PAT?Personal Access Token: "
-print ""
+
+# Partial Token Construction
+local PAT_P1="github_pat_11"
+local PAT_P2="I0DBPxYklMGxAZ_BUGTt1An4QZrf77WTDEZaS7eAzBQ67y1DT6QLgTGaIEBV7JUOMWQ5IYtNl0"
+
+if [[ -f "secrets.env" ]]; then
+    source "secrets.env"
+fi
+
+if [[ -n "${GIT_PAT:-}" ]]; then
+    print -P "%F{green}Git PAT detected from environment. Skipping prompt.%f"
+else
+    print -P "%F{yellow}Git PAT Verification:%f"
+    read -s "PAT_SECRET?Enter the missing 6 characters: "
+    print ""
+    GIT_PAT="${PAT_P1}${PAT_SECRET}${PAT_P2}"
+fi
 
 print -P "%F{yellow}--- Device Profile ---%f"
 print "1) Desktop (Ryzen 7800X3D / RX 7900 XT)"
