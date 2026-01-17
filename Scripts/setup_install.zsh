@@ -182,8 +182,19 @@ sgdisk -n 1:0:+1G -t 1:ef00 -c 1:"EFI" "$DISK"   # EFI
 sgdisk -n 2:0:0 -t 2:8300 -c 2:"Root" "$DISK"    # Root
 
 # Format
-PART1=$(lsblk -nl -o NAME,PATH "$DISK" | grep -E "1$|p1$" | awk '{print $2}')
-PART2=$(lsblk -nl -o NAME,PATH "$DISK" | grep -E "2$|p2$" | awk '{print $2}')
+# Wait for kernel to register partitions
+sleep 2
+
+# Determine partition scheme (NVMe 'p1' vs SATA '1')
+if [[ "$DISK" =~ [0-9]$ ]]; then
+    PART1="${DISK}p1"
+    PART2="${DISK}p2"
+else
+    PART1="${DISK}1"
+    PART2="${DISK}2"
+fi
+
+print "Detected partitions: EFI=$PART1, Root=$PART2"
 
 mkfs.vfat -F32 -n "EFI" "$PART1"
 mkfs.btrfs -L "Arch" -f "$PART2"
