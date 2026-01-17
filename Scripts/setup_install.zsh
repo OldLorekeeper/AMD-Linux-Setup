@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/zsh
 # ==============================================================================
 # AMD-LINUX-SETUP: UNIFIED INSTALLER (ZEN 4)
 # ==============================================================================
@@ -9,123 +9,145 @@
 # Kernel: CachyOS (x86-64-v4)
 # ==============================================================================
 
-set -e
+setopt ERR_EXIT NO_UNSET PIPE_FAIL
 
-# --- Visuals ---
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m'
+# ------------------------------------------------------------------------------
+# 1. Pre-flight Checks & Configuration
+# ------------------------------------------------------------------------------
 
-echo -e "${GREEN}"
-echo "======================================================"
-echo "   AMD-Linux-Setup: Unified Installer (Zen 4)"
-echo "======================================================"
-echo -e "${NC}"
+print -P "%F{green}======================================================%f"
+print -P "%F{green}   AMD-Linux-Setup: Unified Installer (Zen 4)%f"
+print -P "%F{green}======================================================%f"
 
-# ==============================================================================
-# PHASE 1: PRE-FLIGHT CHECKS & CONFIGURATION
-# ==============================================================================
+# Purpose: Ensure environment is ready (UEFI, Internet) and gather user input.
 
-# 1.1 Integrity Checks
 if [[ ! -d /sys/firmware/efi/efivars ]]; then
-    echo -e "${RED}[!] Error: System is not booted in UEFI mode.${NC}"
+    print -P "%F{red}[!] Error: System is not booted in UEFI mode.%f"
     exit 1
 fi
 
 if ! ping -c 1 archlinux.org &>/dev/null; then
-    echo -e "${RED}[!] Error: No internet connection.${NC}"
+    print -P "%F{red}[!] Error: No internet connection.%f"
     exit 1
 fi
 
-# 1.2 User Configuration
-echo -e "${YELLOW}--- User Configuration ---${NC}"
-read -p "Hostname [NCC-1701]: " HOSTNAME
+print -P "%F{yellow}--- User Configuration ---%f"
+read "HOSTNAME?Hostname [Default: NCC-1701]: "
 HOSTNAME=${HOSTNAME:-NCC-1701}
 
-read -p "Username [curtis]: " TARGET_USER
-TARGET_USER=${TARGET_USER:-curtis}
+read "TARGET_USER?Username [Default: user]: "
+TARGET_USER=${TARGET_USER:-user}
 
-echo -e "${YELLOW}Set Root Password:${NC}"
-read -s ROOT_PASS
-echo
-echo -e "${YELLOW}Set User (${TARGET_USER}) Password:${NC}"
-read -s USER_PASS
-echo
+print -P "%F{yellow}Set Root Password:%f"
+read -s "ROOT_PASS?Password: "
+print ""
+print -P "%F{yellow}Set User (${TARGET_USER}) Password:%f"
+read -s "USER_PASS?Password: "
+print ""
 
-# 1.3 Git Identity
-echo -e "${YELLOW}--- Git Configuration (Optional) ---${NC}"
-read -p "Git Name: " GIT_NAME
-read -p "Git Email: " GIT_EMAIL
-echo -e "${YELLOW}Git PAT (Saved to libsecret helper):${NC}"
-read -s GIT_PAT
-echo
+print -P "%F{yellow}--- Git Configuration (Optional) ---%f"
+read "GIT_NAME?Git Name: "
+read "GIT_EMAIL?Git Email: "
+print -P "%F{yellow}Git PAT (Saved to libsecret helper):%f"
+read -s "GIT_PAT?Personal Access Token: "
+print ""
 
-# 1.4 Device Profile
-echo -e "${YELLOW}--- Device Profile ---${NC}"
-echo "1) Desktop (Ryzen 7800X3D / RX 7900 XT)"
-echo "2) Laptop (Ryzen 7840HS / 780M)"
-read -p "Select Profile [1-2]: " PROFILE_SEL
+print -P "%F{yellow}--- Device Profile ---%f"
+print "1) Desktop (Ryzen 7800X3D / RX 7900 XT)"
+print "2) Laptop (Ryzen 7840HS / 780M)"
+read "PROFILE_SEL?Select Profile [1-2]: "
 
 case $PROFILE_SEL in
     1) DEVICE_PROFILE="desktop" ;;
     2) DEVICE_PROFILE="laptop" ;;
-    *) echo -e "${RED}Invalid selection.${NC}"; exit 1 ;;
+    *) print -P "%F{red}Invalid selection.%f"; exit 1 ;;
 esac
 
-# 1.5 Desktop-Specific Inputs
+# Desktop Specific Inputs
 SLSKD_USER=""
 SLSKD_PASS=""
 SOULSEEK_USER=""
 SOULSEEK_PASS=""
 MEDIA_UUID=""
+EDID_ENABLE=""
+MONITOR_PORT=""
 
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
-    echo -e "${YELLOW}--- Desktop Automation & Storage ---${NC}"
+    print -P "%F{yellow}--- Desktop Automation & Storage ---%f"
 
-    echo "Existing Partitions (for Media Drive):"
+    print "Existing Partitions (for Media Drive):"
     lsblk -o NAME,SIZE,FSTYPE,LABEL,UUID | grep -v loop
-    read -p "Enter UUID for /mnt/Media (Leave empty to skip): " MEDIA_UUID
+    read "MEDIA_UUID?Enter UUID for /mnt/Media (Leave empty to skip): "
 
-    echo -e "${YELLOW}Slskd & Soulseek Credentials:${NC}"
-    read -p "Slskd WebUI Username: " SLSKD_USER
-    read -s -p "Slskd WebUI Password: " SLSKD_PASS; echo
-    read -p "Soulseek Username: " SOULSEEK_USER
-    read -s -p "Soulseek Password: " SOULSEEK_PASS; echo
+    print -P "%F{yellow}Slskd & Soulseek Credentials:%f"
+    read "SLSKD_USER?Slskd WebUI Username: "
+    read -s "SLSKD_PASS?Slskd WebUI Password: "; print ""
+    read "SOULSEEK_USER?Soulseek Username: "
+    read -s "SOULSEEK_PASS?Soulseek Password: "; print ""
+
+    print -P "%F{yellow}Display Configuration (Headless/Streaming):%f"
+    read "EDID_ENABLE?Enable custom 2560x1600 EDID? [y/N]: "
+
+    if [[ "$EDID_ENABLE" =~ ^[Yy]$ ]]; then
+        print "Detecting connected ports..."
+        typeset -a CONNECTED_PORTS
+
+        # Zsh loop for detecting ports
+        for status_file in /sys/class/drm/*/status; do
+            if grep -q "connected" "$status_file"; then
+                # Extract port name (e.g., card0-DP-1 -> DP-1)
+                local port_path=${status_file:h}
+                local port_name=${port_path:t}
+                local clean_name=${port_name#*-}
+                CONNECTED_PORTS+=("$clean_name")
+            fi
+        done
+
+        if (( ${#CONNECTED_PORTS} == 0 )); then
+            print -P "%F{red}No monitors detected. Enter manually (e.g., DP-1).%f"
+            read "MONITOR_PORT?Port: "
+        elif (( ${#CONNECTED_PORTS} == 1 )); then
+            MONITOR_PORT="${CONNECTED_PORTS[1]}"
+            print -P "Detected and selected: %F{green}$MONITOR_PORT%f"
+        else
+            print "Multiple ports detected:"
+            select opt in "${CONNECTED_PORTS[@]}"; do
+                MONITOR_PORT="$opt"
+                break
+            done
+        fi
+    fi
 fi
 
-# 1.6 Disk Selection
-echo -e "${YELLOW}--- Installation Target ---${NC}"
+print -P "%F{yellow}--- Installation Target ---%f"
 lsblk -d -n -o NAME,SIZE,MODEL,TYPE | grep disk
-read -p "Target Disk (e.g., nvme0n1): " DISK
-DISK="/dev/$DISK"
+read "DISK_SEL?Target Disk (e.g., nvme0n1): "
+DISK="/dev/$DISK_SEL"
 
 if [[ ! -b "$DISK" ]]; then
-    echo -e "${RED}Error: Invalid disk '$DISK'.${NC}"
+    print -P "%F{red}Error: Invalid disk '$DISK'.%f"
     exit 1
 fi
 
-echo -e "${RED}WARNING: ALL DATA ON $DISK WILL BE ERASED!${NC}"
-read -p "Type 'yes' to confirm: " CONFIRM
+print -P "%F{red}WARNING: ALL DATA ON $DISK WILL BE ERASED!%f"
+read "CONFIRM?Type 'yes' to confirm: "
 if [[ "$CONFIRM" != "yes" ]]; then
-    echo "Aborted."
+    print "Aborted."
     exit 1
 fi
 
-# ==============================================================================
-# PHASE 2: LIVE ENVIRONMENT PREP
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# 2. Live Environment Prep
+# ------------------------------------------------------------------------------
 
-echo -e "${GREEN}--- Preparing Live Environment ---${NC}"
+print -P "%F{green}--- Preparing Live Environment ---%f"
 timedatectl set-ntp true
 
-# 2.1 Mirrors & Pacman
-echo "Optimising mirrors..."
+print "Optimising mirrors..."
 reflector --country GB,IE,NL,DE,FR,EU --age 12 --protocol https --sort rate --fastest 10 --save /etc/pacman.d/mirrorlist
 sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf
 
-# 2.2 CachyOS Repositories (Zen 4 Optimised)
-echo "Adding CachyOS repositories..."
+print "Adding CachyOS repositories..."
 pacman-key --recv-keys F3B607488DB35A47 --keyserver keyserver.ubuntu.com
 pacman-key --lsign-key F3B607488DB35A47
 pacman -U --noconfirm 'https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-keyring-20240331-1-any.pkg.tar.zst' \
@@ -147,26 +169,26 @@ EOF
 fi
 pacman -Sy
 
-# ==============================================================================
-# PHASE 3: PARTITIONING & FORMATTING
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# 3. Partitioning & Formatting
+# ------------------------------------------------------------------------------
 
-echo -e "${GREEN}--- Partitioning & Formatting ---${NC}"
+print -P "%F{green}--- Partitioning & Formatting ---%f"
 
-# 3.1 Wipe & Partition
+# Wipe & Partition
 sgdisk -Z "$DISK"
 sgdisk -o "$DISK"
 sgdisk -n 1:0:+1G -t 1:ef00 -c 1:"EFI" "$DISK"   # EFI
 sgdisk -n 2:0:0 -t 2:8300 -c 2:"Root" "$DISK"    # Root
 
-# 3.2 Format
+# Format
 PART1=$(lsblk -nl -o NAME,PATH "$DISK" | grep -E "1$|p1$" | awk '{print $2}')
 PART2=$(lsblk -nl -o NAME,PATH "$DISK" | grep -E "2$|p2$" | awk '{print $2}')
 
 mkfs.vfat -F32 -n "EFI" "$PART1"
 mkfs.btrfs -L "Arch" -f "$PART2"
 
-# 3.3 Btrfs Subvolumes
+# Btrfs Subvolumes
 mount "$PART2" /mnt
 btrfs subvolume create /mnt/@
 btrfs subvolume create /mnt/@home
@@ -176,7 +198,7 @@ btrfs subvolume create /mnt/@.snapshots
 btrfs subvolume create /mnt/@games
 umount /mnt
 
-# 3.4 Mount Layout
+# Mount Layout
 MOUNT_OPTS="rw,noatime,compress=zstd:3,ssd,discard=async,space_cache=v2"
 mount -o "$MOUNT_OPTS,subvol=@" "$PART2" /mnt
 
@@ -192,13 +214,12 @@ chattr +C /mnt/Games
 
 mount "$PART1" /mnt/boot
 
-# ==============================================================================
-# PHASE 4: BASE INSTALLATION
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# 4. Base Installation
+# ------------------------------------------------------------------------------
 
-echo -e "${GREEN}--- Installing Base System ---${NC}"
+print -P "%F{green}--- Installing Base System ---%f"
 
-# 4.1 Package Definitions
 BASE_PKGS=(
     "base" "base-devel" "linux-cachyos" "linux-cachyos-headers" "linux-firmware"
     "amd-ucode" "btrfs-progs" "networkmanager" "git" "vim" "sudo" "efibootmgr"
@@ -211,7 +232,6 @@ DESKTOP_ENV_PKGS=(
     "mesa" "vulkan-radeon" "libva-mesa-driver"
 )
 
-# Core Utils (from previous setup_config.json/core_pkg.txt)
 COMMON_PKGS=(
     "7zip" "bash-language-server" "chromium" "cmake" "cmake-extras" "cpupower"
     "cups" "dkms" "dnsmasq" "dosfstools" "edk2-ovmf" "extra-cmake-modules"
@@ -223,36 +243,34 @@ COMMON_PKGS=(
     "vulkan-headers" "wayland-protocols" "wine" "wine-mono" "winetricks"
 )
 
-# 4.2 Pacstrap
 pacstrap -K /mnt "${BASE_PKGS[@]}" "${DESKTOP_ENV_PKGS[@]}" "${COMMON_PKGS[@]}"
-
-# 4.3 Fstab Generation
 genfstab -U /mnt >> /mnt/etc/fstab
 
-# Inject Media Drive (If configured)
+# Inject Media Drive
 if [[ -n "$MEDIA_UUID" ]]; then
-    echo "UUID=$MEDIA_UUID  /mnt/Media  btrfs  rw,nosuid,nodev,noatime,nofail,x-gvfs-hide,x-systemd.automount,compress=zstd:3,discard=async  0 0" >> /mnt/etc/fstab
+    print "UUID=$MEDIA_UUID  /mnt/Media  btrfs  rw,nosuid,nodev,noatime,nofail,x-gvfs-hide,x-systemd.automount,compress=zstd:3,discard=async  0 0" >> /mnt/etc/fstab
 fi
 
-# ==============================================================================
-# PHASE 5: SYSTEM CONFIGURATION (CHROOT)
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# 5. System Configuration (Chroot)
+# ------------------------------------------------------------------------------
 
-echo -e "${GREEN}--- Configuring System (Chroot) ---${NC}"
+print -P "%F{green}--- Configuring System (Chroot) ---%f"
 
-# Generate internal script
-cat <<CHROOT_SCRIPT > /mnt/setup_internal.sh
-#!/bin/bash
-set -e
+# Generate Internal Zsh Script
+# We use cat with variable expansion to inject vars from this outer scope
+cat <<CHROOT_SCRIPT > /mnt/setup_internal.zsh
+#!/bin/zsh
+setopt ERR_EXIT NO_UNSET PIPE_FAIL
 
 # --- 5.1 Identity & Locale ---
 ln -sf /usr/share/zoneinfo/Europe/London /etc/localtime
 hwclock --systohc
-echo "en_GB.UTF-8 UTF-8" > /etc/locale.gen
+print "en_GB.UTF-8 UTF-8" > /etc/locale.gen
 locale-gen
-echo "LANG=en_GB.UTF-8" > /etc/locale.conf
-echo "KEYMAP=uk" > /etc/vconsole.conf
-echo "$HOSTNAME" > /etc/hostname
+print "LANG=en_GB.UTF-8" > /etc/locale.conf
+print "KEYMAP=uk" > /etc/vconsole.conf
+print "$HOSTNAME" > /etc/hostname
 cat <<HOSTS >> /etc/hosts
 127.0.0.1   localhost
 ::1         localhost
@@ -260,29 +278,42 @@ cat <<HOSTS >> /etc/hosts
 HOSTS
 
 # --- 5.2 Users & Permissions ---
-echo "Creating user $TARGET_USER..."
+print "Creating user $TARGET_USER..."
+# Safety fix: Ensure polkit group exists
+groupadd --gid 102 polkit 2>/dev/null || true
+
 useradd -m -G wheel,input,render,video,storage,gamemode,libvirt -s /bin/zsh $TARGET_USER
-echo "root:$ROOT_PASS" | chpasswd
-echo "$TARGET_USER:$USER_PASS" | chpasswd
-echo "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/wheel
+print "root:$ROOT_PASS" | chpasswd
+print "$TARGET_USER:$USER_PASS" | chpasswd
+print "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/wheel
 
 groupadd -f media
 usermod -aG media $TARGET_USER
 
 # --- 5.3 Network & Services ---
-echo -e "[device]\nwifi.backend=iwd" > /etc/NetworkManager/conf.d/wifi_backend.conf
+mkdir -p /etc/NetworkManager/conf.d
+print -l "[device]" "wifi.backend=iwd" > /etc/NetworkManager/conf.d/wifi_backend.conf
 sed -i 's/^#*\(Experimental = \).*/\1true/' /etc/bluetooth/main.conf
-systemctl enable NetworkManager bluetooth sshd sddm fstrim.timer
+systemctl enable NetworkManager bluetooth sshd sddm fstrim.timer fwupd.service
 
-# Network Optimisation: Tailscale GRO
+mkdir -p /etc/xdg/reflector
+cat << 'REFLECTOR' > /etc/xdg/reflector/reflector.conf
+--country GB,IE,NL,DE,FR,EU
+--age 6
+--protocol https
+--sort rate
+--fastest 10
+--save /etc/pacman.d/mirrorlist
+REFLECTOR
+systemctl enable reflector.timer
+
 mkdir -p /etc/NetworkManager/dispatcher.d
 cat << 'GRO' > /etc/NetworkManager/dispatcher.d/99-tailscale-gro
-#!/bin/bash
+#!/bin/zsh
 [[ "\$2" == "up" ]] && /usr/bin/ethtool -K "\$1" rx-udp-gro-forwarding on rx-gro-list off 2>/dev/null || true
 GRO
 chmod +x /etc/NetworkManager/dispatcher.d/99-tailscale-gro
 
-# Network Optimisation: WiFi Power Save
 cat << 'WIFI' > /etc/NetworkManager/dispatcher.d/disable-wifi-powersave
 #!/bin/sh
 [[ "\$1" == wl* ]] && [[ "\$2" == "up" ]] && /usr/bin/iw dev "\$1" set power_save off
@@ -292,17 +323,15 @@ chmod +x /etc/NetworkManager/dispatcher.d/disable-wifi-powersave
 # --- 5.4 Bootloader ---
 grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
 sed -i 's/^GRUB_TIMEOUT=5/GRUB_TIMEOUT=2/' /etc/default/grub
-grub-mkconfig -o /boot/grub/grub.cfg
 
-# --- 5.5 Build Environment (Optimised) ---
+# --- 5.5 Build Environment ---
 sed -i 's/^#*\(CFLAGS=".* -march=\)x86-64 -mtune=generic/\1native/' /etc/makepkg.conf
 sed -i "s/^#*MAKEFLAGS=.*/MAKEFLAGS=\"-j\$(nproc)\"/" /etc/makepkg.conf
 if ! grep -q "RUSTFLAGS" /etc/makepkg.conf; then
-    echo 'RUSTFLAGS="-C target-cpu=native"' >> /etc/makepkg.conf
+    print 'RUSTFLAGS="-C target-cpu=native"' >> /etc/makepkg.conf
 fi
 sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf
 
-# Re-inject CachyOS for Chroot Context
 if ! grep -q "cachyos" /etc/pacman.conf; then
     cat <<EOF >> /etc/pacman.conf
 [cachyos-znver4]
@@ -327,7 +356,6 @@ cd ..
 rm -rf yay
 
 # --- 5.7 Extended Packages ---
-# Combined Lists
 CORE_AUR=(
     "darkly-bin" "ethtool" "geekbench" "google-chrome" "jq" "kio-gdrive"
     "konsave" "kwin-effects-better-blur-dx" "mkinitcpio-firmware"
@@ -353,7 +381,7 @@ elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
     TARGET_AUR+=("\${LAPTOP_AUR[@]}")
 fi
 
-echo "Installing Extended Packages via Yay..."
+print "Installing Extended Packages via Yay..."
 sudo -u $TARGET_USER yay -S --needed --noconfirm "\${TARGET_AUR[@]}"
 
 # --- 5.8 Dotfiles & Home ---
@@ -419,7 +447,7 @@ sed -i 's/^plugins=(git)$/plugins=(git archlinux zsh-autosuggestions zsh-syntax-
 
 # Gemini Config
 mkdir -p /home/$TARGET_USER/.gemini
-echo '{"mcpServers":{"arch-ops":{"command":"uvx","args":["arch-ops-server"]}}}' > /home/$TARGET_USER/.gemini/settings.json
+print '{"mcpServers":{"arch-ops":{"command":"uvx","args":["arch-ops-server"]}}}' > /home/$TARGET_USER/.gemini/settings.json
 chown -R $TARGET_USER:$TARGET_USER /home/$TARGET_USER/.gemini
 
 # Resources: Konsole & Plasmoids
@@ -435,27 +463,29 @@ if [[ -f "\$TRANS_ARCHIVE" ]]; then
     chown -R $TARGET_USER:$TARGET_USER "/home/$TARGET_USER/.local/share/plasma"
 fi
 
+# Papirus Folder Colour
+papirus-folders -C breeze --theme Papirus-Dark || true
+
 # --- 5.9 Device Specific Logic ---
 
 # Common Env Vars
-echo "LIBVA_DRIVER_NAME=radeonsi" >> /etc/environment
-echo "VDPAU_DRIVER=radeonsi" >> /etc/environment
-echo "WINEFSYNC=1" >> /etc/environment
+print "LIBVA_DRIVER_NAME=radeonsi" >> /etc/environment
+print "VDPAU_DRIVER=radeonsi" >> /etc/environment
+print "WINEFSYNC=1" >> /etc/environment
 
-# Common Udev (NVMe Scheduler)
-echo 'ACTION=="add|change", KERNEL=="nvme[0-9]n[0-9]", ATTR{queue/scheduler}="kyber"' > /etc/udev/rules.d/60-iosched.rules
+# Common Udev
+print 'ACTION=="add|change", KERNEL=="nvme[0-9]n[0-9]", ATTR{queue/scheduler}="kyber"' > /etc/udev/rules.d/60-iosched.rules
 
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
-    echo "Applying Desktop Configuration..."
+    print "Applying Desktop Configuration..."
 
-    # 1. Hardware Configuration
-    # USB Controller Fix (Asus X670E-I)
-    echo 'SUBSYSTEM=="pci", ATTR{vendor}=="0x1022", ATTR{device}=="0x43f7", ATTR{power/control}="on"' > /etc/udev/rules.d/99-xhci-fix.rules
+    # Hardware Configuration
+    print 'SUBSYSTEM=="pci", ATTR{vendor}=="0x1022", ATTR{device}=="0x43f7", ATTR{power/control}="on"' > /etc/udev/rules.d/99-xhci-fix.rules
 
     # Boot Params
     GRUB_CMDLINE="loglevel=3 quiet amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=3440x1440@60 amd_pstate=active"
 
-    # 2. EDID Injection (2560x1600 Headless Support)
+    # EDID Injection
     EDID_SRC="\$REPO_DIR/Resources/Sunshine/custom_2560x1600.bin"
     if [[ -f "\$EDID_SRC" ]]; then
         mkdir -p /usr/lib/firmware/edid
@@ -463,16 +493,18 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
         if ! grep -q "custom_2560x1600.bin" /etc/mkinitcpio.conf; then
             sed -i 's|^FILES=(|FILES=(/usr/lib/firmware/edid/custom_2560x1600.bin |' /etc/mkinitcpio.conf
         fi
+
+        if [[ -n "$MONITOR_PORT" ]]; then
+            GRUB_CMDLINE="\$GRUB_CMDLINE drm.edid_firmware=${MONITOR_PORT}:edid/custom_2560x1600.bin"
+        fi
     fi
     sed -i "s|^GRUB_CMDLINE_LINUX_DEFAULT=.*|GRUB_CMDLINE_LINUX_DEFAULT=\"\$GRUB_CMDLINE\"|" /etc/default/grub
 
-    # 3. Media Utilities
-    # Fix Cover Art Script
+    # Media Utilities
     ln -sf "\$REPO_DIR/Scripts/jellyfin_fix_cover_art.zsh" /home/$TARGET_USER/.local/bin/fix_cover_art
     chmod +x /home/$TARGET_USER/.local/bin/fix_cover_art
 
-    # 4. Sunshine Customisation
-    # Hook for Icon Replacement
+    # Sunshine Customisation
     cat << 'HOOK' > /usr/local/bin/replace-sunshine-icons.sh
 #!/bin/bash
 DEST="/usr/share/icons/hicolor/scalable/status"
@@ -496,8 +528,7 @@ When = PostTransaction
 Exec = /usr/local/bin/replace-sunshine-icons.sh
 HOOK
 
-    # GPU Boost Script & Helpers
-    echo "$TARGET_USER ALL=(ALL) NOPASSWD: /usr/local/bin/sunshine_gpu_boost" > /etc/sudoers.d/90-sunshine-boost
+    print "$TARGET_USER ALL=(ALL) NOPASSWD: /usr/local/bin/sunshine_gpu_boost" > /etc/sudoers.d/90-sunshine-boost
     chmod 440 /etc/sudoers.d/90-sunshine-boost
 
     for script in sunshine_gpu_boost.zsh sunshine_hdr.zsh sunshine_res.zsh sunshine_laptop.zsh; do
@@ -505,8 +536,7 @@ HOOK
         chmod +x "\$REPO_DIR/Scripts/\$script"
     done
 
-    # 5. Media Stack Automation
-    # Slskd Config
+    # Media Stack Automation
     mkdir -p /etc/slskd
     cat <<YAML > /etc/slskd/slskd.yml
 web:
@@ -522,7 +552,7 @@ directories:
   incomplete: /mnt/Media/Downloads/slskd/Incomplete
 YAML
 
-    # Soularr Installation
+    # Soularr
     cd /opt
     git clone https://github.com/mrusse/soularr.git
     chown -R $TARGET_USER:$TARGET_USER /opt/soularr
@@ -555,12 +585,11 @@ WantedBy=timers.target
 TIMER
     systemctl enable soularr.timer
 
-    # 6. Media Drive & Service Overrides
+    # Media Drive & Service Overrides
     if [[ -n "$MEDIA_UUID" ]]; then
         mkdir -p /mnt/Media
         mount /mnt/Media || true
 
-        # Structure & Permissions
         if mountpoint -q /mnt/Media; then
             mkdir -p /mnt/Media/{Films,TV,Music/{Maintained,Manual},Downloads/{lidarr,radarr,slskd,sonarr,transmission}}
             chattr +C /mnt/Media/Downloads || true
@@ -570,38 +599,32 @@ TIMER
             setfacl -R -m d:g:media:rwX /mnt/Media
         fi
 
-        # Service Dependencies
         for svc in sonarr radarr lidarr prowlarr transmission slskd jellyfin; do
             mkdir -p "/etc/systemd/system/\$svc.service.d"
-            echo -e "[Unit]\nRequiresMountsFor=/mnt/Media" > "/etc/systemd/system/\$svc.service.d/media-mount.conf"
+            print -l "[Unit]" "RequiresMountsFor=/mnt/Media" > "/etc/systemd/system/\$svc.service.d/media-mount.conf"
             if [[ "\$svc" != "jellyfin" ]]; then
-                echo -e "[Service]\nUMask=0002" > "/etc/systemd/system/\$svc.service.d/permissions.conf"
+                print -l "[Service]" "UMask=0002" > "/etc/systemd/system/\$svc.service.d/permissions.conf"
             fi
         done
-        # Slskd Config Override
         mkdir -p /etc/systemd/system/slskd.service.d
-        echo -e "[Service]\nExecStart=\nExecStart=/usr/lib/slskd/slskd --config /etc/slskd/slskd.yml" > /etc/systemd/system/slskd.service.d/override.conf
+        print -l "[Service]" "ExecStart=" "ExecStart=/usr/lib/slskd/slskd --config /etc/slskd/slskd.yml" > /etc/systemd/system/slskd.service.d/override.conf
     fi
 
-    # 7. Optimisations
-    # Jellyfin RAM Transcode
-    echo "d /dev/shm/jellyfin 0755 jellyfin jellyfin -" > /etc/tmpfiles.d/jellyfin-transcode.conf
+    # Optimisations
+    print "d /dev/shm/jellyfin 0755 jellyfin jellyfin -" > /etc/tmpfiles.d/jellyfin-transcode.conf
     usermod -aG render,video jellyfin || true
     chattr +C /var/lib/jellyfin || true
 
-    # Solaar Rules
     wget -O /etc/udev/rules.d/42-solaar-uinput.rules https://raw.githubusercontent.com/pwr-Solaar/Solaar/refs/heads/master/rules.d-uinput/42-logitech-unify-permissions.rules
 
-    # Enable Stack
     systemctl enable jellyfin transmission sonarr radarr lidarr prowlarr sunshine slskd
 
 elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
-    echo "Applying Laptop Configuration..."
+    print "Applying Laptop Configuration..."
 
     GRUB_CMDLINE="loglevel=3 quiet amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=2560x1600@60 amd_pstate=active"
     sed -i "s|^GRUB_CMDLINE_LINUX_DEFAULT=.*|GRUB_CMDLINE_LINUX_DEFAULT=\"\$GRUB_CMDLINE\"|" /etc/default/grub
 
-    # Numlock
     if ! grep -q "numlock" /etc/mkinitcpio.conf; then
         sed -i 's/HOOKS=(\(.*\))/HOOKS=(\1 numlock)/' /etc/mkinitcpio.conf
     fi
@@ -611,13 +634,11 @@ fi
 
 # --- 5.10 Final System Tuning ---
 
-# Sysctl & ZRAM
-echo -e "[zram0]\nzram-size = ram / 2\ncompression-algorithm = lz4\nswap-priority = 100" > /etc/systemd/zram-generator.conf
-echo -e "vm.swappiness = 150\nvm.page-cluster = 0" > /etc/sysctl.d/99-swappiness.conf
-echo -e "net.core.default_qdisc = cake\nnet.ipv4.tcp_congestion_control = bbr" > /etc/sysctl.d/99-bbr.conf
-echo -e "net.ipv4.ip_forward = 1\nnet.ipv6.conf.all.forwarding = 1" > /etc/sysctl.d/99-tailscale.conf
+print -l "[zram0]" "zram-size = ram / 2" "compression-algorithm = lz4" "swap-priority = 100" > /etc/systemd/zram-generator.conf
+print -l "vm.swappiness = 150" "vm.page-cluster = 0" > /etc/sysctl.d/99-swappiness.conf
+print -l "net.core.default_qdisc = cake" "net.ipv4.tcp_congestion_control = bbr" > /etc/sysctl.d/99-bbr.conf
+print -l "net.ipv4.ip_forward = 1" "net.ipv6.conf.all.forwarding = 1" > /etc/sysctl.d/99-tailscale.conf
 
-# Btrfs Timers & Snapper/Grub
 cat << 'TIMER' > /etc/systemd/system/btrfs-balance.timer
 [Unit]
 Description=Run Btrfs Balance Monthly
@@ -675,26 +696,27 @@ When = PostTransaction
 Exec = /usr/bin/grub-mkconfig -o /boot/grub/grub.cfg
 HOOK
 
-# Initramfs Generation (Final)
+# Initramfs Generation
 sed -i 's|^MODULES=.*|MODULES=(amdgpu nvme)|' /etc/mkinitcpio.conf
 sed -i 's/^#COMPRESSION="zstd"/COMPRESSION="lz4"/' /etc/mkinitcpio.conf
 mkinitcpio -P
 grub-mkconfig -o /boot/grub/grub.cfg
 
 # --- 5.11 First Boot Automation ---
-echo "Scheduling First Boot Setup..."
+print "Scheduling First Boot Setup..."
 mkdir -p /home/$TARGET_USER/.config/autostart
 cat <<BOOTSCRIPT > /home/$TARGET_USER/.local/bin/first_boot.zsh
 #!/bin/zsh
 source /home/$TARGET_USER/.zshrc
 sleep 5
-echo "Running First Boot Setup..."
+print "Running First Boot Setup..."
+REPO_DIR="/home/$TARGET_USER/Obsidian/AMD-Linux-Setup"
 
 # Desktop: Tailscale Exit Node
 [[ "$DEVICE_PROFILE" == "desktop" ]] && sudo tailscale up --advertise-exit-node
 
 # Konsave (Theming)
-PROFILE_DIR="/home/$TARGET_USER/Obsidian/AMD-Linux-Setup/Resources/Konsave"
+PROFILE_DIR="\$REPO_DIR/Resources/Konsave"
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     konsave -i "\$PROFILE_DIR"/Desktop*.knsv
     konsave -a \$(konsave -l | grep Desktop | head -n1 | awk '{print \$1}')
@@ -704,7 +726,31 @@ else
 fi
 
 # KWin Rules
-/home/$TARGET_USER/Obsidian/AMD-Linux-Setup/Scripts/kwin_apply_rules.zsh $DEVICE_PROFILE
+"\$REPO_DIR/Scripts/kwin_apply_rules.zsh" $DEVICE_PROFILE
+
+# Sunshine Config Wizard (Desktop Only)
+if [[ "$DEVICE_PROFILE" == "desktop" ]] && (( \$+commands[kscreen-doctor] )); then
+    print -P "\n%F{yellow}--- Sunshine Resolution/HDR Configuration ---%f"
+    print "Current Output Configuration:"
+    kscreen-doctor -o; print ""
+    if read -q "CONFIRM?Configure Sunshine Monitor and Mode Indexes now? [y/N] "; then
+        print ""
+        read "MON_ID?Enter Monitor ID (e.g. DP-1): "
+        read "STREAM_IDX?Enter Target Stream Mode Index (e.g. 9): "
+        read "DEFAULT_IDX?Enter Default Mode Index (e.g. 1): "
+
+        SCRIPTS_DIR="\$REPO_DIR/Scripts"
+        for script in sunshine_hdr.zsh sunshine_res.zsh sunshine_laptop.zsh; do
+            target_file="\$SCRIPTS_DIR/\$script"
+            if [[ -f "\$target_file" ]]; then
+                sed -i "s/^MONITOR=.*/MONITOR=\"\$MON_ID\"/" "\$target_file"
+                sed -i "s/^STREAM_MODE=.*/STREAM_MODE=\"\$STREAM_IDX\"/" "\$target_file"
+                sed -i "s/^DEFAULT_MODE=.*/DEFAULT_MODE=\"\$DEFAULT_IDX\"/" "\$target_file"
+                print "Updated variables in \$script"
+            fi
+        done
+    fi
+fi
 
 # Self-Cleanup
 rm /home/$TARGET_USER/.config/autostart/first_boot.desktop
@@ -718,7 +764,7 @@ chown $TARGET_USER:$TARGET_USER /home/$TARGET_USER/.local/bin/first_boot.zsh
 cat <<AUTOSTART > /home/$TARGET_USER/.config/autostart/first_boot.desktop
 [Desktop Entry]
 Type=Application
-Exec=/home/$TARGET_USER/.local/bin/first_boot.zsh
+Exec=konsole --separate --hide-tabbar -e /home/$TARGET_USER/.local/bin/first_boot.zsh
 Hidden=false
 NoDisplay=false
 Name=First Boot Setup
@@ -729,15 +775,15 @@ chown $TARGET_USER:$TARGET_USER /home/$TARGET_USER/.config/autostart/first_boot.
 CHROOT_SCRIPT
 
 # Execute Chroot Script
-chmod +x /mnt/setup_internal.sh
-arch-chroot /mnt /setup_internal.sh
+chmod +x /mnt/setup_internal.zsh
+arch-chroot /mnt /setup_internal.zsh
 
-# ==============================================================================
-# PHASE 6: COMPLETION
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# 6. Completion
+# ------------------------------------------------------------------------------
 
-echo -e "${GREEN}--- Installation Complete ---${NC}"
-rm /mnt/setup_internal.sh
+print -P "%F{green}--- Installation Complete ---%f"
+rm /mnt/setup_internal.zsh
 umount -R /mnt
 
-echo -e "${YELLOW}System ready. Please remove installation media and reboot.${NC}"
+print -P "%F{yellow}System ready. Please remove installation media and reboot.%f"
