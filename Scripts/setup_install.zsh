@@ -158,7 +158,7 @@ print -P "%F{green}--- Preparing Live Environment ---%f"
 timedatectl set-ntp true
 
 print "Optimising mirrors..."
-reflector --country GB,IE,NL,DE,FR,EU --age 12 --protocol https --sort rate --fastest 10 --save /etc/pacman.d/mirrorlist
+reflector --country GB,IE,NL,DE,FR,EU --save /etc/pacman.d/mirrorlist
 sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf
 
 print "Adding CachyOS repositories..."
