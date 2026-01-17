@@ -181,6 +181,7 @@ Include = /etc/pacman.d/cachyos-v4-mirrorlist
 Include = /etc/pacman.d/cachyos-mirrorlist
 EOF
 fi
+sed -i "/\[multilib\]/,/Include/"'s/^#//' /etc/pacman.conf
 pacman -Sy
 
 # ------------------------------------------------------------------------------
@@ -268,7 +269,7 @@ COMMON_PKGS=(
     "vulkan-headers" "wayland-protocols" "wine" "wine-mono" "winetricks"
 )
 
-pacstrap -K /mnt "${BASE_PKGS[@]}" "${DESKTOP_ENV_PKGS[@]}" "${COMMON_PKGS[@]}"
+pacstrap -K /mnt --noconfirm "${BASE_PKGS[@]}" "${DESKTOP_ENV_PKGS[@]}" "${COMMON_PKGS[@]}"
 genfstab -U /mnt >> /mnt/etc/fstab
 
 # Inject Media Drive
