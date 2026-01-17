@@ -214,7 +214,7 @@ BASE_EXTRAS="amd-ucode bluez bluez-utils cups dosfstools os-prober ntfs-3g steam
 7zip bash-language-server chromium cmake cmake-extras cpupower dkms dnsmasq edk2-ovmf extra-cmake-modules \
 fastfetch gamescope gwenview hunspell-en_gb inkscape isoimagewriter iw iwd kio-admin lib32-gnutls libva-utils \
 libvirt lz4 nss-mdns obsidian pacman-contrib python-pip qemu-desktop transmission-cli vdpauinfo virt-manager \
-vlc vlc-plugin-ffmpeg vulkan-headers wayland-protocols wine wine-mono winetricks"
+vlc vlc-plugin-ffmpeg vulkan-headers wayland-protocols wine wine-mono winetricks zsh fwupd papirus-icon-theme"
 
 # Combined List
 INSTALL_LIST="base base-devel linux-cachyos linux-cachyos-headers linux-firmware git vim openssh networkmanager grub efibootmgr yay reflector $GPU_PKGS $DE_PKGS $AUDIO_PKGS $BASE_EXTRAS $CORE_PKGS $DEVICE_PKGS"
