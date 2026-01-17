@@ -1,0 +1,35 @@
+Prompt:
+
+Withotu editing or linking to any of the existing scripts in this repo, I need you to generate a singular, standalone installation script (Scripts/unified_install.sh) replicating my existing modular install/setup scripts that can be run from an Arch Linux Live USB to fully provision my system.
+
+This unfied script should do everything that the modular install/setup scripts do, but from the live USB environment (before booting into setup system)
+
+Context & Goal:
+
+Currently, my repository uses a tiered setup starting with Scripts/system_install.sh, which uses archinstall consuming Scripts/setup_config.json. I want to completely avoid using archinstall because I have heard it can introduce bloat.
+
+Instructions:
+
+   1. Analyze the entire repo so you fully understand its contents and purpose (including .md files and other scripts not related to install/setup)
+
+   2. Analyze the Tiered install/setup Logic: Comprehensive read the Scripts/ directory (setup_home -> setup_core ->
+      setup_desktop/setup_laptop). You must fully grasp the "opinionated" nature of this configuration - including specific
+      Btrfs layouts like @games with No-CoW, custom Zsh aliases/wrappers, root-user symlinking, and directory
+      structures, etc.
+
+   3. Interrogate the Environment: You are currently running on my Desktop instance of this setup. Use your MCP tools
+      to probe the system to validate how the install/setup scripts work in practice (though be aware that this system will have drifted slightly from repo/script ideal starting position)
+
+   4. Derive the Laptop Profile: Analyze Scripts/setup_laptop.zsh to understand the specific deltas (drivers, kernel
+      arguments, packages) required for the Laptop profile compared to the Desktop.
+
+   5. Generate the Solution: Write a single script that:
+       * Replicates the full installation process (Partitioning -> Base -> Config) without archinstall.
+       * Prompts the user to select "Desktop" or "Laptop" and applies the correct profile.
+       * Strictly preserves all my opinionated configurations (dotfiles, git wrappers, file locations, etc.) exactly as they
+         are in the current scripts.
+       * Ensures the repository is cloned to the correct location (~/Obsidian/AMD-Linux-Setup) so that non-setup
+         scripts (like system_maintain.zsh) continue to function correctly post-install.
+
+  Do not offer "improvements" to my choices or style unless they are critical security fixes; the primary goal is
+  strict replication of the current environment via a cleaner installation method.
