@@ -20,7 +20,6 @@ print -P "%F{green}   AMD-Linux-Setup: Unified Installer (Zen 4)%f"
 print -P "%F{green}======================================================%f"
 
 # Purpose: Ensure environment is ready (UEFI, Internet) and gather user input.
-
 if [[ ! -d /sys/firmware/efi/efivars ]]; then
     print -P "%F{red}[!] Error: System is not booted in UEFI mode.%f"
     exit 1
@@ -157,9 +156,14 @@ fi
 print -P "%F{green}--- Preparing Live Environment ---%f"
 timedatectl set-ntp true
 
+print "Optimising pacman.conf (Live Env)..."
+# Update pacman.conf: Architecture, Color, ParallelDownloads
+sed -i 's/^Architecture = auto$/Architecture = auto x86_64_v4/' /etc/pacman.conf
+sed -i 's/^#Color/Color/' /etc/pacman.conf
+sed -i 's/^#*ParallelDownloads\s*=.*/ParallelDownloads = 20/' /etc/pacman.conf
+
 print "Optimising mirrors..."
 reflector --country GB,IE,NL,DE,FR,EU --save /etc/pacman.d/mirrorlist
-sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf
 
 print "Adding CachyOS repositories..."
 pacman-key --recv-keys F3B607488DB35A47 --keyserver keyserver.ubuntu.com
@@ -246,8 +250,10 @@ mount "$PART1" /mnt/boot
 
 print -P "%F{green}--- Installing Base System ---%f"
 
+# FIX: Added CachyOS repo packages so the target system has mirrorlists
 BASE_PKGS=(
     "base" "base-devel" "linux-cachyos" "linux-cachyos-headers" "linux-firmware"
+    "cachyos-keyring" "cachyos-mirrorlist" "cachyos-v4-mirrorlist"
     "amd-ucode" "btrfs-progs" "networkmanager" "git" "vim" "sudo" "efibootmgr"
     "grub" "grub-btrfs" "zsh" "pacman-contrib" "reflector" "openssh"
 )
@@ -356,7 +362,11 @@ sed -i "s/^#*MAKEFLAGS=.*/MAKEFLAGS=\"-j\$(nproc)\"/" /etc/makepkg.conf
 if ! grep -q "RUSTFLAGS" /etc/makepkg.conf; then
     print 'RUSTFLAGS="-C target-cpu=native"' >> /etc/makepkg.conf
 fi
-sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf
+
+# Fix: Apply Pacman Config Tweaks to Target System
+sed -i 's/^Architecture = auto$/Architecture = auto x86_64_v4/' /etc/pacman.conf
+sed -i 's/^#Color/Color/' /etc/pacman.conf
+sed -i 's/^#*ParallelDownloads\s*=.*/ParallelDownloads = 20/' /etc/pacman.conf
 
 if ! grep -q "cachyos" /etc/pacman.conf; then
     cat <<EOF >> /etc/pacman.conf
@@ -370,10 +380,20 @@ Include = /etc/pacman.d/cachyos-v4-mirrorlist
 Include = /etc/pacman.d/cachyos-mirrorlist
 EOF
 fi
+
+# FIX: Initialize keyring to prevent permissions errors
+pacman-key --init
+pacman-key --populate archlinux cachyos
+
 pacman-key --recv-keys F3B607488DB35A47 --keyserver keyserver.ubuntu.com
 pacman-key --lsign-key F3B607488DB35A47
 
 # --- 5.6 AUR Helper (Yay) ---
+
+# FIX: Grant temp sudo access so yay doesn't hang on password prompt
+print "$TARGET_USER ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/00_yay_temp
+chmod 440 /etc/sudoers.d/00_yay_temp
+
 cd /home/$TARGET_USER
 sudo -u $TARGET_USER git clone https://aur.archlinux.org/yay.git
 cd yay
@@ -409,6 +429,9 @@ fi
 
 print "Installing Extended Packages via Yay..."
 sudo -u $TARGET_USER yay -S --needed --noconfirm "\${TARGET_AUR[@]}"
+
+# Fix: Revoke temporary passwordless sudo
+rm /etc/sudoers.d/00_yay_temp
 
 # --- 5.8 Dotfiles & Home ---
 mkdir -p /home/$TARGET_USER/{Games,Make,Obsidian} /home/$TARGET_USER/.local/bin
@@ -531,6 +554,7 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     chmod +x /home/$TARGET_USER/.local/bin/fix_cover_art
 
     # Sunshine Customisation
+    # FIX: Escaped REPO_DIR to prevent parameter not set error
     cat << 'HOOK' > /usr/local/bin/replace-sunshine-icons.sh
 #!/bin/bash
 DEST="/usr/share/icons/hicolor/scalable/status"
@@ -775,7 +799,7 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]] && (( \$+commands[kscreen-doctor] )); th
                 print "Updated variables in \$script"
             fi
         done
-    fi
+     fi
 fi
 
 # Self-Cleanup
