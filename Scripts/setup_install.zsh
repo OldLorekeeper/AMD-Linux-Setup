@@ -534,7 +534,7 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     cat << 'HOOK' > /usr/local/bin/replace-sunshine-icons.sh
 #!/bin/bash
 DEST="/usr/share/icons/hicolor/scalable/status"
-SRC="$REPO_DIR/Resources/Icons/Sunshine"
+SRC="\$REPO_DIR/Resources/Icons/Sunshine"
 [[ -d "\$SRC" ]] && cp "\$SRC"/*.svg "\$DEST/"
 SUNSHINE=\$(command -v sunshine)
 [[ -n "\$SUNSHINE" ]] && setcap cap_sys_admin+p "\$SUNSHINE"
