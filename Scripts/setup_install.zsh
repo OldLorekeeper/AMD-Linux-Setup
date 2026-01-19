@@ -474,8 +474,8 @@ pacman -Sy
 # 5.6 AUR Helper (Yay)
 # ------------------------------------------------------------------------------
 
-print "$TARGET_USER ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/00_yay_temp
-chmod 440 /etc/sudoers.d/00_yay_temp
+print "$TARGET_USER ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/99_yay_temp
+chmod 440 /etc/sudoers.d/99_yay_temp
 chown -R "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER"
 
 cd "/home/$TARGET_USER"
@@ -515,7 +515,7 @@ fi
 
 print "Installing Extended Packages via Yay..."
 sudo -u "$TARGET_USER" yay -S --needed --noconfirm "${TARGET_AUR[@]}"
-rm /etc/sudoers.d/00_yay_temp
+rm /etc/sudoers.d/99_yay_temp
 
 # ------------------------------------------------------------------------------
 # 5.8 Dotfiles & Home
