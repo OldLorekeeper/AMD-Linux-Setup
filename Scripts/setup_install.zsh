@@ -510,6 +510,10 @@ sudo -u "$TARGET_USER" git clone https://github.com/zsh-users/zsh-autosuggestion
 sudo -u "$TARGET_USER" git clone https://github.com/zsh-users/zsh-syntax-highlighting "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
 ln -sf "/home/$TARGET_USER/.oh-my-zsh" /root/.oh-my-zsh
 ln -sf "/home/$TARGET_USER/.zshrc" /root/.zshrc
+
+# FIX: Explicitly write the profile variable with expansion enabled
+print "export KWIN_PROFILE=\"$DEVICE_PROFILE\"" >> "/home/$TARGET_USER/.zshrc"
+
 cat <<'ZSHCONF' >> "/home/$TARGET_USER/.zshrc"
 
 # --- Custom Configuration ---
@@ -535,7 +539,6 @@ maintain() {
     "$script"
 }
 
-export KWIN_PROFILE="$DEVICE_PROFILE"
 update-kwin() {
     local target="${1:-$KWIN_PROFILE}"
     cd "$HOME/Obsidian/AMD-Linux-Setup" && git pull && ./Scripts/kwin_apply_rules.zsh "$target"
