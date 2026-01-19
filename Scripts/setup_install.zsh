@@ -518,16 +518,29 @@ cat <<'ZSHCONF' >> "/home/$TARGET_USER/.zshrc"
 
 # --- Custom Configuration ---
 export PATH="$HOME/.local/bin:$PATH"
+
+# NVM Setup
+export NVM_DIR="$HOME/.nvm"
+[ -s "/usr/share/nvm/init-nvm.sh" ] && source "/usr/share/nvm/init-nvm.sh"
+
 alias mkinit="sudo mkinitcpio -P"
 alias mkgrub="sudo grub-mkconfig -o /boot/grub/grub.cfg"
 
 # Auto-Organize Git Clones
 git() {
-    if (( EUID == 0 )); then command git "$@"; return; fi
-    if [[ "$1" == "clone" && -n "$2" && -z "$3" && "$PWD" == "$HOME" ]]; then
-        print -P "%F{yellow}Auto-cloning to ~/Make...%f"
-        local repo_name="${2:t:r}"
-        command git clone "$2" "$HOME/Make/$repo_name"
+    if (( EUID == 0 )); then
+        command git "$@"
+        return
+    fi
+    if [[ "$1" == "clone" && -n "$2" && -z "$3" ]]; then
+        if [[ "$PWD" == "$HOME" ]]; then
+            print -P "%F{yellow}Auto-cloning to ~/Make...%f"
+            # Extract basename and remove .git extension
+            local repo_name="${${2:t}%.git}"
+            command git clone "$2" "$HOME/Make/$repo_name"
+        else
+            command git clone "$2"
+        fi
     else
         command git "$@"
     fi
@@ -535,13 +548,64 @@ git() {
 
 maintain() {
     local script="$HOME/Obsidian/AMD-Linux-Setup/Scripts/system_maintain.zsh"
-    [[ -x "$script" ]] || chmod +x "$script"
-    "$script"
+    if [[ -f "$script" ]]; then
+        [[ -x "$script" ]] || chmod +x "$script"
+        "$script"
+    else
+        print -P "%F{red}Error: Maintenance script not found at:%f\n$script"
+        return 1
+    fi
 }
 
+# KWin Management
 update-kwin() {
     local target="${1:-$KWIN_PROFILE}"
-    cd "$HOME/Obsidian/AMD-Linux-Setup" && git pull && ./Scripts/kwin_apply_rules.zsh "$target"
+    if [[ -z "$target" ]]; then
+        print -u2 "Error: No profile specified and KWIN_PROFILE not set."
+        return 1
+    fi
+
+    print -P "%F{green}--- Syncing and Updating for Profile: $target ---%f"
+    local current_dir="$PWD"
+    local repo_dir="$HOME/Obsidian/AMD-Linux-Setup"
+
+    cd "$repo_dir" || return
+
+    # Auto-commit common fragment changes
+    if git status --porcelain Resources/Kwin/common.kwinrule.fragment | grep -q '^ M'; then
+        print -P "%F{yellow}Committing changes to common.kwinrule.fragment...%f"
+        git add Resources/Kwin/common.kwinrule.fragment
+        git commit -m "AUTOSYNC: KWin common fragment update from ${HOST}"
+    fi
+
+    if ! git pull; then
+        print -P "%F{red}Error: Git pull failed.%f"
+        cd "$current_dir"
+        return 1
+    fi
+
+    ./Scripts/kwin_apply_rules.zsh "$target"
+    cd "$current_dir"
+}
+
+edit-kwin() {
+    local target="${1:-$KWIN_PROFILE}"
+    local repo_dir="$HOME/Obsidian/AMD-Linux-Setup/Resources/Kwin"
+    local file_path=""
+
+    case "$target" in
+        "desktop") file_path="$repo_dir/desktop.rule.template" ;;
+        "laptop")  file_path="$repo_dir/laptop.rule.template" ;;
+        "common")  file_path="$repo_dir/common.kwinrule.fragment" ;;
+        *)         file_path="$repo_dir/common.kwinrule.fragment" ;;
+    esac
+
+    if [[ -f "$file_path" ]]; then
+        print "Opening template for: $target"
+        kate "$file_path" &!
+    else
+        print -u2 "Error: File not found: $file_path"
+    fi
 }
 ZSHCONF
 sed -i 's/^plugins=(git)$/plugins=(git archlinux zsh-autosuggestions zsh-syntax-highlighting)/' "/home/$TARGET_USER/.zshrc"
