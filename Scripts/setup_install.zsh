@@ -273,7 +273,7 @@ CORE_PKGS=(
     "amd-ucode" "btrfs-progs" "networkmanager" "git" "vim" "sudo" "efibootmgr"
     "grub" "grub-btrfs" "zsh" "pacman-contrib" "reflector" "openssh" "zram-generator"
     # GUI / GRAPHICs
-    "plasma-meta" "sddm" "konsole" "dolphin" "ark" "kate" "spectacle"
+    "plasma-meta" "sddm" "sddm-kcm" "konsole" "dolphin" "ark" "kate" "spectacle"
     "pipewire" "pipewire-pulse" "pipewire-alsa" "wireplumber"
     "mesa" "vulkan-radeon"
     # COMMON FOR DESKTOOP ANDD LAPTOP
