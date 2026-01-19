@@ -32,39 +32,91 @@ if ! ping -c 1 archlinux.org &>/dev/null; then
     exit 1
 fi
 
-print -P "%F{yellow}--- User Configuration ---%f"
+# ------------------------------------------------------------------------------
+# 1.1 Secrets Decryption
+# ------------------------------------------------------------------------------
 
-read "HOSTNAME?Hostname [Default: NCC-1701]: "
-HOSTNAME=${HOSTNAME:-NCC-1701}
+print -P "%F{yellow}--- Credentials Setup ---%f"
+SECRETS_FILE="setup_secrets.enc"
+SECRETS_PATH=""
 
-read "TARGET_USER?Username [Default: user]: "
-TARGET_USER=${TARGET_USER:-user}
+if [[ -f "${0:a:h}/$SECRETS_FILE" ]]; then
+    SECRETS_PATH="${0:a:h}/$SECRETS_FILE"
+elif [[ -f "./$SECRETS_FILE" ]]; then
+    SECRETS_PATH="./$SECRETS_FILE"
+fi
 
-print -P "%F{yellow}Set Root Password:%f"
-read -s "ROOT_PASS?Password: "
-print ""; print -P "%F{yellow}Set User (${TARGET_USER}) Password:%f"
-read -s "USER_PASS?Password: "
-print ""
+if [[ -n "$SECRETS_PATH" ]]; then
+    print -P "%F{yellow}Found encrypted secrets vault at: $SECRETS_PATH%f"
+    read -s "DECRYPT_PASS?Enter Decryption Password: "; print ""
+    if DECRYPTED=$(print "$DECRYPT_PASS" | openssl enc -d -aes-256-cbc -pbkdf2 -in "$SECRETS_PATH" -pass stdin 2>/dev/null); then
+        source <(print -r "$DECRYPTED")
+        print -P "%F{green}Secrets loaded successfully.%f"
+    else
+        print -P "%F{red}Decryption failed (Incorrect password?). Continuing with manual prompts.%f"
+    fi
+else
+    print -P "No secrets file found. Proceeding with manual input."
+fi
 
-# Purpose: Optional Git authentication for dotfiles.
-print -P "%F{yellow}--- Git Configuration (Optional) ---%f"
-read "GIT_NAME?Git Name: "
-read "GIT_EMAIL?Git Email: "
+# ------------------------------------------------------------------------------
+# 1.2 User Configuration
+# ------------------------------------------------------------------------------
 
-# Rationale: Reconstruct split token to avoid simple scanning.
-local PAT_P1="github_pat_11"
-local PAT_P2="I0DBPxYklMGxAZ_BUGTt1An4QZrf77WTDEZaS7eAzBQ67y1DT6QLgTGaIEBV7JUOMWQ5IYtNl0"
+print -P "%F{yellow}--- System Configuration ---%f"
 
-[[ -f "secrets.env" ]] && source "secrets.env"
+if [[ -z "${HOSTNAME:-}" ]]; then
+    read "HOSTNAME?Hostname [Default: NCC-1701]: "
+    HOSTNAME=${HOSTNAME:-NCC-1701}
+else
+    print -P "Hostname loaded: %F{green}$HOSTNAME%f"
+fi
+
+if [[ -z "${TARGET_USER:-}" ]]; then
+    read "TARGET_USER?Username [Default: user]: "
+    TARGET_USER=${TARGET_USER:-user}
+else
+    print -P "Username loaded: %F{green}$TARGET_USER%f"
+fi
+
+if [[ -z "${ROOT_PASS:-}" ]]; then
+    print -P "%F{yellow}Set Root Password:%f"
+    read -s "ROOT_PASS?Password: "; print ""
+fi
+
+if [[ -z "${USER_PASS:-}" ]]; then
+    print -P "%F{yellow}Set User (${TARGET_USER}) Password:%f"
+    read -s "USER_PASS?Password: "; print ""
+fi
+
+# ------------------------------------------------------------------------------
+# 1.3 Git Configuration
+# ------------------------------------------------------------------------------
+
+if [[ -z "${GIT_NAME:-}" ]]; then
+    read "GIT_NAME?Git Name [Default: OldLorekeeper]: "
+    GIT_NAME=${GIT_NAME:-OldLorekeeper}
+fi
+
+if [[ -z "${GIT_EMAIL:-}" ]]; then
+    read "GIT_EMAIL?Git Email: "
+fi
 
 if [[ -n "${GIT_PAT:-}" ]]; then
-    print -P "%F{green}Git PAT detected from environment. Skipping prompt.%f"
+    print -P "%F{green}Git PAT configured.%f"
 else
-    print -P "%F{yellow}Git PAT Verification:%f"
-    read -s "PAT_SECRET?Enter the missing 6 characters: "
-    print ""
-    GIT_PAT="${PAT_P1}${PAT_SECRET}${PAT_P2}"
+    print -P "%F{yellow}Enter GitHub Personal Access Token:%f"
+    read -s "GIT_PAT?Token (Hidden): "; print ""
 fi
+
+if [[ -z "${GIT_PAT:-}" ]]; then
+    print -P "%F{red}[!] Error: Git PAT is required to clone private dotfiles.%f"
+    exit 1
+fi
+
+# ------------------------------------------------------------------------------
+# 1.4 Device Profile
+# ------------------------------------------------------------------------------
 
 print -P "%F{yellow}--- Device Profile ---%f"
 print -l "1) Desktop (Ryzen 7800X3D / RX 7900 XT)" "2) Laptop (Ryzen 7840HS / 780M)"
@@ -76,7 +128,7 @@ case $PROFILE_SEL in
     *) print -P "%F{red}Invalid selection.%f"; exit 1 ;;
 esac
 
-# Purpose: Desktop-specific media server inputs.
+# Initialize variables
 SLSKD_USER=""; SLSKD_PASS=""; SOULSEEK_USER=""; SOULSEEK_PASS=""; MEDIA_UUID=""
 EDID_ENABLE=""; MONITOR_PORT=""
 
@@ -100,7 +152,6 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
         typeset -a CONNECTED_PORTS
         for status_file in /sys/class/drm/*/status; do
             if grep -q "connected" "$status_file"; then
-                # Extract clean port name (e.g., card0-DP-1 -> DP-1)
                 CONNECTED_PORTS+=("${${status_file:h}:t#*-}")
             fi
         done
@@ -126,7 +177,6 @@ read "DISK_SEL?Target Disk (e.g., nvme0n1): "
 DISK="/dev/$DISK_SEL"
 
 [[ ! -b "$DISK" ]] && { print -P "%F{red}Error: Invalid disk '$DISK'.%f"; exit 1; }
-
 print -P "%F{red}WARNING: ALL DATA ON $DISK WILL BE ERASED!%f"
 read "CONFIRM?Type 'yes' to confirm: "
 [[ "$CONFIRM" != "yes" ]] && { print "Aborted."; exit 1; }
@@ -139,27 +189,20 @@ read "CONFIRM?Type 'yes' to confirm: "
 print -P "%F{green}--- Preparing Live Environment ---%f"
 
 timedatectl set-ntp true
-
 print "Optimising pacman.conf (Live Env)..."
 sed -i 's/^Architecture = auto$/Architecture = auto x86_64_v4/' /etc/pacman.conf
 sed -i 's/^#Color/Color/' /etc/pacman.conf
 sed -i 's/^#*ParallelDownloads\s*=.*/ParallelDownloads = 20/' /etc/pacman.conf
-
 print "Optimising mirrors..."
 reflector --country GB,IE,NL,DE,FR,EU --save /etc/pacman.d/mirrorlist
 
 print "Adding CachyOS repositories..."
 pacman-key --recv-keys F3B607488DB35A47 --keyserver keyserver.ubuntu.com
 pacman-key --lsign-key F3B607488DB35A47
-
-# Dynamic Version Resolution
 CACHY_URL="https://mirror.cachyos.org/repo/x86_64/cachyos"
 
-# Helper to find latest package version from directory listing
 get_latest_pkg() {
-    local pkg_name="$1"
-    # Fetch list, grep for package name + version number start, sort version, take last
-    curl -s "$CACHY_URL/" | grep -o "${pkg_name}-[0-9].*pkg.tar.zst" | sort -V | tail -n1
+    curl -s "$CACHY_URL/" | grep -o "${1}-[0-9].*pkg.tar.zst" | sort -V | tail -n1
 }
 
 print "Resolving latest keyring versions..."
@@ -167,18 +210,14 @@ PKG_KEYRING=$(get_latest_pkg "cachyos-keyring")
 PKG_MIRROR=$(get_latest_pkg "cachyos-mirrorlist")
 PKG_V4=$(get_latest_pkg "cachyos-v4-mirrorlist")
 
-# Safety Check
 if [[ -z "$PKG_KEYRING" || -z "$PKG_MIRROR" || -z "$PKG_V4" ]]; then
     print -P "%F{red}[!] Error: Could not resolve CachyOS package filenames.%f"
     exit 1
 fi
 
 print -P "Found: %F{green}${PKG_KEYRING}%f"
-pacman -U --noconfirm "${CACHY_URL}/${PKG_KEYRING}" \
-                      "${CACHY_URL}/${PKG_MIRROR}" \
-                      "${CACHY_URL}/${PKG_V4}"
+pacman -U --noconfirm "${CACHY_URL}/${PKG_KEYRING}" "${CACHY_URL}/${PKG_MIRROR}" "${CACHY_URL}/${PKG_V4}"
 
-# Rationale: CachyOS repos must be appended to end to ensure Standard Arch has priority.
 if ! grep -q "cachyos" /etc/pacman.conf; then
     print -l "" "[cachyos-znver4]" "Include = /etc/pacman.d/cachyos-v4-mirrorlist" \
              "[cachyos-core-znver4]" "Include = /etc/pacman.d/cachyos-v4-mirrorlist" \
@@ -199,16 +238,13 @@ sgdisk -Z "$DISK"
 sgdisk -o "$DISK"
 sgdisk -n 1:0:+1G -t 1:ef00 -c 1:"EFI" "$DISK"
 sgdisk -n 2:0:0 -t 2:8300 -c 2:"Root" "$DISK"
+sleep 2
 
-sleep 2 # Wait for kernel to register partitions
-
-# Logic: Handle NVMe (p1) vs SATA (1) naming conventions.
 if [[ "$DISK" =~ [0-9]$ ]]; then
     PART1="${DISK}p1"; PART2="${DISK}p2"
 else
     PART1="${DISK}1"; PART2="${DISK}2"
 fi
-
 print "Detected partitions: EFI=$PART1, Root=$PART2"
 
 mkfs.vfat -F32 -n "EFI" "$PART1"
@@ -224,26 +260,21 @@ btrfs subvolume create /mnt/@.snapshots
 btrfs subvolume create /mnt/@games
 umount /mnt
 
-# Rationale: Mount with ZSTD compression and SSD optimizations.
 MOUNT_OPTS="rw,noatime,compress=zstd:3,ssd,discard=async,space_cache=v2"
 mount -o "$MOUNT_OPTS,subvol=@" "$PART2" /mnt
-
 mkdir -p /mnt/{boot/efi,home,var/log,var/cache/pacman/pkg,.snapshots}
 mount -o "$MOUNT_OPTS,subvol=@home" "$PART2" /mnt/home
 mount -o "$MOUNT_OPTS,subvol=@log" "$PART2" /mnt/var/log
 mount -o "$MOUNT_OPTS,subvol=@pkg" "$PART2" /mnt/var/cache/pacman/pkg
 mount -o "$MOUNT_OPTS,subvol=@.snapshots" "$PART2" /mnt/.snapshots
 
-# Special handling for @games (User Home Mount)
-# We do NOT mount it to its final location yet as the user home doesn't exist.
-# We mount it temporarily to apply No-CoW (+C).
+# Apply No-CoW to @games
 mkdir -p /mnt/tmp_games
 mount -o "$MOUNT_OPTS,subvol=@games" "$PART2" /mnt/tmp_games
 chattr +C /mnt/tmp_games
 umount /mnt/tmp_games
 rmdir /mnt/tmp_games
 
-# Rationale: Mount EFI to /efi to keep /boot on Btrfs (enabling kernel rollbacks).
 mkdir -p /mnt/efi
 mount "$PART1" /mnt/efi
 
@@ -251,7 +282,6 @@ mount "$PART1" /mnt/efi
 # 4. Base Installation
 # ------------------------------------------------------------------------------
 
-# Purpose: Install essential packages to /mnt.
 print -P "%F{green}--- Installing Base System ---%f"
 
 BASE_PKGS=(
@@ -260,13 +290,11 @@ BASE_PKGS=(
     "amd-ucode" "btrfs-progs" "networkmanager" "git" "vim" "sudo" "efibootmgr"
     "grub" "grub-btrfs" "zsh" "pacman-contrib" "reflector" "openssh"
 )
-
 DESKTOP_ENV_PKGS=(
     "plasma-meta" "sddm" "konsole" "dolphin" "ark" "kate" "spectacle"
     "pipewire" "pipewire-pulse" "pipewire-alsa" "wireplumber"
     "mesa" "vulkan-radeon" "libva-mesa-driver"
 )
-
 COMMON_PKGS=(
     "7zip" "bash-language-server" "chromium" "cmake" "cmake-extras" "cpupower"
     "cups" "dkms" "dnsmasq" "dosfstools" "edk2-ovmf" "extra-cmake-modules"
@@ -281,8 +309,7 @@ COMMON_PKGS=(
 pacstrap -K /mnt --noconfirm "${BASE_PKGS[@]}" "${DESKTOP_ENV_PKGS[@]}" "${COMMON_PKGS[@]}"
 genfstab -U /mnt >> /mnt/etc/fstab
 
-# Manually append @games mount to fstab (mounting to User Home)
-# We extract the UUID of PART2
+# Manually append @games mount to fstab
 ROOT_UUID=$(blkid -s UUID -o value "$PART2")
 print "UUID=$ROOT_UUID  /home/$TARGET_USER/Games  btrfs  $MOUNT_OPTS,subvol=@games  0 0" >> /mnt/etc/fstab
 
@@ -297,42 +324,68 @@ fi
 # Purpose: Generate the internal script to be run inside `arch-chroot`.
 print -P "%F{green}--- Configuring System (Chroot) ---%f"
 
-cat <<CHROOT_SCRIPT > /mnt/setup_internal.zsh
+# Pass variables safely into the chroot
+cat <<VARS > /mnt/install_vars.zsh
+TARGET_USER=${(q)TARGET_USER}
+ROOT_PASS=${(q)ROOT_PASS}
+USER_PASS=${(q)USER_PASS}
+HOSTNAME=${(q)HOSTNAME}
+GIT_NAME=${(q)GIT_NAME}
+GIT_EMAIL=${(q)GIT_EMAIL}
+GIT_PAT=${(q)GIT_PAT}
+DEVICE_PROFILE=${(q)DEVICE_PROFILE}
+SLSKD_USER=${(q)SLSKD_USER}
+SLSKD_PASS=${(q)SLSKD_PASS}
+SOULSEEK_USER=${(q)SOULSEEK_USER}
+SOULSEEK_PASS=${(q)SOULSEEK_PASS}
+MEDIA_UUID=${(q)MEDIA_UUID}
+MONITOR_PORT=${(q)MONITOR_PORT}
+VARS
+
+# The actual installation script
+cat << 'CHROOT_SCRIPT' > /mnt/setup_internal.zsh
 #!/bin/zsh
 setopt ERR_EXIT NO_UNSET PIPE_FAIL
 
-# --- 5.1 Identity & Locale ---
+source /install_vars.zsh
+rm /install_vars.zsh
+
+# ------------------------------------------------------------------------------
+# 5.1 Identity & Locale
+# ------------------------------------------------------------------------------
+
 ln -sf /usr/share/zoneinfo/Europe/London /etc/localtime
 hwclock --systohc
-print "en_GB.UTF-8 UTF-8" > /etc/locale.gen
+print -l "en_GB.UTF-8 UTF-8" "en_US.UTF-8 UTF-8" > /etc/locale.gen
 locale-gen
 print "LANG=en_GB.UTF-8" > /etc/locale.conf
 print "KEYMAP=uk" > /etc/vconsole.conf
 print "$HOSTNAME" > /etc/hostname
-
 print -l "127.0.0.1   localhost" "::1         localhost" "127.0.1.1   $HOSTNAME.localdomain $HOSTNAME" >> /etc/hosts
 
-# --- 5.2 Users & Permissions ---
+# ------------------------------------------------------------------------------
+# 5.2 Users & Permissions
+# ------------------------------------------------------------------------------
+
 print "Creating user $TARGET_USER..."
 groupadd --gid 102 polkit 2>/dev/null || true
-useradd -m -G wheel,input,render,video,storage,gamemode,libvirt -s /bin/zsh $TARGET_USER
+useradd -m -G wheel,input,render,video,storage,gamemode,libvirt -s /bin/zsh "$TARGET_USER"
 print "root:$ROOT_PASS" | chpasswd
 print "$TARGET_USER:$USER_PASS" | chpasswd
 print "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/wheel
 
 groupadd -f media
-usermod -aG media $TARGET_USER
+usermod -aG media "$TARGET_USER"
 
-# Ensure @games mount point exists and has correct ownership
-# The subvolume is mounted via fstab, but we must mount it now to set subvol root ownership
-mkdir -p /home/$TARGET_USER/Games
-chown $TARGET_USER:$TARGET_USER /home/$TARGET_USER/Games
-mount /home/$TARGET_USER/Games
-chown $TARGET_USER:$TARGET_USER /home/$TARGET_USER/Games
-# Already chattr +C from outside, but verify?
-# lsattr -d /home/$TARGET_USER/Games
+mkdir -p "/home/$TARGET_USER/Games"
+chown "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/Games"
+mount "/home/$TARGET_USER/Games" 2>/dev/null || true
+chown "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/Games"
 
-# --- 5.3 Network & Services ---
+# ------------------------------------------------------------------------------
+# 5.3 Network & Services
+# ------------------------------------------------------------------------------
+
 mkdir -p /etc/NetworkManager/conf.d
 print -l "[device]" "wifi.backend=iwd" > /etc/NetworkManager/conf.d/wifi_backend.conf
 sed -i 's/^#*\(Experimental = \).*/\1true/' /etc/bluetooth/main.conf
@@ -345,39 +398,42 @@ systemctl enable reflector.timer
 mkdir -p /etc/NetworkManager/dispatcher.d
 cat << 'GRO' > /etc/NetworkManager/dispatcher.d/99-tailscale-gro
 #!/bin/zsh
-[[ "\$2" == "up" ]] && /usr/bin/ethtool -K "\$1" rx-udp-gro-forwarding on rx-gro-list off 2>/dev/null || true
+[[ "$2" == "up" ]] && /usr/bin/ethtool -K "$1" rx-udp-gro-forwarding on rx-gro-list off 2>/dev/null || true
 GRO
 chmod +x /etc/NetworkManager/dispatcher.d/99-tailscale-gro
 
 cat << 'WIFI' > /etc/NetworkManager/dispatcher.d/disable-wifi-powersave
 #!/bin/sh
-[[ "\$1" == wl* ]] && [[ "\$2" == "up" ]] && /usr/bin/iw dev "\$1" set power_save off
+[[ "$1" == wl* ]] && [[ "$2" == "up" ]] && /usr/bin/iw dev "$1" set power_save off
 WIFI
 chmod +x /etc/NetworkManager/dispatcher.d/disable-wifi-powersave
 
-# --- 5.4 Bootloader ---
+# ------------------------------------------------------------------------------
+# 5.4 Bootloader
+# ------------------------------------------------------------------------------
+
 grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB
 sed -i 's/^GRUB_TIMEOUT=5/GRUB_TIMEOUT=2/' /etc/default/grub
 
-# --- 5.5 Build Environment & Repos ---
+# ------------------------------------------------------------------------------
+# 5.5 Build Environment & Repos
+# ------------------------------------------------------------------------------
+
 sed -i 's/^#*\(CFLAGS=".* -march=\)x86-64 -mtune=generic/\1native/' /etc/makepkg.conf
 sed -i "s/^#*MAKEFLAGS=.*/MAKEFLAGS=\"-j\$(nproc)\"/" /etc/makepkg.conf
 grep -q "RUSTFLAGS" /etc/makepkg.conf || print 'RUSTFLAGS="-C target-cpu=native"' >> /etc/makepkg.conf
 
-# Re-apply Pacman Config Tweaks in Target
 sed -i 's/^Architecture = auto$/Architecture = auto x86_64_v4/' /etc/pacman.conf
 sed -i 's/^#Color/Color/' /etc/pacman.conf
 sed -i 's/^#*ParallelDownloads\s*=.*/ParallelDownloads = 20/' /etc/pacman.conf
 sed -i "/\[multilib\]/,/Include/"'s/^#//' /etc/pacman.conf
 
-# Init Keys
 pacman-key --init
 pacman-key --populate archlinux
 if pacman -Q cachyos-keyring &>/dev/null; then
     pacman-key --populate cachyos
 fi
 
-# Add CachyOS Repos (if missing)
 if ! grep -q "cachyos" /etc/pacman.conf; then
     print -l "" "[cachyos-znver4]" "Include = /etc/pacman.d/cachyos-v4-mirrorlist" \
              "[cachyos-core-znver4]" "Include = /etc/pacman.d/cachyos-v4-mirrorlist" \
@@ -385,93 +441,94 @@ if ! grep -q "cachyos" /etc/pacman.conf; then
              "[cachyos]" "Include = /etc/pacman.d/cachyos-mirrorlist" >> /etc/pacman.conf
 fi
 
-# Add LizardByte Repo (for Sunshine)
 if ! grep -q "lizardbyte" /etc/pacman.conf; then
     print -l "" "[lizardbyte]" "SigLevel = Optional" \
              "Server = https://github.com/LizardByte/pacman-repo/releases/latest/download" >> /etc/pacman.conf
 fi
-
 pacman -Sy
 
-# --- 5.6 AUR Helper (Yay) ---
+# ------------------------------------------------------------------------------
+# 5.6 AUR Helper (Yay)
+# ------------------------------------------------------------------------------
+
 print "$TARGET_USER ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/00_yay_temp
 chmod 440 /etc/sudoers.d/00_yay_temp
 
-cd /home/$TARGET_USER
-sudo -u $TARGET_USER git clone https://aur.archlinux.org/yay.git
+cd "/home/$TARGET_USER"
+sudo -u "$TARGET_USER" git clone https://aur.archlinux.org/yay.git
 cd yay
-sudo -u $TARGET_USER makepkg -si --noconfirm
+sudo -u "$TARGET_USER" makepkg -si --noconfirm
 cd ..
 rm -rf yay
 
-# --- 5.7 Extended Packages ---
+# ------------------------------------------------------------------------------
+# 5.7 Extended Packages
+# ------------------------------------------------------------------------------
+
 CORE_AUR=(
     "darkly-bin" "ethtool" "geekbench" "google-chrome" "jq" "kio-gdrive"
     "konsave" "kwin-effects-better-blur-dx" "mkinitcpio-firmware"
     "papirus-folders" "plasma6-applets-panel-colorizer" "protontricks"
     "protonup-qt" "tailscale" "timeshift-systemd-timer" "uv" "xpadneo-dkms"
 )
-
 DESKTOP_AUR=(
     "jellyfin-web" "jellyfin-server" "kid3" "lidarr-bin" "lutris" "prowlarr-bin"
     "python-dotenv" "python-pydantic" "python-requests" "python-schedule"
     "python-setuptools" "python-wheel" "radarr-bin" "slskd-bin" "solaar"
     "sonarr-bin" "yt-dlp"
 )
-
 LAPTOP_AUR=(
     "mkinitcpio-numlock" "moonlight-qt" "power-profiles-daemon"
 )
 
-TARGET_AUR=("\${CORE_AUR[@]}")
+TARGET_AUR=("${CORE_AUR[@]}")
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
-    TARGET_AUR+=("\${DESKTOP_AUR[@]}")
-    # Install Sunshine via Pacman (LizardByte Repo)
+    TARGET_AUR+=("${DESKTOP_AUR[@]}")
     pacman -S --noconfirm sunshine
 elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
-    TARGET_AUR+=("\${LAPTOP_AUR[@]}")
+    TARGET_AUR+=("${LAPTOP_AUR[@]}")
 fi
 
 print "Installing Extended Packages via Yay..."
-sudo -u $TARGET_USER yay -S --needed --noconfirm "\${TARGET_AUR[@]}"
-
+sudo -u "$TARGET_USER" yay -S --needed --noconfirm "${TARGET_AUR[@]}"
 rm /etc/sudoers.d/00_yay_temp
 
-# --- 5.8 Dotfiles & Home ---
-mkdir -p /home/$TARGET_USER/{Make,Obsidian} /home/$TARGET_USER/.local/bin
-chown -R $TARGET_USER:$TARGET_USER /home/$TARGET_USER
+# ------------------------------------------------------------------------------
+# 5.8 Dotfiles & Home
+# ------------------------------------------------------------------------------
 
-REPO_DIR="/home/$TARGET_USER/Obsidian/AMD-Linux-Setup"
-if [[ ! -d "\$REPO_DIR" ]]; then
-    sudo -u $TARGET_USER git clone https://github.com/OldLorekeeper/AMD-Linux-Setup "\$REPO_DIR"
-fi
+mkdir -p "/home/$TARGET_USER"/{Make,Obsidian} "/home/$TARGET_USER/.local/bin"
+chown -R "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER"
 
 if [[ -n "$GIT_NAME" ]]; then
-    sudo -u $TARGET_USER git config --global user.name "$GIT_NAME"
-    sudo -u $TARGET_USER git config --global user.email "$GIT_EMAIL"
-
+    sudo -u "$TARGET_USER" git config --global user.name "$GIT_NAME"
+    sudo -u "$TARGET_USER" git config --global user.email "$GIT_EMAIL"
     if [[ -n "$GIT_PAT" ]]; then
         print "https://$GIT_NAME:$GIT_PAT@github.com" > "/home/$TARGET_USER/.git-credentials"
         chmod 600 "/home/$TARGET_USER/.git-credentials"
-        chown $TARGET_USER:$TARGET_USER "/home/$TARGET_USER/.git-credentials"
-        sudo -u $TARGET_USER git config --global credential.helper store
+        chown "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/.git-credentials"
+        sudo -u "$TARGET_USER" git config --global credential.helper store
     else
-        sudo -u $TARGET_USER git config --global credential.helper libsecret
+        sudo -u "$TARGET_USER" git config --global credential.helper libsecret
     fi
 fi
 
+REPO_DIR="/home/$TARGET_USER/Obsidian/AMD-Linux-Setup"
+if [[ ! -d "$REPO_DIR" ]]; then
+    sudo -u "$TARGET_USER" git clone https://github.com/OldLorekeeper/AMD-Linux-Setup "$REPO_DIR"
+fi
+
 if [[ ! -d "/home/$TARGET_USER/.oh-my-zsh" ]]; then
-    sudo -u $TARGET_USER sh -c "\$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+    sudo -u "$TARGET_USER" sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 fi
 
 ZSH_CUSTOM="/home/$TARGET_USER/.oh-my-zsh/custom"
-sudo -u $TARGET_USER git clone https://github.com/zsh-users/zsh-autosuggestions "\$ZSH_CUSTOM/plugins/zsh-autosuggestions"
-sudo -u $TARGET_USER git clone https://github.com/zsh-users/zsh-syntax-highlighting "\$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
-ln -sf /home/$TARGET_USER/.oh-my-zsh /root/.oh-my-zsh
-ln -sf /home/$TARGET_USER/.zshrc /root/.zshrc
+sudo -u "$TARGET_USER" git clone https://github.com/zsh-users/zsh-autosuggestions "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
+sudo -u "$TARGET_USER" git clone https://github.com/zsh-users/zsh-syntax-highlighting "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
+ln -sf "/home/$TARGET_USER/.oh-my-zsh" /root/.oh-my-zsh
+ln -sf "/home/$TARGET_USER/.zshrc" /root/.zshrc
 
-# ZSH Configuration Injection
-cat <<'ZSHCONF' >> /home/$TARGET_USER/.zshrc
+cat <<'ZSHCONF' >> "/home/$TARGET_USER/.zshrc"
 
 # --- Custom Configuration ---
 export PATH="$HOME/.local/bin:$PATH"
@@ -480,89 +537,84 @@ alias mkgrub="sudo grub-mkconfig -o /boot/grub/grub.cfg"
 
 # Auto-Organize Git Clones
 git() {
-    if (( EUID == 0 )); then command git "\$@"; return; fi
-    if [[ "\$1" == "clone" && -n "\$2" && -z "\$3" && "\$PWD" == "\$HOME" ]]; then
+    if (( EUID == 0 )); then command git "$@"; return; fi
+    if [[ "$1" == "clone" && -n "$2" && -z "$3" && "$PWD" == "$HOME" ]]; then
         print -P "%F{yellow}Auto-cloning to ~/Make...%f"
-        local repo_name="\${2:t}"; repo_name="\${repo_name%.git}"
-        command git clone "\$2" "$HOME/Make/\$repo_name"
+        local repo_name="${2:t:r}"
+        command git clone "$2" "$HOME/Make/$repo_name"
     else
-        command git "\$@"
+        command git "$@"
     fi
 }
 
 maintain() {
     local script="$HOME/Obsidian/AMD-Linux-Setup/Scripts/system_maintain.zsh"
-    [[ -x "\$script" ]] || chmod +x "\$script"
-    "\$script"
+    [[ -x "$script" ]] || chmod +x "$script"
+    "$script"
 }
 
 export KWIN_PROFILE="$DEVICE_PROFILE"
 update-kwin() {
-    local target="\${1:-\$KWIN_PROFILE}"
-    cd "$HOME/Obsidian/AMD-Linux-Setup" && git pull && ./Scripts/kwin_apply_rules.zsh "\$target"
+    local target="${1:-$KWIN_PROFILE}"
+    cd "$HOME/Obsidian/AMD-Linux-Setup" && git pull && ./Scripts/kwin_apply_rules.zsh "$target"
 }
 ZSHCONF
 
-sed -i 's/^plugins=(git)$/plugins=(git archlinux zsh-autosuggestions zsh-syntax-highlighting)/' /home/$TARGET_USER/.zshrc
+sed -i 's/^plugins=(git)$/plugins=(git archlinux zsh-autosuggestions zsh-syntax-highlighting)/' "/home/$TARGET_USER/.zshrc"
 
-# Gemini Config
-mkdir -p /home/$TARGET_USER/.gemini
-print '{"mcpServers":{"arch-ops":{"command":"uvx","args":["arch-ops-server"]}}}' > /home/$TARGET_USER/.gemini/settings.json
-chown -R $TARGET_USER:$TARGET_USER /home/$TARGET_USER/.gemini
+mkdir -p "/home/$TARGET_USER/.gemini"
+print '{"mcpServers":{"arch-ops":{"command":"uvx","args":["arch-ops-server"]}}}' > "/home/$TARGET_USER/.gemini/settings.json"
+chown -R "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/.gemini"
 
-# Resources
-mkdir -p /home/$TARGET_USER/.local/share/konsole
-cp -f "\$REPO_DIR/Resources/Konsole"/* /home/$TARGET_USER/.local/share/konsole/ 2>/dev/null || true
-chown -R $TARGET_USER:$TARGET_USER /home/$TARGET_USER/.local/share/konsole
+mkdir -p "/home/$TARGET_USER/.local/share/konsole"
+cp -f "$REPO_DIR/Resources/Konsole"/* "/home/$TARGET_USER/.local/share/konsole/" 2>/dev/null || true
+chown -R "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/.local/share/konsole"
 
-TRANS_ARCHIVE="\$REPO_DIR/Resources/Plasmoids/transmission-plasmoid.tar.gz"
-if [[ -f "\$TRANS_ARCHIVE" ]]; then
+TRANS_ARCHIVE="$REPO_DIR/Resources/Plasmoids/transmission-plasmoid.tar.gz"
+if [[ -f "$TRANS_ARCHIVE" ]]; then
     TRANS_DIR="/home/$TARGET_USER/.local/share/plasma/plasmoids/com.oldlorekeeper.transmission"
-    mkdir -p "\$TRANS_DIR"
-    tar -xf "\$TRANS_ARCHIVE" -C "\$(dirname "\$TRANS_DIR")"
-    chown -R $TARGET_USER:$TARGET_USER "/home/$TARGET_USER/.local/share/plasma"
+    mkdir -p "$TRANS_DIR"
+    tar -xf "$TRANS_ARCHIVE" -C "${TRANS_DIR:h}"
+    chown -R "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/.local/share/plasma"
 fi
-
 papirus-folders -C breeze --theme Papirus-Dark || true
 
-# --- 5.9 Device Specific Logic ---
+# ------------------------------------------------------------------------------
+# 5.9 Device Specific Logic
+# ------------------------------------------------------------------------------
+
 print "LIBVA_DRIVER_NAME=radeonsi" >> /etc/environment
 print "VDPAU_DRIVER=radeonsi" >> /etc/environment
 print "WINEFSYNC=1" >> /etc/environment
-
 print 'ACTION=="add|change", KERNEL=="nvme[0-9]n[0-9]", ATTR{queue/scheduler}="kyber"' > /etc/udev/rules.d/60-iosched.rules
 
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     print "Applying Desktop Configuration..."
-
     print 'SUBSYSTEM=="pci", ATTR{vendor}=="0x1022", ATTR{device}=="0x43f7", ATTR{power/control}="on"' > /etc/udev/rules.d/99-xhci-fix.rules
     GRUB_CMDLINE="loglevel=3 quiet amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=3440x1440@60 amd_pstate=active"
 
-    # EDID Injection
-    EDID_SRC="\$REPO_DIR/Resources/Sunshine/custom_2560x1600.bin"
-    if [[ -f "\$EDID_SRC" ]]; then
+    EDID_SRC="$REPO_DIR/Resources/Sunshine/custom_2560x1600.bin"
+    if [[ -f "$EDID_SRC" ]]; then
         mkdir -p /usr/lib/firmware/edid
-        cp "\$EDID_SRC" /usr/lib/firmware/edid/
+        cp "$EDID_SRC" /usr/lib/firmware/edid/
         grep -q "custom_2560x1600.bin" /etc/mkinitcpio.conf || sed -i 's|^FILES=(|FILES=(/usr/lib/firmware/edid/custom_2560x1600.bin |' /etc/mkinitcpio.conf
         if [[ -n "$MONITOR_PORT" ]]; then
-            GRUB_CMDLINE="\$GRUB_CMDLINE drm.edid_firmware=${MONITOR_PORT}:edid/custom_2560x1600.bin"
+            GRUB_CMDLINE="$GRUB_CMDLINE drm.edid_firmware=${MONITOR_PORT}:edid/custom_2560x1600.bin"
         fi
     fi
-    sed -i "s|^GRUB_CMDLINE_LINUX_DEFAULT=.*|GRUB_CMDLINE_LINUX_DEFAULT=\"\$GRUB_CMDLINE\"|" /etc/default/grub
+    sed -i "s|^GRUB_CMDLINE_LINUX_DEFAULT=.*|GRUB_CMDLINE_LINUX_DEFAULT=\"$GRUB_CMDLINE\"|" /etc/default/grub
 
-    # Media Utilities
-    ln -sf "\$REPO_DIR/Scripts/jellyfin_fix_cover_art.zsh" /home/$TARGET_USER/.local/bin/fix_cover_art
-    chmod +x /home/$TARGET_USER/.local/bin/fix_cover_art
+    ln -sf "$REPO_DIR/Scripts/jellyfin_fix_cover_art.zsh" "/home/$TARGET_USER/.local/bin/fix_cover_art"
+    chmod +x "/home/$TARGET_USER/.local/bin/fix_cover_art"
 
-    # Sunshine Customisation
     cat << 'HOOK' > /usr/local/bin/replace-sunshine-icons.sh
 #!/bin/bash
 shopt -s nullglob
 DEST="/usr/share/icons/hicolor/scalable/status"
-SRC="\$REPO_DIR/Resources/Icons/Sunshine"
-[[ -d "\$SRC" ]] && cp "\$SRC"/*.svg "\$DEST/"
-SUNSHINE=\$(command -v sunshine)
-[[ -n "\$SUNSHINE" ]] && setcap cap_sys_admin+p "\$SUNSHINE"
+SRC="$REPO_DIR/Resources/Icons/Sunshine"
+[[ -d "$SRC" ]] && cp "$SRC"/*.svg "$DEST/"
+SUNSHINE=$(command -v sunshine)
+[[ -n "$SUNSHINE" ]] && setcap cap_sys_admin+p "$SUNSHINE"
 HOOK
     chmod +x /usr/local/bin/replace-sunshine-icons.sh
 
@@ -583,20 +635,18 @@ HOOK
     chmod 440 /etc/sudoers.d/90-sunshine-boost
 
     for script in sunshine_gpu_boost.zsh sunshine_hdr.zsh sunshine_res.zsh sunshine_laptop.zsh; do
-        ln -sf "\$REPO_DIR/Scripts/\$script" "/usr/local/bin/\${script%.zsh}"
-        chmod +x "\$REPO_DIR/Scripts/\$script"
+        ln -sf "$REPO_DIR/Scripts/$script" "/usr/local/bin/${script:r}"
+        chmod +x "$REPO_DIR/Scripts/$script"
     done
 
-    # Media Stack Automation
     mkdir -p /etc/slskd
     print -l "web:" "  port: 5030" "  authentication:" "    username: $SLSKD_USER" "    password: $SLSKD_PASS" \
              "soulseek:" "  username: $SOULSEEK_USER" "  password: $SOULSEEK_PASS" \
              "directories:" "  downloads: /mnt/Media/Downloads/slskd/Complete" "  incomplete: /mnt/Media/Downloads/slskd/Incomplete" > /etc/slskd/slskd.yml
 
-    # Soularr
     cd /opt
     git clone https://github.com/mrusse/soularr.git
-    chown -R $TARGET_USER:$TARGET_USER /opt/soularr
+    chown -R "$TARGET_USER:$TARGET_USER" /opt/soularr
     pip install --break-system-packages -r /opt/soularr/requirements.txt
     [[ -f /opt/soularr/config.ini ]] && cp /opt/soularr/config.ini /opt/soularr/config/config.ini || true
 
@@ -621,26 +671,23 @@ UNIT
     if [[ -n "$MEDIA_UUID" ]]; then
         mkdir -p /mnt/Media
         mount /mnt/Media || true
-
         if mountpoint -q /mnt/Media; then
             mkdir -p /mnt/Media/{Films,TV,Music/{Maintained,Manual},Downloads/{lidarr,radarr,slskd,sonarr,transmission}}
             chattr +C /mnt/Media/Downloads || true
-            chown -R $TARGET_USER:media /mnt/Media
+            chown -R "$TARGET_USER:media" /mnt/Media
             chmod -R 775 /mnt/Media
             setfacl -R -m g:media:rwX /mnt/Media
             setfacl -R -m d:g:media:rwX /mnt/Media
         fi
-
         for svc in sonarr radarr lidarr prowlarr transmission slskd jellyfin; do
-            mkdir -p "/etc/systemd/system/\$svc.service.d"
-            print -l "[Unit]" "RequiresMountsFor=/mnt/Media" > "/etc/systemd/system/\$svc.service.d/media-mount.conf"
-            [[ "\$svc" != "jellyfin" ]] && print -l "[Service]" "UMask=0002" > "/etc/systemd/system/\$svc.service.d/permissions.conf"
+            mkdir -p "/etc/systemd/system/$svc.service.d"
+            print -l "[Unit]" "RequiresMountsFor=/mnt/Media" > "/etc/systemd/system/$svc.service.d/media-mount.conf"
+            [[ "$svc" != "jellyfin" ]] && print -l "[Service]" "UMask=0002" > "/etc/systemd/system/$svc.service.d/permissions.conf"
         done
         mkdir -p /etc/systemd/system/slskd.service.d
         print -l "[Service]" "ExecStart=" "ExecStart=/usr/lib/slskd/slskd --config /etc/slskd/slskd.yml" > /etc/systemd/system/slskd.service.d/override.conf
     fi
 
-    # Optimisations
     print "d /dev/shm/jellyfin 0755 jellyfin jellyfin -" > /etc/tmpfiles.d/jellyfin-transcode.conf
     usermod -aG render,video jellyfin || true
     chattr +C /var/lib/jellyfin || true
@@ -650,12 +697,15 @@ UNIT
 elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
     print "Applying Laptop Configuration..."
     GRUB_CMDLINE="loglevel=3 quiet amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=2560x1600@60 amd_pstate=active"
-    sed -i "s|^GRUB_CMDLINE_LINUX_DEFAULT=.*|GRUB_CMDLINE_LINUX_DEFAULT=\"\$GRUB_CMDLINE\"|" /etc/default/grub
+    sed -i "s|^GRUB_CMDLINE_LINUX_DEFAULT=.*|GRUB_CMDLINE_LINUX_DEFAULT=\"$GRUB_CMDLINE\"|" /etc/default/grub
     grep -q "numlock" /etc/mkinitcpio.conf || sed -i 's/HOOKS=(\(.*\))/HOOKS=(\1 numlock)/' /etc/mkinitcpio.conf
     systemctl enable power-profiles-daemon
 fi
 
-# --- 5.10 Final System Tuning ---
+# ------------------------------------------------------------------------------
+# 5.10 Final System Tuning
+# ------------------------------------------------------------------------------
+
 print -l "[zram0]" "zram-size = ram / 2" "compression-algorithm = lz4" "swap-priority = 100" > /etc/systemd/zram-generator.conf
 print -l "vm.swappiness = 150" "vm.page-cluster = 0" > /etc/sysctl.d/99-swappiness.conf
 print -l "net.core.default_qdisc = cake" "net.ipv4.tcp_congestion_control = bbr" > /etc/sysctl.d/99-bbr.conf
@@ -703,26 +753,26 @@ When = PostTransaction
 Exec = /usr/bin/grub-mkconfig -o /boot/grub/grub.cfg
 HOOK
 
-# Initramfs Generation
 sed -i 's|^MODULES=.*|MODULES=(amdgpu nvme)|' /etc/mkinitcpio.conf
 sed -i 's/^#COMPRESSION="zstd"/COMPRESSION="lz4"/' /etc/mkinitcpio.conf
 mkinitcpio -P
 grub-mkconfig -o /boot/grub/grub.cfg
 
-# --- 5.11 First Boot Automation ---
+# ------------------------------------------------------------------------------
+# 5.11 First Boot Automation
+# ------------------------------------------------------------------------------
+
 print "Scheduling First Boot Setup..."
-mkdir -p /home/$TARGET_USER/.config/autostart
-cat <<BOOTSCRIPT > /home/$TARGET_USER/.local/bin/first_boot.zsh
+mkdir -p "/home/$TARGET_USER/.config/autostart"
+cat <<BOOTSCRIPT > "/home/$TARGET_USER/.local/bin/first_boot.zsh"
 #!/bin/zsh
-source /home/$TARGET_USER/.zshrc
+source "/home/$TARGET_USER/.zshrc"
 sleep 5
 print "Running First Boot Setup..."
 REPO_DIR="/home/$TARGET_USER/Obsidian/AMD-Linux-Setup"
 
-# Desktop: Tailscale Exit Node
 [[ "$DEVICE_PROFILE" == "desktop" ]] && sudo tailscale up --advertise-exit-node
 
-# Konsave (Theming)
 PROFILE_DIR="\$REPO_DIR/Resources/Konsave"
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     konsave -i "\$PROFILE_DIR"/Desktop*.knsv
@@ -732,10 +782,8 @@ else
     konsave -a \$(konsave -l | grep Laptop | head -n1 | awk '{print \$1}')
 fi
 
-# KWin Rules
 "\$REPO_DIR/Scripts/kwin_apply_rules.zsh" $DEVICE_PROFILE
 
-# Sunshine Config Wizard (Desktop Only)
 if [[ "$DEVICE_PROFILE" == "desktop" ]] && (( \$+commands[kscreen-doctor] )); then
     print -P "\n%F{yellow}--- Sunshine Resolution/HDR Configuration ---%f"
     print "Current Output Configuration:"
@@ -759,18 +807,17 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]] && (( \$+commands[kscreen-doctor] )); th
      fi
 fi
 
-# Self-Cleanup
-rm /home/$TARGET_USER/.config/autostart/first_boot.desktop
-rm /home/$TARGET_USER/.local/bin/first_boot.zsh
+rm "/home/$TARGET_USER/.config/autostart/first_boot.desktop"
+rm "/home/$TARGET_USER/.local/bin/first_boot.zsh"
 notify-send "System Setup Complete" "Ready."
 BOOTSCRIPT
 
-chmod +x /home/$TARGET_USER/.local/bin/first_boot.zsh
-chown $TARGET_USER:$TARGET_USER /home/$TARGET_USER/.local/bin/first_boot.zsh
+chmod +x "/home/$TARGET_USER/.local/bin/first_boot.zsh"
+chown "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/.local/bin/first_boot.zsh"
 
 print -l "[Desktop Entry]" "Type=Application" "Exec=konsole --separate --hide-tabbar -e /home/$TARGET_USER/.local/bin/first_boot.zsh" \
-         "Hidden=false" "NoDisplay=false" "Name=First Boot Setup" "X-GNOME-Autostart-enabled=true" > /home/$TARGET_USER/.config/autostart/first_boot.desktop
-chown $TARGET_USER:$TARGET_USER /home/$TARGET_USER/.config/autostart/first_boot.desktop
+         "Hidden=false" "NoDisplay=false" "Name=First Boot Setup" "X-GNOME-Autostart-enabled=true" > "/home/$TARGET_USER/.config/autostart/first_boot.desktop"
+chown "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/.config/autostart/first_boot.desktop"
 
 CHROOT_SCRIPT
 
@@ -785,5 +832,4 @@ arch-chroot /mnt /setup_internal.zsh
 print -P "%F{green}--- Installation Complete ---%f"
 rm /mnt/setup_internal.zsh
 umount -R /mnt
-
 print -P "%F{yellow}System ready. Please remove installation media and reboot.%f"
