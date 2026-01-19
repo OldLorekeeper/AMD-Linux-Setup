@@ -27,7 +27,7 @@ if [[ ! -d /sys/firmware/efi/efivars ]]; then
     exit 1
 fi
 
-if ! ping -c 1 archlinux.org &>/dev/null; then
+if ! ping -c 3 archlinux.org &>/dev/null; then
     print -P "%F{red}[!] Error: No internet connection.%f"
     exit 1
 fi
@@ -135,7 +135,7 @@ EDID_ENABLE=""; MONITOR_PORT=""
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     print -P "%F{yellow}--- Desktop Automation & Storage ---%f"
     print "Existing Partitions (for Media Drive):"
-    lsblk -o NAME,SIZE,FSTYPE,LABEL,UUID | grep -v loop
+    lsblk -o NAME,SIZE,FSTYPE,LABEL,UUID | grep -v loop || true
     read "MEDIA_UUID?Enter UUID for /mnt/Media (Leave empty to skip): "
 
     print -P "%F{yellow}Slskd & Soulseek Credentials:%f"
@@ -150,7 +150,7 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     if [[ "$EDID_ENABLE" =~ ^[Yy]$ ]]; then
         print "Detecting connected ports..."
         typeset -a CONNECTED_PORTS
-        for status_file in /sys/class/drm/*/status; do
+        for status_file in /sys/class/drm/*/status(N); do
             if grep -q "connected" "$status_file"; then
                 CONNECTED_PORTS+=("${${status_file:h}:t#*-}")
             fi
@@ -262,7 +262,7 @@ umount /mnt
 
 MOUNT_OPTS="rw,noatime,compress=zstd:3,ssd,discard=async,space_cache=v2"
 mount -o "$MOUNT_OPTS,subvol=@" "$PART2" /mnt
-mkdir -p /mnt/{boot/efi,home,var/log,var/cache/pacman/pkg,.snapshots}
+mkdir -p /mnt/{home,var/log,var/cache/pacman/pkg,.snapshots}
 mount -o "$MOUNT_OPTS,subvol=@home" "$PART2" /mnt/home
 mount -o "$MOUNT_OPTS,subvol=@log" "$PART2" /mnt/var/log
 mount -o "$MOUNT_OPTS,subvol=@pkg" "$PART2" /mnt/var/cache/pacman/pkg
@@ -453,6 +453,7 @@ pacman -Sy
 
 print "$TARGET_USER ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/00_yay_temp
 chmod 440 /etc/sudoers.d/00_yay_temp
+chown -R "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER"
 
 cd "/home/$TARGET_USER"
 sudo -u "$TARGET_USER" git clone https://aur.archlinux.org/yay.git
