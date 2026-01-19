@@ -323,7 +323,7 @@ COMMON_PKGS=(
     "cups" "dkms" "dnsmasq" "dosfstools" "edk2-ovmf" "extra-cmake-modules"
     "fastfetch" "fwupd" "gamemode" "gamescope" "gwenview" "hunspell-en_gb"
     "inkscape" "isoimagewriter" "iw" "iwd" "kio-admin" "lib32-gamemode"
-    "lib32-gnutls" "lib32-vulkan-radeon" "libva-utils" "libvirt" "lz4" "nss-mdns"
+    "lib32-gnutls" "lib32-vulkan-radeon" "libva-utils" "libvirt" "lz4" "npm" "nss-mdns"
     "obsidian" "papirus-icon-theme" "python-pip" "qemu-desktop" "steam"
     "transmission-cli" "vdpauinfo" "virt-manager" "vlc" "vlc-plugin-ffmpeg"
     "vulkan-headers" "wayland-protocols" "wine" "wine-mono" "winetricks"
@@ -589,6 +589,9 @@ update-kwin() {
 ZSHCONF
 
 sed -i 's/^plugins=(git)$/plugins=(git archlinux zsh-autosuggestions zsh-syntax-highlighting)/' "/home/$TARGET_USER/.zshrc"
+
+print "Installing Gemini CLI..."
+npm install -g @google/gemini-cli
 
 mkdir -p "/home/$TARGET_USER/.gemini"
 print '{"mcpServers":{"arch-ops":{"command":"uvx","args":["arch-ops-server"]}}}' > "/home/$TARGET_USER/.gemini/settings.json"
