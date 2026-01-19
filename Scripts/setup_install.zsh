@@ -748,6 +748,9 @@ UNIT
         print -l "[Service]" "ExecStart=" "ExecStart=/usr/lib/slskd/slskd --config /etc/slskd/slskd.yml" > /etc/systemd/system/slskd.service.d/override.conf
     fi
     print "d /dev/shm/jellyfin 0755 jellyfin jellyfin -" > /etc/tmpfiles.d/jellyfin-transcode.conf
+    for svc in sonarr radarr lidarr prowlarr transmission slskd jellyfin; do
+        usermod -aG media "$svc" 2>/dev/null || true
+    done
     usermod -aG render,video jellyfin || true
     chattr +C /var/lib/jellyfin || true
     wget -O /etc/udev/rules.d/42-solaar-uinput.rules https://raw.githubusercontent.com/pwr-Solaar/Solaar/refs/heads/master/rules.d-uinput/42-logitech-unify-permissions.rules
