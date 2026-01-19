@@ -498,6 +498,7 @@ REPO_DIR="/home/$TARGET_USER/Obsidian/AMD-Linux-Setup"
 if [[ ! -d "$REPO_DIR" ]]; then
     sudo -u "$TARGET_USER" git clone https://github.com/OldLorekeeper/AMD-Linux-Setup "$REPO_DIR"
 fi
+chmod +x "$REPO_DIR/Scripts/"*.zsh
 if [[ ! -d "/home/$TARGET_USER/.oh-my-zsh" ]]; then
     sudo -u "$TARGET_USER" sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 fi
@@ -554,6 +555,8 @@ if [[ -f "$TRANS_ARCHIVE" ]]; then
     chown -R "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/.local/share/plasma"
 fi
 papirus-folders -C breeze --theme Papirus-Dark || true
+mkdir -p "/home/$TARGET_USER/.local/share/"{icons,kxmlgui5,plasma,color-schemes,aurorae,fonts,wallpapers}
+chown -R "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/.local"
 
 # ------------------------------------------------------------------------------
 # 7.9 Device Specific Logic & Theming
@@ -793,7 +796,8 @@ chmod +x "/home/$TARGET_USER/.local/bin/first_boot.zsh"
 chown "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/.local/bin/first_boot.zsh"
 print -l "[Desktop Entry]" "Type=Application" "Exec=konsole --separate --hide-tabbar -e /home/$TARGET_USER/.local/bin/first_boot.zsh" \
          "Hidden=false" "NoDisplay=false" "Name=First Boot Setup" "X-GNOME-Autostart-enabled=true" > "/home/$TARGET_USER/.config/autostart/first_boot.desktop"
-chown "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/.config/autostart/first_boot.desktop"
+print "Finalizing permissions..."
+chown -R "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER"
 CHROOT_SCRIPT
 chmod +x /mnt/setup_internal.zsh
 arch-chroot /mnt /setup_internal.zsh
