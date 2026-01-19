@@ -1,3 +1,0 @@
-mkinitcpio-numlock
-moonlight-qt
-power-profiles-daemon
