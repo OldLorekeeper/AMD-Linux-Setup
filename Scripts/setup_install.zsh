@@ -38,25 +38,29 @@ fi
 
 print -P "%F{yellow}--- Credentials Setup ---%f"
 SECRETS_FILE="setup_secrets.enc"
-SECRETS_PATH=""
+RAW_URL="https://raw.githubusercontent.com/OldLorekeeper/AMD-Linux-Setup/main/Scripts/$SECRETS_FILE"
 
-if [[ -f "${0:a:h}/$SECRETS_FILE" ]]; then
-    SECRETS_PATH="${0:a:h}/$SECRETS_FILE"
-elif [[ -f "./$SECRETS_FILE" ]]; then
-    SECRETS_PATH="./$SECRETS_FILE"
+# If file is missing, try to download it
+if [[ ! -f "$SECRETS_FILE" ]]; then
+    print -P "%F{cyan}Secrets file not found locally. Attempting remote fetch...%f"
+    read -s "TEMP_PAT?Enter GitHub PAT to download secrets: "; print ""
+
+    if curl -H "Authorization: token $TEMP_PAT" -fsSL "$RAW_URL" -o "$SECRETS_FILE"; then
+        print -P "%F{green}Successfully downloaded $SECRETS_FILE%f"
+        GIT_PAT="$TEMP_PAT" # Reuse this PAT for later git clones
+    else
+        print -P "%F{red}Failed to download secrets. Proceeding with manual input.%f"
+    fi
 fi
 
-if [[ -n "$SECRETS_PATH" ]]; then
-    print -P "%F{yellow}Found encrypted secrets vault at: $SECRETS_PATH%f"
+if [[ -f "$SECRETS_FILE" ]]; then
     read -s "DECRYPT_PASS?Enter Decryption Password: "; print ""
-    if DECRYPTED=$(print "$DECRYPT_PASS" | openssl enc -d -aes-256-cbc -pbkdf2 -in "$SECRETS_PATH" -pass stdin 2>/dev/null); then
+    if DECRYPTED=$(openssl enc -d -aes-256-cbc -pbkdf2 -in "$SECRETS_FILE" -k "$DECRYPT_PASS" 2>/dev/null); then
         source <(print -r "$DECRYPTED")
         print -P "%F{green}Secrets loaded successfully.%f"
     else
-        print -P "%F{red}Decryption failed (Incorrect password?). Continuing with manual prompts.%f"
+        print -P "%F{red}Decryption failed. Continuing with manual prompts.%f"
     fi
-else
-    print -P "No secrets file found. Proceeding with manual input."
 fi
 
 # ------------------------------------------------------------------------------
@@ -223,7 +227,7 @@ pacman-key --lsign-key F3B607488DB35A47
 CACHY_URL="https://mirror.cachyos.org/repo/x86_64/cachyos"
 
 get_latest_pkg() {
-    curl -s "$CACHY_URL/" | grep -o "${1}-[0-9].*pkg.tar.zst" | sort -V | tail -n1
+    curl -s "$CACHY_URL/" | grep -oP "${1}-[0-9][^>]*?pkg\.tar\.zst(?=\")" | sort -V | tail -n1
 }
 
 print "Resolving latest keyring versions..."
