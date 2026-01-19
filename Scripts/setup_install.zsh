@@ -415,7 +415,7 @@ sed -i 's/^#*\(Experimental = \).*/\1true/' /etc/bluetooth/main.conf
 systemctl enable NetworkManager bluetooth sshd sddm fstrim.timer fwupd.service
 
 mkdir -p /etc/xdg/reflector
-print -l "--country GB,IE,NL,DE,FR,EU" "--age 6" "--protocol https" "--sort rate" "--fastest 10" "--save /etc/pacman.d/mirrorlist" > /etc/xdg/reflector/reflector.conf
+print -l -- "--country GB,IE,NL,DE,FR,EU" "--save /etc/pacman.d/mirrorlist" > /etc/xdg/reflector/reflector.conf
 systemctl enable reflector.timer
 
 mkdir -p /etc/NetworkManager/dispatcher.d
