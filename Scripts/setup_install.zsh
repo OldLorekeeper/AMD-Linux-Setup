@@ -55,9 +55,9 @@ if [[ -f "$SECRETS_FILE" ]]; then
     fi
 fi
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # 2. User Configuration
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 # Purpose: configure basic system identity variables (Hostname, User, Passwords) and Git credentials. Uses defaults if variables were not loaded via secrets.
 
@@ -286,7 +286,7 @@ CORE_PKGS=(
 )
 DESKTOP_PKGS=(
     "jellyfin-server" "jellyfin-web" "kid3" "lutris" "python-dotenv" "python-pydantic"
-    "python-requests" "python-setuptools" "python-wheel" "solaar" "sunshine" "yt-dlp"
+    "python-requests" "python-setuptools" "python-wheel" "solaar" "yt-dlp"
 )
 LAPTOP_PKGS=(
     "moonlight-qt" "power-profiles-daemon"
@@ -455,12 +455,12 @@ rm -rf yay
 # Purpose: Install profile-specific AUR packages using the newly installed Yay.
 
 CORE_AUR=(
-    "darkly-bin" "konsave" "kwin-effects-better-blur-dx"
+    "darkly-bin" "geekbench" "google-chrome" "konsave" "kwin-effects-better-blur-dx"
     "papirus-folders" "plasma6-applets-panel-colorizer" "timeshift-systemd-timer"
 )
 DESKTOP_AUR=(
     "lidarr-bin" "prowlarr-bin" "python-schedule" "radarr-bin"
-    "slskd-bin" "sonarr-bin"
+    "slskd-bin" "sonarr-bin" "sunshine"
 )
 LAPTOP_AUR=(
     "mkinitcpio-numlock"
