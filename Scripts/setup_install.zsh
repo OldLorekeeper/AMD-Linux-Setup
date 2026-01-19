@@ -43,13 +43,11 @@ RAW_URL="https://raw.githubusercontent.com/OldLorekeeper/AMD-Linux-Setup/main/Sc
 # If file is missing, try to download it
 if [[ ! -f "$SECRETS_FILE" ]]; then
     print -P "%F{cyan}Secrets file not found locally. Attempting remote fetch...%f"
-    read -s "TEMP_PAT?Enter GitHub PAT to download secrets: "; print ""
 
-    if curl -H "Authorization: token $TEMP_PAT" -fsSL "$RAW_URL" -o "$SECRETS_FILE"; then
+    if curl -fsSL "$RAW_URL" -o "$SECRETS_FILE"; then
         print -P "%F{green}Successfully downloaded $SECRETS_FILE%f"
-        GIT_PAT="$TEMP_PAT" # Reuse this PAT for later git clones
     else
-        print -P "%F{red}Failed to download secrets. Proceeding with manual input.%f"
+        print -P "%F{red}Failed to download secrets (Is the repo public?). Proceeding with manual input.%f"
     fi
 fi
 
