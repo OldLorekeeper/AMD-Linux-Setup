@@ -517,16 +517,15 @@ print "export KWIN_PROFILE=\"$DEVICE_PROFILE\"" >> "/home/$TARGET_USER/.zshrc"
 cat <<'ZSHCONF' >> "/home/$TARGET_USER/.zshrc"
 
 # --- Custom Configuration ---
-export PATH="$HOME/.local/bin:$PATH"
 
-# NVM Setup
+export PATH="$HOME/.local/bin:$PATH"
 export NVM_DIR="$HOME/.nvm"
 [ -s "/usr/share/nvm/init-nvm.sh" ] && source "/usr/share/nvm/init-nvm.sh"
-
 alias mkinit="sudo mkinitcpio -P"
 alias mkgrub="sudo grub-mkconfig -o /boot/grub/grub.cfg"
 
-# Auto-Organize Git Clones
+# Auto-organise clones
+
 git() {
     if (( EUID == 0 )); then
         command git "$@"
@@ -546,6 +545,8 @@ git() {
     fi
 }
 
+# Run maintenance script
+
 maintain() {
     local script="$HOME/Obsidian/AMD-Linux-Setup/Scripts/system_maintain.zsh"
     if [[ -f "$script" ]]; then
@@ -558,6 +559,7 @@ maintain() {
 }
 
 # KWin Management
+
 update-kwin() {
     local target="${1:-$KWIN_PROFILE}"
     if [[ -z "$target" ]]; then
