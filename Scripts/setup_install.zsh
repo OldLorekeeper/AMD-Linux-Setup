@@ -271,7 +271,7 @@ CORE_PKGS=(
     "base" "base-devel" "linux-cachyos" "linux-cachyos-headers" "linux-firmware"
     "cachyos-keyring" "cachyos-mirrorlist" "cachyos-v4-mirrorlist"
     "amd-ucode" "btrfs-progs" "networkmanager" "git" "vim" "sudo" "efibootmgr"
-    "grub" "grub-btrfs" "zsh" "pacman-contrib" "reflector" "openssh"
+    "grub" "grub-btrfs" "zsh" "pacman-contrib" "reflector" "openssh" "zram-generator"
     # GUI / GRAPHICs
     "plasma-meta" "sddm" "konsole" "dolphin" "ark" "kate" "spectacle"
     "pipewire" "pipewire-pulse" "pipewire-alsa" "wireplumber"
@@ -413,7 +413,7 @@ sed -i 's/^GRUB_TIMEOUT=5/GRUB_TIMEOUT=2/' /etc/default/grub
 
 # Purpose: Optimize makepkg.conf (CFLAGS, MAKEFLAGS), configure pacman.conf (v3/v4 arch), init pacman keys, and add third-party repos (LizardByte).
 
-sed -i 's/^#*\(CFLAGS=".* -march=\)x86-64 -mtune=generic/\1native/' /etc/makepkg.conf
+sed -i 's/-march=x86-64 -mtune=generic/-march=native/' /etc/makepkg.conf
 sed -i "s/^#*MAKEFLAGS=.*/MAKEFLAGS=\"-j\$(nproc)\"/" /etc/makepkg.conf
 grep -q "RUSTFLAGS" /etc/makepkg.conf || print 'RUSTFLAGS="-C target-cpu=native"' >> /etc/makepkg.conf
 sed -i 's/^Architecture = auto$/Architecture = auto x86_64_v4/' /etc/pacman.conf
