@@ -180,7 +180,7 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
         done
 
         if (( ${#CONNECTED_PORTS} == 0 )); then
-            print -P "%F{red}No monitors detected. Enter manually (e.g., DP-1).%f"
+            print -P "%F{red}No monitors detected. Enter manually (e.g. DP-1).%f"
             read "MONITOR_PORT?Port: "
         elif (( ${#CONNECTED_PORTS} == 1 )); then
             MONITOR_PORT="${CONNECTED_PORTS[1]}"
@@ -196,7 +196,7 @@ fi
 
 print -P "%F{yellow}--- Installation Target ---%f"
 lsblk -d -n -o NAME,SIZE,MODEL,TYPE | grep disk
-read "DISK_SEL?Target Disk (e.g., nvme0n1): "
+read "DISK_SEL?Target Disk (e.g. nvme0n1): "
 DISK="/dev/$DISK_SEL"
 
 [[ ! -b "$DISK" ]] && { print -P "%F{red}Error: Invalid disk '$DISK'.%f"; exit 1; }
@@ -373,6 +373,9 @@ setopt ERR_EXIT NO_UNSET PIPE_FAIL
 source /install_vars.zsh
 rm /install_vars.zsh
 
+# Ensure the temporary permission file is ALWAYS deleted on exit
+trap 'rm -f /etc/sudoers.d/00_setup_temp' EXIT
+
 # ------------------------------------------------------------------------------
 # 5.1 Identity & Locale
 # ------------------------------------------------------------------------------
@@ -396,6 +399,10 @@ useradd -m -G wheel,input,render,video,storage,gamemode,libvirt -s /bin/zsh "$TA
 print "root:$ROOT_PASS" | chpasswd
 print "$TARGET_USER:$USER_PASS" | chpasswd
 print "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/wheel
+
+# Grant temporary NOPASSWD access for the duration of the install
+print "$TARGET_USER ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/00_setup_temp
+chmod 440 /etc/sudoers.d/00_setup_temp
 
 groupadd -f media
 usermod -aG media "$TARGET_USER"
@@ -474,8 +481,6 @@ pacman -Sy
 # 5.6 AUR Helper (Yay)
 # ------------------------------------------------------------------------------
 
-print "$TARGET_USER ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/99_yay_temp
-chmod 440 /etc/sudoers.d/99_yay_temp
 chown -R "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER"
 
 cd "/home/$TARGET_USER"
@@ -515,7 +520,6 @@ fi
 
 print "Installing Extended Packages via Yay..."
 sudo -u "$TARGET_USER" yay -S --needed --noconfirm "${TARGET_AUR[@]}"
-rm /etc/sudoers.d/99_yay_temp
 
 # ------------------------------------------------------------------------------
 # 5.8 Dotfiles & Home
