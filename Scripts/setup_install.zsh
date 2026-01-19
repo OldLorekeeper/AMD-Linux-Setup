@@ -608,9 +608,36 @@ fi
 papirus-folders -C breeze --theme Papirus-Dark || true
 
 # ------------------------------------------------------------------------------
-# 5.9 Device Specific Logic
+# 5.9 Device Specific Logic & Theming
 # ------------------------------------------------------------------------------
 
+# Setup Konsave and KWin Rules HERE (inside chroot) to avoid first-boot race conditions
+print "Applying Konsave Theme..."
+PROFILE_DIR="$REPO_DIR/Resources/Konsave"
+if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
+    LATEST_KNSV=$(ls -t "$PROFILE_DIR"/Desktop*.knsv 2>/dev/null | head -n1)
+else
+    LATEST_KNSV=$(ls -t "$PROFILE_DIR"/Laptop*.knsv 2>/dev/null | head -n1)
+fi
+
+if [[ -f "$LATEST_KNSV" ]]; then
+    print "Found latest Konsave profile: ${LATEST_KNSV:t}"
+
+    # Run Konsave as user
+    sudo -u "$TARGET_USER" konsave -i "$LATEST_KNSV" --force
+
+    # Extract profile name and apply
+    PROFILE_NAME="${LATEST_KNSV:t:r}"
+    print "Applying Profile: $PROFILE_NAME"
+    sudo -u "$TARGET_USER" konsave -a "$PROFILE_NAME"
+else
+    print -P "%F{red}No Konsave profile found!%f"
+fi
+
+print "Applying KWin Rules..."
+sudo -u "$TARGET_USER" "$REPO_DIR/Scripts/kwin_apply_rules.zsh" "$DEVICE_PROFILE"
+
+# Device Environment Setup
 print "LIBVA_DRIVER_NAME=radeonsi" >> /etc/environment
 print "VDPAU_DRIVER=radeonsi" >> /etc/environment
 print "WINEFSYNC=1" >> /etc/environment
@@ -707,7 +734,7 @@ UNIT
             setfacl -R -m g:media:rwX /mnt/Media
             setfacl -R -m d:g:media:rwX /mnt/Media
         fi
-        for svc in sonarr radarr lidarr prowlarr transmission slskd jellyfin; do
+        for svc in sonarr radarr lidarr prowlarr transmission-daemon slskd jellyfin; do
             mkdir -p "/etc/systemd/system/$svc.service.d"
             print -l "[Unit]" "RequiresMountsFor=/mnt/Media" > "/etc/systemd/system/$svc.service.d/media-mount.conf"
             [[ "$svc" != "jellyfin" ]] && print -l "[Service]" "UMask=0002" > "/etc/systemd/system/$svc.service.d/permissions.conf"
@@ -720,7 +747,7 @@ UNIT
     usermod -aG render,video jellyfin || true
     chattr +C /var/lib/jellyfin || true
     wget -O /etc/udev/rules.d/42-solaar-uinput.rules https://raw.githubusercontent.com/pwr-Solaar/Solaar/refs/heads/master/rules.d-uinput/42-logitech-unify-permissions.rules
-    systemctl enable jellyfin transmission sonarr radarr lidarr prowlarr sunshine slskd
+    systemctl enable jellyfin transmission-daemon sonarr radarr lidarr prowlarr sunshine slskd
 
 elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
     print "Applying Laptop Configuration..."
@@ -733,6 +760,13 @@ fi
 # ------------------------------------------------------------------------------
 # 5.10 Final System Tuning
 # ------------------------------------------------------------------------------
+
+print "Removing Discover and Plasma Meta..."
+if pacman -Qi plasma-meta &>/dev/null; then
+    pacman -R --noconfirm plasma-meta
+    pacman -D --asexplicit plasma-desktop
+fi
+pacman -Rns --noconfirm discover || true
 
 print -l "[zram0]" "zram-size = ram / 2" "compression-algorithm = lz4" "swap-priority = 100" > /etc/systemd/zram-generator.conf
 print -l "vm.swappiness = 150" "vm.page-cluster = 0" > /etc/sysctl.d/99-swappiness.conf
@@ -799,19 +833,13 @@ sleep 5
 print "Running First Boot Setup..."
 REPO_DIR="/home/$TARGET_USER/Obsidian/AMD-Linux-Setup"
 
-[[ "$DEVICE_PROFILE" == "desktop" ]] && sudo tailscale up --advertise-exit-node
-
-PROFILE_DIR="\$REPO_DIR/Resources/Konsave"
+# 1. Tailscale Login
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
-    konsave -i "\$PROFILE_DIR"/Desktop*.knsv
-    konsave -a \$(konsave -l | grep Desktop | head -n1 | awk '{print \$1}')
-else
-    konsave -i "\$PROFILE_DIR"/Laptop*.knsv
-    konsave -a \$(konsave -l | grep Laptop | head -n1 | awk '{print \$1}')
+    print "Connecting to Tailscale..."
+    sudo tailscale up --advertise-exit-node
 fi
 
-"\$REPO_DIR/Scripts/kwin_apply_rules.zsh" $DEVICE_PROFILE
-
+# 2. Configure Sunshine (Desktop Only)
 if [[ "$DEVICE_PROFILE" == "desktop" ]] && (( \$+commands[kscreen-doctor] )); then
     print -P "\n%F{yellow}--- Sunshine Resolution/HDR Configuration ---%f"
     print "Current Output Configuration:"
@@ -835,9 +863,16 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]] && (( \$+commands[kscreen-doctor] )); th
      fi
 fi
 
+# 3. Safe Cleanup
+# Remove the autostart entry IMMEDIATELY so it doesn't run again on next boot
 rm "/home/$TARGET_USER/.config/autostart/first_boot.desktop"
+
+print -P "\n%F{green}System Setup Complete!%f"
+print "You can scroll up to review any errors."
+read "k?Press Enter to cleanup and close this terminal..."
+
+# Finally, remove this script file
 rm "/home/$TARGET_USER/.local/bin/first_boot.zsh"
-notify-send "System Setup Complete" "Ready."
 BOOTSCRIPT
 
 chmod +x "/home/$TARGET_USER/.local/bin/first_boot.zsh"
