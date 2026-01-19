@@ -267,13 +267,16 @@ mount "$PART1" /mnt/efi
 
 print -P "%F{green}--- Installing Base System ---%f"
 CORE_PKGS=(
+    # BASE / KERNEL
     "base" "base-devel" "linux-cachyos" "linux-cachyos-headers" "linux-firmware"
     "cachyos-keyring" "cachyos-mirrorlist" "cachyos-v4-mirrorlist"
     "amd-ucode" "btrfs-progs" "networkmanager" "git" "vim" "sudo" "efibootmgr"
     "grub" "grub-btrfs" "zsh" "pacman-contrib" "reflector" "openssh"
+    # GUI / GRAPHICs
     "plasma-meta" "sddm" "konsole" "dolphin" "ark" "kate" "spectacle"
     "pipewire" "pipewire-pulse" "pipewire-alsa" "wireplumber"
-    "mesa" "vulkan-radeon" "libva-mesa-driver"
+    "mesa" "vulkan-radeon"
+    # COMMON FOR DESKTOOP ANDD LAPTOP
     "7zip" "bash-language-server" "chromium" "cmake" "cmake-extras" "cpupower"
     "cups" "dkms" "dnsmasq" "dosfstools" "edk2-ovmf" "ethtool" "extra-cmake-modules"
     "fastfetch" "fwupd" "gamemode" "gamescope" "gwenview" "hunspell-en_gb"
