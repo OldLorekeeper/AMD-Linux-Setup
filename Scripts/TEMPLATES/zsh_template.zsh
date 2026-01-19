@@ -11,7 +11,7 @@
 # 4. Safety: Use 'setopt ERR_EXIT NO_UNSET PIPE_FAIL'.
 # 5. Context: No hardcoded secrets.
 # 6. Syntax: Use Zsh native modifiers and tooling
-# 8. Documentation: Precede code in each section with 'Purpose' comment block. No meta or inline comments within code.
+# 8. Documentation: Precede code in each section with 'Purpose' comment block followed by empty line. No meta or inline comments within code.
 #
 # ------------------------------------------------------------------------------
 
@@ -25,10 +25,7 @@ print -P "%F{green}--- Starting [Process Name] ---%f"
 # 1. Section Header
 # ------------------------------------------------------------------------------
 
-# Purpose: [Description of the main task].
-# - Action 1: [Details]
-# - Action 2: [Details]
-# - [Topic]: [Explanation of non-obvious choice, e.g. hardcoded paths or specific flags].
+# Purpose: [Description of the main task/actions]
 
 if ! (( $+commands[dependency] )); then
     print -P "%F{red}Error: dependency is not installed.%f"
@@ -39,10 +36,7 @@ fi
 # 2. Section Header
 # ------------------------------------------------------------------------------
 
-# Purpose: [Description of the main task].
-# - Action 1: [Details]
-# - Action 2: [Details]
-# - [Topic]: [Explanation of non-obvious choice, e.g. hardcoded paths or specific flags].
+# Purpose: [Description of the main task/actions].
 
 print -P "%F{green}--- Section Title ---%f"
 
