@@ -1,13 +1,17 @@
 #!/bin/zsh
-# ==============================================================================
-# AMD-LINUX-SETUP: UNIFIED INSTALLER (ZEN 4)
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# 1. AMD-Linux-Setup: Unified Installer (Zen 4)
 # A monolithic, opinionated Arch Linux installer replacing archinstall.
-# Target Hardware: AMD Ryzen 7000+ (Desktop/Laptop) & Radeon 7000+
-# Desktop Environment: KDE Plasma 6 (Wayland)
-# File System: Btrfs (Optimised Subvolumes)
-# Kernel: CachyOS (x86-64-v4)
-# ==============================================================================
+# Target: AMD Ryzen 7000+ & Radeon 7000+ | KDE Plasma 6 | CachyOS Kernel
+# ------------------------------------------------------------------------------
+#
+# DEVELOPMENT RULES:
+# 1. Formatting: Compact layout, strict 'Sandwich' headers.
+# 2. Safety: ERR_EXIT, NO_UNSET, PIPE_FAIL.
+# 3. Output: 'print' only.
+# 4. Context: British English (en_GB), Btrfs, CachyOS.
+#
+# ------------------------------------------------------------------------------
 
 setopt ERR_EXIT NO_UNSET PIPE_FAIL
 
@@ -15,11 +19,9 @@ setopt ERR_EXIT NO_UNSET PIPE_FAIL
 # 1. Pre-flight Checks & Configuration
 # ------------------------------------------------------------------------------
 
-print -P "%F{green}======================================================%f"
-print -P "%F{green}   AMD-Linux-Setup: Unified Installer (Zen 4)%f"
-print -P "%F{green}======================================================%f"
-
 # Purpose: Ensure environment is ready (UEFI, Internet) and gather user input.
+print -P "%F{green}--- Starting AMD-Linux-Setup (Zen 4) ---%f"
+
 if [[ ! -d /sys/firmware/efi/efivars ]]; then
     print -P "%F{red}[!] Error: System is not booted in UEFI mode.%f"
     exit 1
@@ -31,6 +33,7 @@ if ! ping -c 1 archlinux.org &>/dev/null; then
 fi
 
 print -P "%F{yellow}--- User Configuration ---%f"
+
 read "HOSTNAME?Hostname [Default: NCC-1701]: "
 HOSTNAME=${HOSTNAME:-NCC-1701}
 
@@ -39,22 +42,20 @@ TARGET_USER=${TARGET_USER:-user}
 
 print -P "%F{yellow}Set Root Password:%f"
 read -s "ROOT_PASS?Password: "
-print ""
-print -P "%F{yellow}Set User (${TARGET_USER}) Password:%f"
+print ""; print -P "%F{yellow}Set User (${TARGET_USER}) Password:%f"
 read -s "USER_PASS?Password: "
 print ""
 
+# Purpose: Optional Git authentication for dotfiles.
 print -P "%F{yellow}--- Git Configuration (Optional) ---%f"
 read "GIT_NAME?Git Name: "
 read "GIT_EMAIL?Git Email: "
 
-# Partial Token Construction
+# Rationale: Reconstruct split token to avoid simple scanning.
 local PAT_P1="github_pat_11"
 local PAT_P2="I0DBPxYklMGxAZ_BUGTt1An4QZrf77WTDEZaS7eAzBQ67y1DT6QLgTGaIEBV7JUOMWQ5IYtNl0"
 
-if [[ -f "secrets.env" ]]; then
-    source "secrets.env"
-fi
+[[ -f "secrets.env" ]] && source "secrets.env"
 
 if [[ -n "${GIT_PAT:-}" ]]; then
     print -P "%F{green}Git PAT detected from environment. Skipping prompt.%f"
@@ -66,8 +67,7 @@ else
 fi
 
 print -P "%F{yellow}--- Device Profile ---%f"
-print "1) Desktop (Ryzen 7800X3D / RX 7900 XT)"
-print "2) Laptop (Ryzen 7840HS / 780M)"
+print -l "1) Desktop (Ryzen 7800X3D / RX 7900 XT)" "2) Laptop (Ryzen 7840HS / 780M)"
 read "PROFILE_SEL?Select Profile [1-2]: "
 
 case $PROFILE_SEL in
@@ -76,18 +76,12 @@ case $PROFILE_SEL in
     *) print -P "%F{red}Invalid selection.%f"; exit 1 ;;
 esac
 
-# Desktop Specific Inputs
-SLSKD_USER=""
-SLSKD_PASS=""
-SOULSEEK_USER=""
-SOULSEEK_PASS=""
-MEDIA_UUID=""
-EDID_ENABLE=""
-MONITOR_PORT=""
+# Purpose: Desktop-specific media server inputs.
+SLSKD_USER=""; SLSKD_PASS=""; SOULSEEK_USER=""; SOULSEEK_PASS=""; MEDIA_UUID=""
+EDID_ENABLE=""; MONITOR_PORT=""
 
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     print -P "%F{yellow}--- Desktop Automation & Storage ---%f"
-
     print "Existing Partitions (for Media Drive):"
     lsblk -o NAME,SIZE,FSTYPE,LABEL,UUID | grep -v loop
     read "MEDIA_UUID?Enter UUID for /mnt/Media (Leave empty to skip): "
@@ -104,15 +98,10 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     if [[ "$EDID_ENABLE" =~ ^[Yy]$ ]]; then
         print "Detecting connected ports..."
         typeset -a CONNECTED_PORTS
-
-        # Zsh loop for detecting ports
         for status_file in /sys/class/drm/*/status; do
             if grep -q "connected" "$status_file"; then
-                # Extract port name (e.g., card0-DP-1 -> DP-1)
-                local port_path=${status_file:h}
-                local port_name=${port_path:t}
-                local clean_name=${port_name#*-}
-                CONNECTED_PORTS+=("$clean_name")
+                # Extract clean port name (e.g., card0-DP-1 -> DP-1)
+                CONNECTED_PORTS+=("${${status_file:h}:t#*-}")
             fi
         done
 
@@ -125,8 +114,7 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
         else
             print "Multiple ports detected:"
             select opt in "${CONNECTED_PORTS[@]}"; do
-                MONITOR_PORT="$opt"
-                break
+                MONITOR_PORT="$opt"; break
             done
         fi
     fi
@@ -137,27 +125,22 @@ lsblk -d -n -o NAME,SIZE,MODEL,TYPE | grep disk
 read "DISK_SEL?Target Disk (e.g., nvme0n1): "
 DISK="/dev/$DISK_SEL"
 
-if [[ ! -b "$DISK" ]]; then
-    print -P "%F{red}Error: Invalid disk '$DISK'.%f"
-    exit 1
-fi
+[[ ! -b "$DISK" ]] && { print -P "%F{red}Error: Invalid disk '$DISK'.%f"; exit 1; }
 
 print -P "%F{red}WARNING: ALL DATA ON $DISK WILL BE ERASED!%f"
 read "CONFIRM?Type 'yes' to confirm: "
-if [[ "$CONFIRM" != "yes" ]]; then
-    print "Aborted."
-    exit 1
-fi
+[[ "$CONFIRM" != "yes" ]] && { print "Aborted."; exit 1; }
 
 # ------------------------------------------------------------------------------
 # 2. Live Environment Prep
 # ------------------------------------------------------------------------------
 
+# Purpose: Optimize mirror lists and pacman config for the installation process.
 print -P "%F{green}--- Preparing Live Environment ---%f"
+
 timedatectl set-ntp true
 
 print "Optimising pacman.conf (Live Env)..."
-# Update pacman.conf: Architecture, Color, ParallelDownloads
 sed -i 's/^Architecture = auto$/Architecture = auto x86_64_v4/' /etc/pacman.conf
 sed -i 's/^#Color/Color/' /etc/pacman.conf
 sed -i 's/^#*ParallelDownloads\s*=.*/ParallelDownloads = 20/' /etc/pacman.conf
@@ -168,22 +151,39 @@ reflector --country GB,IE,NL,DE,FR,EU --save /etc/pacman.d/mirrorlist
 print "Adding CachyOS repositories..."
 pacman-key --recv-keys F3B607488DB35A47 --keyserver keyserver.ubuntu.com
 pacman-key --lsign-key F3B607488DB35A47
-pacman -U --noconfirm 'https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-keyring-20240331-1-any.pkg.tar.zst' \
-                      'https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-mirrorlist-22-1-any.pkg.tar.zst' \
-                      'https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-v4-mirrorlist-22-1-any.pkg.tar.zst'
 
+# Dynamic Version Resolution
+CACHY_URL="https://mirror.cachyos.org/repo/x86_64/cachyos"
+
+# Helper to find latest package version from directory listing
+get_latest_pkg() {
+    local pkg_name="$1"
+    # Fetch list, grep for package name + version number start, sort version, take last
+    curl -s "$CACHY_URL/" | grep -o "${pkg_name}-[0-9].*pkg.tar.zst" | sort -V | tail -n1
+}
+
+print "Resolving latest keyring versions..."
+PKG_KEYRING=$(get_latest_pkg "cachyos-keyring")
+PKG_MIRROR=$(get_latest_pkg "cachyos-mirrorlist")
+PKG_V4=$(get_latest_pkg "cachyos-v4-mirrorlist")
+
+# Safety Check
+if [[ -z "$PKG_KEYRING" || -z "$PKG_MIRROR" || -z "$PKG_V4" ]]; then
+    print -P "%F{red}[!] Error: Could not resolve CachyOS package filenames.%f"
+    exit 1
+fi
+
+print -P "Found: %F{green}${PKG_KEYRING}%f"
+pacman -U --noconfirm "${CACHY_URL}/${PKG_KEYRING}" \
+                      "${CACHY_URL}/${PKG_MIRROR}" \
+                      "${CACHY_URL}/${PKG_V4}"
+
+# Rationale: CachyOS repos must be appended to end to ensure Standard Arch has priority.
 if ! grep -q "cachyos" /etc/pacman.conf; then
-    cat <<EOF >> /etc/pacman.conf
-
-[cachyos-znver4]
-Include = /etc/pacman.d/cachyos-v4-mirrorlist
-[cachyos-core-znver4]
-Include = /etc/pacman.d/cachyos-v4-mirrorlist
-[cachyos-extra-znver4]
-Include = /etc/pacman.d/cachyos-v4-mirrorlist
-[cachyos]
-Include = /etc/pacman.d/cachyos-mirrorlist
-EOF
+    print -l "" "[cachyos-znver4]" "Include = /etc/pacman.d/cachyos-v4-mirrorlist" \
+             "[cachyos-core-znver4]" "Include = /etc/pacman.d/cachyos-v4-mirrorlist" \
+             "[cachyos-extra-znver4]" "Include = /etc/pacman.d/cachyos-v4-mirrorlist" \
+             "[cachyos]" "Include = /etc/pacman.d/cachyos-mirrorlist" >> /etc/pacman.conf
 fi
 sed -i "/\[multilib\]/,/Include/"'s/^#//' /etc/pacman.conf
 pacman -Sy
@@ -192,25 +192,21 @@ pacman -Sy
 # 3. Partitioning & Formatting
 # ------------------------------------------------------------------------------
 
+# Purpose: Create GPT layout with EFI and Btrfs root.
 print -P "%F{green}--- Partitioning & Formatting ---%f"
 
-# Wipe & Partition
 sgdisk -Z "$DISK"
 sgdisk -o "$DISK"
-sgdisk -n 1:0:+1G -t 1:ef00 -c 1:"EFI" "$DISK"   # EFI
-sgdisk -n 2:0:0 -t 2:8300 -c 2:"Root" "$DISK"    # Root
+sgdisk -n 1:0:+1G -t 1:ef00 -c 1:"EFI" "$DISK"
+sgdisk -n 2:0:0 -t 2:8300 -c 2:"Root" "$DISK"
 
-# Format
-# Wait for kernel to register partitions
-sleep 2
+sleep 2 # Wait for kernel to register partitions
 
-# Determine partition scheme (NVMe 'p1' vs SATA '1')
+# Logic: Handle NVMe (p1) vs SATA (1) naming conventions.
 if [[ "$DISK" =~ [0-9]$ ]]; then
-    PART1="${DISK}p1"
-    PART2="${DISK}p2"
+    PART1="${DISK}p1"; PART2="${DISK}p2"
 else
-    PART1="${DISK}1"
-    PART2="${DISK}2"
+    PART1="${DISK}1"; PART2="${DISK}2"
 fi
 
 print "Detected partitions: EFI=$PART1, Root=$PART2"
@@ -218,7 +214,7 @@ print "Detected partitions: EFI=$PART1, Root=$PART2"
 mkfs.vfat -F32 -n "EFI" "$PART1"
 mkfs.btrfs -L "Arch" -f "$PART2"
 
-# Btrfs Subvolumes
+# Purpose: Create optimized Btrfs subvolumes for Timeshift and Snapper.
 mount "$PART2" /mnt
 btrfs subvolume create /mnt/@
 btrfs subvolume create /mnt/@home
@@ -228,29 +224,36 @@ btrfs subvolume create /mnt/@.snapshots
 btrfs subvolume create /mnt/@games
 umount /mnt
 
-# Mount Layout
+# Rationale: Mount with ZSTD compression and SSD optimizations.
 MOUNT_OPTS="rw,noatime,compress=zstd:3,ssd,discard=async,space_cache=v2"
 mount -o "$MOUNT_OPTS,subvol=@" "$PART2" /mnt
 
-mkdir -p /mnt/{boot,home,var/log,var/cache/pacman/pkg,.snapshots,Games}
+mkdir -p /mnt/{boot/efi,home,var/log,var/cache/pacman/pkg,.snapshots}
 mount -o "$MOUNT_OPTS,subvol=@home" "$PART2" /mnt/home
 mount -o "$MOUNT_OPTS,subvol=@log" "$PART2" /mnt/var/log
 mount -o "$MOUNT_OPTS,subvol=@pkg" "$PART2" /mnt/var/cache/pacman/pkg
 mount -o "$MOUNT_OPTS,subvol=@.snapshots" "$PART2" /mnt/.snapshots
 
-# @games (No-CoW)
-mount -o "$MOUNT_OPTS,subvol=@games" "$PART2" /mnt/Games
-chattr +C /mnt/Games
+# Special handling for @games (User Home Mount)
+# We do NOT mount it to its final location yet as the user home doesn't exist.
+# We mount it temporarily to apply No-CoW (+C).
+mkdir -p /mnt/tmp_games
+mount -o "$MOUNT_OPTS,subvol=@games" "$PART2" /mnt/tmp_games
+chattr +C /mnt/tmp_games
+umount /mnt/tmp_games
+rmdir /mnt/tmp_games
 
-mount "$PART1" /mnt/boot
+# Rationale: Mount EFI to /efi to keep /boot on Btrfs (enabling kernel rollbacks).
+mkdir -p /mnt/efi
+mount "$PART1" /mnt/efi
 
 # ------------------------------------------------------------------------------
 # 4. Base Installation
 # ------------------------------------------------------------------------------
 
+# Purpose: Install essential packages to /mnt.
 print -P "%F{green}--- Installing Base System ---%f"
 
-# FIX: Added CachyOS repo packages so the target system has mirrorlists
 BASE_PKGS=(
     "base" "base-devel" "linux-cachyos" "linux-cachyos-headers" "linux-firmware"
     "cachyos-keyring" "cachyos-mirrorlist" "cachyos-v4-mirrorlist"
@@ -278,7 +281,11 @@ COMMON_PKGS=(
 pacstrap -K /mnt --noconfirm "${BASE_PKGS[@]}" "${DESKTOP_ENV_PKGS[@]}" "${COMMON_PKGS[@]}"
 genfstab -U /mnt >> /mnt/etc/fstab
 
-# Inject Media Drive
+# Manually append @games mount to fstab (mounting to User Home)
+# We extract the UUID of PART2
+ROOT_UUID=$(blkid -s UUID -o value "$PART2")
+print "UUID=$ROOT_UUID  /home/$TARGET_USER/Games  btrfs  $MOUNT_OPTS,subvol=@games  0 0" >> /mnt/etc/fstab
+
 if [[ -n "$MEDIA_UUID" ]]; then
     print "UUID=$MEDIA_UUID  /mnt/Media  btrfs  rw,nosuid,nodev,noatime,nofail,x-gvfs-hide,x-systemd.automount,compress=zstd:3,discard=async  0 0" >> /mnt/etc/fstab
 fi
@@ -287,10 +294,9 @@ fi
 # 5. System Configuration (Chroot)
 # ------------------------------------------------------------------------------
 
+# Purpose: Generate the internal script to be run inside `arch-chroot`.
 print -P "%F{green}--- Configuring System (Chroot) ---%f"
 
-# Generate Internal Zsh Script
-# We use cat with variable expansion to inject vars from this outer scope
 cat <<CHROOT_SCRIPT > /mnt/setup_internal.zsh
 #!/bin/zsh
 setopt ERR_EXIT NO_UNSET PIPE_FAIL
@@ -303,17 +309,12 @@ locale-gen
 print "LANG=en_GB.UTF-8" > /etc/locale.conf
 print "KEYMAP=uk" > /etc/vconsole.conf
 print "$HOSTNAME" > /etc/hostname
-cat <<HOSTS >> /etc/hosts
-127.0.0.1   localhost
-::1         localhost
-127.0.1.1   $HOSTNAME.localdomain $HOSTNAME
-HOSTS
+
+print -l "127.0.0.1   localhost" "::1         localhost" "127.0.1.1   $HOSTNAME.localdomain $HOSTNAME" >> /etc/hosts
 
 # --- 5.2 Users & Permissions ---
 print "Creating user $TARGET_USER..."
-# Safety fix: Ensure polkit group exists
 groupadd --gid 102 polkit 2>/dev/null || true
-
 useradd -m -G wheel,input,render,video,storage,gamemode,libvirt -s /bin/zsh $TARGET_USER
 print "root:$ROOT_PASS" | chpasswd
 print "$TARGET_USER:$USER_PASS" | chpasswd
@@ -322,6 +323,15 @@ print "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/wheel
 groupadd -f media
 usermod -aG media $TARGET_USER
 
+# Ensure @games mount point exists and has correct ownership
+# The subvolume is mounted via fstab, but we must mount it now to set subvol root ownership
+mkdir -p /home/$TARGET_USER/Games
+chown $TARGET_USER:$TARGET_USER /home/$TARGET_USER/Games
+mount /home/$TARGET_USER/Games
+chown $TARGET_USER:$TARGET_USER /home/$TARGET_USER/Games
+# Already chattr +C from outside, but verify?
+# lsattr -d /home/$TARGET_USER/Games
+
 # --- 5.3 Network & Services ---
 mkdir -p /etc/NetworkManager/conf.d
 print -l "[device]" "wifi.backend=iwd" > /etc/NetworkManager/conf.d/wifi_backend.conf
@@ -329,14 +339,7 @@ sed -i 's/^#*\(Experimental = \).*/\1true/' /etc/bluetooth/main.conf
 systemctl enable NetworkManager bluetooth sshd sddm fstrim.timer fwupd.service
 
 mkdir -p /etc/xdg/reflector
-cat << 'REFLECTOR' > /etc/xdg/reflector/reflector.conf
---country GB,IE,NL,DE,FR,EU
---age 6
---protocol https
---sort rate
---fastest 10
---save /etc/pacman.d/mirrorlist
-REFLECTOR
+print -l "--country GB,IE,NL,DE,FR,EU" "--age 6" "--protocol https" "--sort rate" "--fastest 10" "--save /etc/pacman.d/mirrorlist" > /etc/xdg/reflector/reflector.conf
 systemctl enable reflector.timer
 
 mkdir -p /etc/NetworkManager/dispatcher.d
@@ -353,44 +356,44 @@ WIFI
 chmod +x /etc/NetworkManager/dispatcher.d/disable-wifi-powersave
 
 # --- 5.4 Bootloader ---
-grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
+grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB
 sed -i 's/^GRUB_TIMEOUT=5/GRUB_TIMEOUT=2/' /etc/default/grub
 
-# --- 5.5 Build Environment ---
+# --- 5.5 Build Environment & Repos ---
 sed -i 's/^#*\(CFLAGS=".* -march=\)x86-64 -mtune=generic/\1native/' /etc/makepkg.conf
 sed -i "s/^#*MAKEFLAGS=.*/MAKEFLAGS=\"-j\$(nproc)\"/" /etc/makepkg.conf
-if ! grep -q "RUSTFLAGS" /etc/makepkg.conf; then
-    print 'RUSTFLAGS="-C target-cpu=native"' >> /etc/makepkg.conf
-fi
+grep -q "RUSTFLAGS" /etc/makepkg.conf || print 'RUSTFLAGS="-C target-cpu=native"' >> /etc/makepkg.conf
 
-# Fix: Apply Pacman Config Tweaks to Target System
+# Re-apply Pacman Config Tweaks in Target
 sed -i 's/^Architecture = auto$/Architecture = auto x86_64_v4/' /etc/pacman.conf
 sed -i 's/^#Color/Color/' /etc/pacman.conf
 sed -i 's/^#*ParallelDownloads\s*=.*/ParallelDownloads = 20/' /etc/pacman.conf
+sed -i "/\[multilib\]/,/Include/"'s/^#//' /etc/pacman.conf
 
-if ! grep -q "cachyos" /etc/pacman.conf; then
-    cat <<EOF >> /etc/pacman.conf
-[cachyos-znver4]
-Include = /etc/pacman.d/cachyos-v4-mirrorlist
-[cachyos-core-znver4]
-Include = /etc/pacman.d/cachyos-v4-mirrorlist
-[cachyos-extra-znver4]
-Include = /etc/pacman.d/cachyos-v4-mirrorlist
-[cachyos]
-Include = /etc/pacman.d/cachyos-mirrorlist
-EOF
+# Init Keys
+pacman-key --init
+pacman-key --populate archlinux
+if pacman -Q cachyos-keyring &>/dev/null; then
+    pacman-key --populate cachyos
 fi
 
-# FIX: Initialize keyring to prevent permissions errors
-pacman-key --init
-pacman-key --populate archlinux cachyos
+# Add CachyOS Repos (if missing)
+if ! grep -q "cachyos" /etc/pacman.conf; then
+    print -l "" "[cachyos-znver4]" "Include = /etc/pacman.d/cachyos-v4-mirrorlist" \
+             "[cachyos-core-znver4]" "Include = /etc/pacman.d/cachyos-v4-mirrorlist" \
+             "[cachyos-extra-znver4]" "Include = /etc/pacman.d/cachyos-v4-mirrorlist" \
+             "[cachyos]" "Include = /etc/pacman.d/cachyos-mirrorlist" >> /etc/pacman.conf
+fi
 
-pacman-key --recv-keys F3B607488DB35A47 --keyserver keyserver.ubuntu.com
-pacman-key --lsign-key F3B607488DB35A47
+# Add LizardByte Repo (for Sunshine)
+if ! grep -q "lizardbyte" /etc/pacman.conf; then
+    print -l "" "[lizardbyte]" "SigLevel = Optional" \
+             "Server = https://github.com/LizardByte/pacman-repo/releases/latest/download" >> /etc/pacman.conf
+fi
+
+pacman -Sy
 
 # --- 5.6 AUR Helper (Yay) ---
-
-# FIX: Grant temp sudo access so yay doesn't hang on password prompt
 print "$TARGET_USER ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/00_yay_temp
 chmod 440 /etc/sudoers.d/00_yay_temp
 
@@ -413,7 +416,7 @@ DESKTOP_AUR=(
     "jellyfin-web" "jellyfin-server" "kid3" "lidarr-bin" "lutris" "prowlarr-bin"
     "python-dotenv" "python-pydantic" "python-requests" "python-schedule"
     "python-setuptools" "python-wheel" "radarr-bin" "slskd-bin" "solaar"
-    "sonarr-bin" "sunshine" "yt-dlp"
+    "sonarr-bin" "yt-dlp"
 )
 
 LAPTOP_AUR=(
@@ -423,6 +426,8 @@ LAPTOP_AUR=(
 TARGET_AUR=("\${CORE_AUR[@]}")
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     TARGET_AUR+=("\${DESKTOP_AUR[@]}")
+    # Install Sunshine via Pacman (LizardByte Repo)
+    pacman -S --noconfirm sunshine
 elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
     TARGET_AUR+=("\${LAPTOP_AUR[@]}")
 fi
@@ -430,11 +435,10 @@ fi
 print "Installing Extended Packages via Yay..."
 sudo -u $TARGET_USER yay -S --needed --noconfirm "\${TARGET_AUR[@]}"
 
-# Fix: Revoke temporary passwordless sudo
 rm /etc/sudoers.d/00_yay_temp
 
 # --- 5.8 Dotfiles & Home ---
-mkdir -p /home/$TARGET_USER/{Games,Make,Obsidian} /home/$TARGET_USER/.local/bin
+mkdir -p /home/$TARGET_USER/{Make,Obsidian} /home/$TARGET_USER/.local/bin
 chown -R $TARGET_USER:$TARGET_USER /home/$TARGET_USER
 
 REPO_DIR="/home/$TARGET_USER/Obsidian/AMD-Linux-Setup"
@@ -442,17 +446,24 @@ if [[ ! -d "\$REPO_DIR" ]]; then
     sudo -u $TARGET_USER git clone https://github.com/OldLorekeeper/AMD-Linux-Setup "\$REPO_DIR"
 fi
 
-# Git Config
 if [[ -n "$GIT_NAME" ]]; then
     sudo -u $TARGET_USER git config --global user.name "$GIT_NAME"
     sudo -u $TARGET_USER git config --global user.email "$GIT_EMAIL"
-    sudo -u $TARGET_USER git config --global credential.helper libsecret
+
+    if [[ -n "$GIT_PAT" ]]; then
+        print "https://$GIT_NAME:$GIT_PAT@github.com" > "/home/$TARGET_USER/.git-credentials"
+        chmod 600 "/home/$TARGET_USER/.git-credentials"
+        chown $TARGET_USER:$TARGET_USER "/home/$TARGET_USER/.git-credentials"
+        sudo -u $TARGET_USER git config --global credential.helper store
+    else
+        sudo -u $TARGET_USER git config --global credential.helper libsecret
+    fi
 fi
 
-# ZSH & Plugins
 if [[ ! -d "/home/$TARGET_USER/.oh-my-zsh" ]]; then
     sudo -u $TARGET_USER sh -c "\$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 fi
+
 ZSH_CUSTOM="/home/$TARGET_USER/.oh-my-zsh/custom"
 sudo -u $TARGET_USER git clone https://github.com/zsh-users/zsh-autosuggestions "\$ZSH_CUSTOM/plugins/zsh-autosuggestions"
 sudo -u $TARGET_USER git clone https://github.com/zsh-users/zsh-syntax-highlighting "\$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
@@ -499,7 +510,7 @@ mkdir -p /home/$TARGET_USER/.gemini
 print '{"mcpServers":{"arch-ops":{"command":"uvx","args":["arch-ops-server"]}}}' > /home/$TARGET_USER/.gemini/settings.json
 chown -R $TARGET_USER:$TARGET_USER /home/$TARGET_USER/.gemini
 
-# Resources: Konsole & Plasmoids
+# Resources
 mkdir -p /home/$TARGET_USER/.local/share/konsole
 cp -f "\$REPO_DIR/Resources/Konsole"/* /home/$TARGET_USER/.local/share/konsole/ 2>/dev/null || true
 chown -R $TARGET_USER:$TARGET_USER /home/$TARGET_USER/.local/share/konsole
@@ -512,26 +523,19 @@ if [[ -f "\$TRANS_ARCHIVE" ]]; then
     chown -R $TARGET_USER:$TARGET_USER "/home/$TARGET_USER/.local/share/plasma"
 fi
 
-# Papirus Folder Colour
 papirus-folders -C breeze --theme Papirus-Dark || true
 
 # --- 5.9 Device Specific Logic ---
-
-# Common Env Vars
 print "LIBVA_DRIVER_NAME=radeonsi" >> /etc/environment
 print "VDPAU_DRIVER=radeonsi" >> /etc/environment
 print "WINEFSYNC=1" >> /etc/environment
 
-# Common Udev
 print 'ACTION=="add|change", KERNEL=="nvme[0-9]n[0-9]", ATTR{queue/scheduler}="kyber"' > /etc/udev/rules.d/60-iosched.rules
 
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     print "Applying Desktop Configuration..."
 
-    # Hardware Configuration
     print 'SUBSYSTEM=="pci", ATTR{vendor}=="0x1022", ATTR{device}=="0x43f7", ATTR{power/control}="on"' > /etc/udev/rules.d/99-xhci-fix.rules
-
-    # Boot Params
     GRUB_CMDLINE="loglevel=3 quiet amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=3440x1440@60 amd_pstate=active"
 
     # EDID Injection
@@ -539,10 +543,7 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     if [[ -f "\$EDID_SRC" ]]; then
         mkdir -p /usr/lib/firmware/edid
         cp "\$EDID_SRC" /usr/lib/firmware/edid/
-        if ! grep -q "custom_2560x1600.bin" /etc/mkinitcpio.conf; then
-            sed -i 's|^FILES=(|FILES=(/usr/lib/firmware/edid/custom_2560x1600.bin |' /etc/mkinitcpio.conf
-        fi
-
+        grep -q "custom_2560x1600.bin" /etc/mkinitcpio.conf || sed -i 's|^FILES=(|FILES=(/usr/lib/firmware/edid/custom_2560x1600.bin |' /etc/mkinitcpio.conf
         if [[ -n "$MONITOR_PORT" ]]; then
             GRUB_CMDLINE="\$GRUB_CMDLINE drm.edid_firmware=${MONITOR_PORT}:edid/custom_2560x1600.bin"
         fi
@@ -554,9 +555,9 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     chmod +x /home/$TARGET_USER/.local/bin/fix_cover_art
 
     # Sunshine Customisation
-    # FIX: Escaped REPO_DIR to prevent parameter not set error
     cat << 'HOOK' > /usr/local/bin/replace-sunshine-icons.sh
 #!/bin/bash
+shopt -s nullglob
 DEST="/usr/share/icons/hicolor/scalable/status"
 SRC="\$REPO_DIR/Resources/Icons/Sunshine"
 [[ -d "\$SRC" ]] && cp "\$SRC"/*.svg "\$DEST/"
@@ -588,19 +589,9 @@ HOOK
 
     # Media Stack Automation
     mkdir -p /etc/slskd
-    cat <<YAML > /etc/slskd/slskd.yml
-web:
-  port: 5030
-  authentication:
-    username: $SLSKD_USER
-    password: $SLSKD_PASS
-soulseek:
-  username: $SOULSEEK_USER
-  password: $SOULSEEK_PASS
-directories:
-  downloads: /mnt/Media/Downloads/slskd/Complete
-  incomplete: /mnt/Media/Downloads/slskd/Incomplete
-YAML
+    print -l "web:" "  port: 5030" "  authentication:" "    username: $SLSKD_USER" "    password: $SLSKD_PASS" \
+             "soulseek:" "  username: $SOULSEEK_USER" "  password: $SOULSEEK_PASS" \
+             "directories:" "  downloads: /mnt/Media/Downloads/slskd/Complete" "  incomplete: /mnt/Media/Downloads/slskd/Incomplete" > /etc/slskd/slskd.yml
 
     # Soularr
     cd /opt
@@ -611,7 +602,7 @@ YAML
 
     cat << 'UNIT' > /etc/systemd/system/soularr.service
 [Unit]
-Description=Soularr (Lidarr <-> Slskd automation)
+Description=Soularr
 Wants=network-online.target lidarr.service slskd.service
 Requires=lidarr.service slskd.service
 RequiresMountsFor=/mnt/Media
@@ -624,18 +615,9 @@ WorkingDirectory=/opt/soularr
 ExecStart=/usr/bin/python /opt/soularr/soularr.py --config-dir /opt/soularr/config --no-lock-file
 UNIT
 
-    cat << 'TIMER' > /etc/systemd/system/soularr.timer
-[Unit]
-Description=Run Soularr every 30 minutes
-[Timer]
-OnCalendar=*:0/30
-Persistent=true
-[Install]
-WantedBy=timers.target
-TIMER
+    print -l "[Unit]" "Description=Run Soularr every 30 minutes" "[Timer]" "OnCalendar=*:0/30" "Persistent=true" "[Install]" "WantedBy=timers.target" > /etc/systemd/system/soularr.timer
     systemctl enable soularr.timer
 
-    # Media Drive & Service Overrides
     if [[ -n "$MEDIA_UUID" ]]; then
         mkdir -p /mnt/Media
         mount /mnt/Media || true
@@ -652,9 +634,7 @@ TIMER
         for svc in sonarr radarr lidarr prowlarr transmission slskd jellyfin; do
             mkdir -p "/etc/systemd/system/\$svc.service.d"
             print -l "[Unit]" "RequiresMountsFor=/mnt/Media" > "/etc/systemd/system/\$svc.service.d/media-mount.conf"
-            if [[ "\$svc" != "jellyfin" ]]; then
-                print -l "[Service]" "UMask=0002" > "/etc/systemd/system/\$svc.service.d/permissions.conf"
-            fi
+            [[ "\$svc" != "jellyfin" ]] && print -l "[Service]" "UMask=0002" > "/etc/systemd/system/\$svc.service.d/permissions.conf"
         done
         mkdir -p /etc/systemd/system/slskd.service.d
         print -l "[Service]" "ExecStart=" "ExecStart=/usr/lib/slskd/slskd --config /etc/slskd/slskd.yml" > /etc/systemd/system/slskd.service.d/override.conf
@@ -664,47 +644,25 @@ TIMER
     print "d /dev/shm/jellyfin 0755 jellyfin jellyfin -" > /etc/tmpfiles.d/jellyfin-transcode.conf
     usermod -aG render,video jellyfin || true
     chattr +C /var/lib/jellyfin || true
-
     wget -O /etc/udev/rules.d/42-solaar-uinput.rules https://raw.githubusercontent.com/pwr-Solaar/Solaar/refs/heads/master/rules.d-uinput/42-logitech-unify-permissions.rules
-
     systemctl enable jellyfin transmission sonarr radarr lidarr prowlarr sunshine slskd
 
 elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
     print "Applying Laptop Configuration..."
-
     GRUB_CMDLINE="loglevel=3 quiet amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=2560x1600@60 amd_pstate=active"
     sed -i "s|^GRUB_CMDLINE_LINUX_DEFAULT=.*|GRUB_CMDLINE_LINUX_DEFAULT=\"\$GRUB_CMDLINE\"|" /etc/default/grub
-
-    if ! grep -q "numlock" /etc/mkinitcpio.conf; then
-        sed -i 's/HOOKS=(\(.*\))/HOOKS=(\1 numlock)/' /etc/mkinitcpio.conf
-    fi
-
+    grep -q "numlock" /etc/mkinitcpio.conf || sed -i 's/HOOKS=(\(.*\))/HOOKS=(\1 numlock)/' /etc/mkinitcpio.conf
     systemctl enable power-profiles-daemon
 fi
 
 # --- 5.10 Final System Tuning ---
-
 print -l "[zram0]" "zram-size = ram / 2" "compression-algorithm = lz4" "swap-priority = 100" > /etc/systemd/zram-generator.conf
 print -l "vm.swappiness = 150" "vm.page-cluster = 0" > /etc/sysctl.d/99-swappiness.conf
 print -l "net.core.default_qdisc = cake" "net.ipv4.tcp_congestion_control = bbr" > /etc/sysctl.d/99-bbr.conf
 print -l "net.ipv4.ip_forward = 1" "net.ipv6.conf.all.forwarding = 1" > /etc/sysctl.d/99-tailscale.conf
 
-cat << 'TIMER' > /etc/systemd/system/btrfs-balance.timer
-[Unit]
-Description=Run Btrfs Balance Monthly
-[Timer]
-OnCalendar=monthly
-Persistent=true
-[Install]
-WantedBy=timers.target
-TIMER
-cat << 'SERVICE' > /etc/systemd/system/btrfs-balance.service
-[Unit]
-Description=Btrfs Balance
-[Service]
-Type=oneshot
-ExecStart=/usr/bin/btrfs balance start -dusage=50 -musage=50 /
-SERVICE
+print -l "[Unit]" "Description=Run Btrfs Balance Monthly" "[Timer]" "OnCalendar=monthly" "Persistent=true" "[Install]" "WantedBy=timers.target" > /etc/systemd/system/btrfs-balance.timer
+print -l "[Unit]" "Description=Btrfs Balance" "[Service]" "Type=oneshot" "ExecStart=/usr/bin/btrfs balance start -dusage=50 -musage=50 /" > /etc/systemd/system/btrfs-balance.service
 
 if [[ -f /usr/lib/systemd/system/grub-btrfsd.service ]]; then
     cp /usr/lib/systemd/system/grub-btrfsd.service /etc/systemd/system/grub-btrfsd.service
@@ -716,7 +674,6 @@ systemctl enable --now btrfs-balance.timer
 systemctl enable --now btrfs-scrub@-.timer
 systemctl enable timeshift-hourly.timer
 
-# Pacman Hooks
 mkdir -p /etc/pacman.d/hooks
 cat <<HOOK > /etc/pacman.d/hooks/98-rebuild-initramfs.hook
 [Trigger]
@@ -811,15 +768,8 @@ BOOTSCRIPT
 chmod +x /home/$TARGET_USER/.local/bin/first_boot.zsh
 chown $TARGET_USER:$TARGET_USER /home/$TARGET_USER/.local/bin/first_boot.zsh
 
-cat <<AUTOSTART > /home/$TARGET_USER/.config/autostart/first_boot.desktop
-[Desktop Entry]
-Type=Application
-Exec=konsole --separate --hide-tabbar -e /home/$TARGET_USER/.local/bin/first_boot.zsh
-Hidden=false
-NoDisplay=false
-Name=First Boot Setup
-X-GNOME-Autostart-enabled=true
-AUTOSTART
+print -l "[Desktop Entry]" "Type=Application" "Exec=konsole --separate --hide-tabbar -e /home/$TARGET_USER/.local/bin/first_boot.zsh" \
+         "Hidden=false" "NoDisplay=false" "Name=First Boot Setup" "X-GNOME-Autostart-enabled=true" > /home/$TARGET_USER/.config/autostart/first_boot.desktop
 chown $TARGET_USER:$TARGET_USER /home/$TARGET_USER/.config/autostart/first_boot.desktop
 
 CHROOT_SCRIPT
