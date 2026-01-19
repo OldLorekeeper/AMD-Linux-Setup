@@ -55,9 +55,9 @@ if [[ -f "$SECRETS_FILE" ]]; then
     fi
 fi
 
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # 2. User Configuration
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 # Purpose: configure basic system identity variables (Hostname, User, Passwords) and Git credentials. Uses defaults if variables were not loaded via secrets.
 
