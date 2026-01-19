@@ -41,7 +41,7 @@ Follow the tiered execution order for all maintenance tasks:
 
 ## 5. MCP Integration & Resource Usage
 
-Always use the following URI schemes, executable tools and/or workflows to retrieve system data before generating scripts or advice: 
+Always use the following URI schemes, executable tools and/or workflows to retrieve system data before generating scripts or advice (note this list may not be exhaustive): 
 
 ### 5.1 URI Schemes
 
