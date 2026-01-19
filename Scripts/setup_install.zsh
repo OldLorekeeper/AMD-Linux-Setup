@@ -129,7 +129,11 @@ case $PROFILE_SEL in
 esac
 
 # Initialize variables
-SLSKD_USER=""; SLSKD_PASS=""; SOULSEEK_USER=""; SOULSEEK_PASS=""; MEDIA_UUID=""
+SLSKD_USER="${SLSKD_USER:-}"
+SLSKD_PASS="${SLSKD_PASS:-}"
+SOULSEEK_USER="${SOULSEEK_USER:-}"
+SOULSEEK_PASS="${SOULSEEK_PASS:-}"
+MEDIA_UUID=""
 EDID_ENABLE=""; MONITOR_PORT=""
 
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
@@ -139,10 +143,27 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     read "MEDIA_UUID?Enter UUID for /mnt/Media (Leave empty to skip): "
 
     print -P "%F{yellow}Slskd & Soulseek Credentials:%f"
-    read "SLSKD_USER?Slskd WebUI Username: "
-    read -s "SLSKD_PASS?Slskd WebUI Password: "; print ""
-    read "SOULSEEK_USER?Soulseek Username: "
-    read -s "SOULSEEK_PASS?Soulseek Password: "; print ""
+
+    # Conditional prompts: Only ask if not already set via secrets
+    if [[ -z "$SLSKD_USER" ]]; then
+        read "SLSKD_USER?Slskd WebUI Username: "
+    else
+        print -P "Slskd User: %F{green}Loaded from secrets%f"
+    fi
+
+    if [[ -z "$SLSKD_PASS" ]]; then
+        read -s "SLSKD_PASS?Slskd WebUI Password: "; print ""
+    fi
+
+    if [[ -z "$SOULSEEK_USER" ]]; then
+        read "SOULSEEK_USER?Soulseek Username: "
+    else
+        print -P "Soulseek User: %F{green}Loaded from secrets%f"
+    fi
+
+    if [[ -z "$SOULSEEK_PASS" ]]; then
+        read -s "SOULSEEK_PASS?Soulseek Password: "; print ""
+    fi
 
     print -P "%F{yellow}Display Configuration (Headless/Streaming):%f"
     read "EDID_ENABLE?Enable custom 2560x1600 EDID? [y/N]: "
