@@ -1,7 +1,7 @@
 #!/bin/zsh
 # ------------------------------------------------------------------------------
 # 5. System Maintenance & Backup
-# Updates system, firmware, cleans cache, and backups Konsave profile.
+# Updates system, firmware, cleans cache, checks services, and backups Konsave profile.
 # ------------------------------------------------------------------------------
 #
 # DEVELOPMENT RULES (Read before editing):
@@ -129,7 +129,43 @@ if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
 fi
 
 # ------------------------------------------------------------------------------
-# 5. Visual Backup (Konsave)
+# 5. Service Health Check
+# ------------------------------------------------------------------------------
+
+# Purpose: Ensure critical system services are enabled and running based on profile.
+# - Auto-Fix: Enables and starts services that have drifted to inactive/disabled.
+
+print -P "%F{green}--- Service Health Check ---%f"
+typeset -a TARGET_SERVICES
+TARGET_SERVICES=(
+    "NetworkManager" "bluetooth" "sshd" "sddm" "fstrim.timer" "fwupd"
+    "reflector.timer" "btrfs-balance.timer" "btrfs-scrub@-.timer" "timeshift-hourly.timer"
+)
+
+if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
+    TARGET_SERVICES+=(
+        "jellyfin" "transmission-daemon" "sonarr" "radarr"
+        "lidarr" "prowlarr" "sunshine" "slskd" "soularr.timer"
+    )
+    [[ -f /usr/lib/systemd/system/grub-btrfsd.service ]] && TARGET_SERVICES+=("grub-btrfsd")
+elif [[ "$PROFILE_TYPE" == "Laptop" ]]; then
+    TARGET_SERVICES+=("power-profiles-daemon")
+fi
+
+for svc in "${TARGET_SERVICES[@]}"; do
+    if ! systemctl is-enabled "$svc" &>/dev/null; then
+        print -P "%F{yellow}Enabling service: $svc%f"
+        sudo systemctl enable "$svc"
+    fi
+    if ! systemctl is-active "$svc" &>/dev/null; then
+        print -P "%F{yellow}Starting service: $svc%f"
+        sudo systemctl start "$svc"
+    fi
+done
+print -P "Service Status: %F{green}OK%f"
+
+# ------------------------------------------------------------------------------
+# 6. Visual Backup (Konsave)
 # ------------------------------------------------------------------------------
 
 # Purpose: Export and version control the current KDE Plasma configuration.
