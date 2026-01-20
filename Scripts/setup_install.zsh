@@ -49,7 +49,11 @@ if [[ -f "$SECRETS_FILE" ]]; then
     read -s "DECRYPT_PASS?Enter Decryption Password: "; print ""
     if DECRYPTED=$(openssl enc -d -aes-256-cbc -pbkdf2 -in "$SECRETS_FILE" -k "$DECRYPT_PASS" 2>/dev/null); then
         source <(print -r "$DECRYPTED")
-        print -P "%F{green}Secrets loaded successfully.%f"
+        if [[ "${SECRETS_LOADED:-}" == "true" ]]; then
+            print -P "%F{green}Secrets loaded successfully.%f"
+        else
+            print -P "%F{red}Secrets format invalid or missing canary. Falling back to manual prompts.%f"
+        fi
     else
         print -P "%F{red}Decryption failed. Continuing with manual prompts.%f"
     fi
@@ -415,6 +419,7 @@ sed -i 's/^GRUB_TIMEOUT=5/GRUB_TIMEOUT=2/' /etc/default/grub
 
 sed -i 's/-march=x86-64 -mtune=generic/-march=native/' /etc/makepkg.conf
 sed -i "s/^#*MAKEFLAGS=.*/MAKEFLAGS=\"-j\$(nproc)\"/" /etc/makepkg.conf
+sed -i 's/^#*COMPRESSZST=.*/COMPRESSZST=(zstd -c -z -q -T0 -3 -)/' /etc/makepkg.conf
 grep -q "RUSTFLAGS" /etc/makepkg.conf || print 'RUSTFLAGS="-C target-cpu=native"' >> /etc/makepkg.conf
 sed -i 's/^Architecture = auto$/Architecture = auto x86_64_v4/' /etc/pacman.conf
 sed -i 's/^#Color/Color/' /etc/pacman.conf
@@ -861,10 +866,10 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]] && (( \$+commands[kscreen-doctor] )); th
         done
      fi
 fi
-rm "/home/$TARGET_USER/.config/autostart/first_boot.desktop"
 print -P "\n%F{green}System Setup Complete!%f"
 print "You can scroll up to review any errors."
 read "k?Press Enter to cleanup and close this terminal..."
+rm "/home/$TARGET_USER/.config/autostart/first_boot.desktop"
 rm "/home/$TARGET_USER/.local/bin/first_boot.zsh"
 BOOTSCRIPT
 chmod +x "/home/$TARGET_USER/.local/bin/first_boot.zsh"
