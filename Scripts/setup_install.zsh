@@ -300,6 +300,9 @@ LAPTOP_PKGS=(
 )
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     CORE_PKGS+=("${DESKTOP_PKGS[@]}")
+    # Pre-create Jellyfin directory with No-CoW to prevent fragmentation
+    mkdir -p /mnt/var/lib/jellyfin
+    chattr +C /mnt/var/lib/jellyfin
 elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
     CORE_PKGS+=("${LAPTOP_PKGS[@]}")
 fi
@@ -419,6 +422,9 @@ sed -i 's/^GRUB_TIMEOUT=5/GRUB_TIMEOUT=2/' /etc/default/grub
 
 sed -i 's/-march=x86-64 -mtune=generic/-march=native/' /etc/makepkg.conf
 sed -i "s/^#*MAKEFLAGS=.*/MAKEFLAGS=\"-j\$(nproc)\"/" /etc/makepkg.conf
+if [[ "$(findmnt -n -o FSTYPE /tmp)" == "tmpfs" ]]; then
+    sed -i 's/^#*\(BUILDDIR=\/tmp\/makepkg\)/\1/' /etc/makepkg.conf
+fi
 sed -i 's/^#*COMPRESSZST=.*/COMPRESSZST=(zstd -c -z -q -T0 -3 -)/' /etc/makepkg.conf
 grep -q "RUSTFLAGS" /etc/makepkg.conf || print 'RUSTFLAGS="-C target-cpu=native"' >> /etc/makepkg.conf
 sed -i 's/^Architecture = auto$/Architecture = auto x86_64_v4/' /etc/pacman.conf
@@ -688,7 +694,7 @@ print 'ACTION=="add|change", KERNEL=="nvme[0-9]n[0-9]", ATTR{queue/scheduler}="k
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     print "Applying Desktop Configuration..."
     print 'SUBSYSTEM=="pci", ATTR{vendor}=="0x1022", ATTR{device}=="0x43f7", ATTR{power/control}="on"' > /etc/udev/rules.d/99-xhci-fix.rules
-    GRUB_CMDLINE="loglevel=3 quiet amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=3440x1440@60 amd_pstate=active"
+    GRUB_CMDLINE="split_lock_detect=off loglevel=3 quiet amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=3440x1440@60 amd_pstate=active"
     EDID_SRC="$REPO_DIR/Resources/Sunshine/custom_2560x1600.bin"
     if [[ -f "$EDID_SRC" ]]; then
         mkdir -p /usr/lib/firmware/edid
@@ -708,9 +714,13 @@ DEST="/usr/share/icons/hicolor/scalable/status"
 SRC="$REPO_DIR/Resources/Icons/Sunshine"
 [[ -d "$SRC" ]] && cp "$SRC"/*.svg "$DEST/"
 SUNSHINE=$(command -v sunshine)
-[[ -n "$SUNSHINE" ]] && setcap cap_sys_admin+p "$SUNSHINE"
+if [[ -n "$SUNSHINE" ]]; then
+    REAL_PATH=$(readlink -f "$SUNSHINE")
+    setcap cap_sys_admin+p "$REAL_PATH"
+fi
 HOOK
     chmod +x /usr/local/bin/replace-sunshine-icons.sh
+    /usr/local/bin/replace-sunshine-icons.sh
     mkdir -p /etc/pacman.d/hooks
     cat << 'HOOK' > /etc/pacman.d/hooks/sunshine-icons.hook
 [Trigger]
@@ -869,6 +879,14 @@ REPO_DIR="/home/$TARGET_USER/Obsidian/AMD-Linux-Setup"
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     print "Connecting to Tailscale..."
     sudo tailscale up --advertise-exit-node
+    TRANS_CONF="/var/lib/transmission/.config/transmission-daemon/settings.json"
+    if [[ -f "\$TRANS_CONF" ]]; then
+        print "Enforcing Transmission Umask..."
+        sudo systemctl stop transmission
+        sudo jq '.umask = 2' "\$TRANS_CONF" > "\${TRANS_CONF}.tmp" && sudo mv "\${TRANS_CONF}.tmp" "\$TRANS_CONF"
+        sudo chown transmission:transmission "\$TRANS_CONF"
+        sudo systemctl start transmission
+    fi
 fi
 if [[ "$DEVICE_PROFILE" == "desktop" ]] && (( \$+commands[kscreen-doctor] )); then
     print -P "\n%F{yellow}--- Sunshine Resolution/HDR Configuration ---%f"
