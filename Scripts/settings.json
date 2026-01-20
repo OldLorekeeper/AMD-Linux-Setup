@@ -1,0 +1,21 @@
+{
+  "general": {
+    "previewFeatures": true
+  },
+  "security": {
+    "auth": {
+      "selectedType": "oauth-personal"
+    }
+  },
+  "mcpServers": {
+    "arch-linux": {
+      "command": "uvx",
+      "args": [
+        "arch-ops-server"
+      ],
+      "env": {
+        "PATH": "/usr/local/bin:/usr/bin:/bin"
+      }
+    }
+  }
+}

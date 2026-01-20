@@ -274,10 +274,10 @@ CORE_PKGS=(
     # BASE / KERNEL
     "base" "base-devel" "linux-cachyos" "linux-cachyos-headers" "linux-firmware"
     "cachyos-keyring" "cachyos-mirrorlist" "cachyos-v4-mirrorlist"
-    "amd-ucode" "btrfs-progs" "timeshift" "networkmanager" "bluez" "bluez-utils" "git" "vim" "sudo" "efibootmgr"
+    "amd-ucode" "btrfs-progs" "timeshift" "networkmanager" "inetutils" "bluez" "bluez-utils" "git" "vim" "sudo" "efibootmgr"
     "grub" "grub-btrfs" "zsh" "pacman-contrib" "reflector" "openssh" "zram-generator"
     # GUI / GRAPHICs
-    "plasma-meta" "sddm" "sddm-kcm" "konsole" "dolphin" "ark" "kate" "spectacle"
+    "plasma-meta" "sddm" "sddm-kcm" "konsole" "dolphin" "partitionmanager" "ark" "kate" "spectacle"
     "pipewire" "pipewire-pulse" "pipewire-alsa" "wireplumber"
     "mesa" "vulkan-radeon" "kwallet-pam"
     # COMMON FOR DESKTOOP ANDD LAPTOP
@@ -619,7 +619,29 @@ sed -i 's/^plugins=(git)$/plugins=(git archlinux zsh-autosuggestions zsh-syntax-
 print "Installing Gemini CLI..."
 npm install -g @google/gemini-cli
 mkdir -p "/home/$TARGET_USER/.gemini"
-print '{"mcpServers":{"arch-ops":{"command":"uvx","args":["arch-ops-server"]}}}' > "/home/$TARGET_USER/.gemini/settings.json"
+cat << 'JSON' > "/home/$TARGET_USER/.gemini/settings.json"
+{
+  "general": {
+    "previewFeatures": true
+  },
+  "security": {
+    "auth": {
+      "selectedType": "oauth-personal"
+    }
+  },
+  "mcpServers": {
+    "arch-linux": {
+      "command": "uvx",
+      "args": [
+        "arch-ops-server"
+      ],
+      "env": {
+        "PATH": "/usr/local/bin:/usr/bin:/bin"
+      }
+    }
+  }
+}
+JSON
 mkdir -p "/home/$TARGET_USER/.local/share/konsole"
 cp -f "$REPO_DIR/Resources/Konsole"/* "/home/$TARGET_USER/.local/share/konsole/" 2>/dev/null || true
 TRANS_ARCHIVE="$REPO_DIR/Resources/Plasmoids/transmission-plasmoid.tar.gz"
