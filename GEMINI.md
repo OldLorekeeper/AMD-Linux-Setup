@@ -8,20 +8,24 @@ DO NOT MAKE ANY CHANGES TO FILES UNLESS YOU HAVE FIRST PRESENTED THE CHANGE TO T
 - **OS:** Arch Linux (Rolling).
 - **Kernel:** `linux-cachyos` (optimised for Zen 4).
 - **Filesystem:** Btrfs with No-CoW (`+C`) attributes on `~/Games`, `/var/lib/jellyfin`, and `/mnt/Media/Downloads`.
-- **Shell:** Bash (Tier 0/1 bootstrap), Zsh (Tier 2/3 logic and interactive use).
+- **Shell:** Bash (Live Env), Zsh (Interactive & Logic).
 - **Hardware - Desktop:** Ryzen 7 7800X3D, Radeon RX 7900 XT.
 - **Hardware - Laptop:** Ryzen 7 7840HS, Radeon 780M.
 
 ## 2. Repository Architecture
 
-Follow the tiered execution order for all maintenance tasks:
+The project uses a unified lifecycle model:
 
-- **Tier 0 (Bootstrap):** `Scripts/system_install.sh` - Base provisioning.
-- **Tier 1 (Environment):** `Scripts/setup_home.sh` - Dirs, Git, and `@games` subvolume.
-- **Tier 2 (Core):** `Scripts/setup_core.zsh` - Kernel, build environment (`yay`), ZRAM, and BBR/Cake networking.
-- **Tier 3 (Device):**
-    - `Scripts/setup_desktop.zsh`: Media stack (Jellyfin/*arr), Sunshine/Moonlight, and GPU boosting.
-    - `Scripts/setup_laptop.zsh`: Power profiles and display scaling.
+- **Installation:** `Scripts/setup_install.zsh`
+    - Monolithic installer replacing the previous tiered approach.
+    - Handles partitioning, base system, user identity, dotfiles, and device-specific configuration (Desktop/Laptop) in a single execution.
+- **Maintenance:** `Scripts/system_maintain.zsh`
+    - Routine updates (System, AUR, Firmware).
+    - Cleanup (Orphans, Cache).
+    - State backup (Konsave profiles).
+- **Utilities:**
+    - `Scripts/kwin_apply_rules.zsh` - Window management logic.
+    - `Scripts/sunshine_*.zsh` - Host-side streaming configuration.
 
 ## 3. Technical Standards
 
