@@ -145,7 +145,7 @@ TARGET_SERVICES=(
 if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
     TARGET_SERVICES+=(
         "jellyfin" "transmission" "sonarr" "radarr"
-        "lidarr" "prowlarr" "sunshine" "slskd" "soularr.timer"
+        "lidarr" "prowlarr" "slskd" "soularr.timer"
     )
     [[ -f /usr/lib/systemd/system/grub-btrfsd.service ]] && TARGET_SERVICES+=("grub-btrfsd")
 elif [[ "$PROFILE_TYPE" == "Laptop" ]]; then
