@@ -274,7 +274,7 @@ CORE_PKGS=(
     # BASE / KERNEL
     "base" "base-devel" "linux-cachyos" "linux-cachyos-headers" "linux-firmware"
     "cachyos-keyring" "cachyos-mirrorlist" "cachyos-v4-mirrorlist"
-    "amd-ucode" "btrfs-progs" "networkmanager" "git" "vim" "sudo" "efibootmgr"
+    "amd-ucode" "btrfs-progs" "timeshift" "networkmanager" "bluez" "bluez-utils" "git" "vim" "sudo" "efibootmgr"
     "grub" "grub-btrfs" "zsh" "pacman-contrib" "reflector" "openssh" "zram-generator"
     # GUI / GRAPHICs
     "plasma-meta" "sddm" "sddm-kcm" "konsole" "dolphin" "ark" "kate" "spectacle"
