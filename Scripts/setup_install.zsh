@@ -5,10 +5,10 @@
 # Target: AMD Ryzen 7000+ & Radeon 7000+ | KDE Plasma 6 | CachyOS Kernel
 # ------------------------------------------------------------------------------
 #
-# DEVELOPMENT RULES (Read before editing):
+# GENERAL ZSH DEVELOPMENT RULES (Read before editing):
 # 1. Formatting: Keep layout compact. No vertical whitespace inside blocks.
 # 2. Separators: Use 'Sandwich' headers (# ------) with strict spacing (1 line before).
-# 3. Idempotency: Scripts must be safe to re-run. Check state before changes.
+# 3. Idempotency: Scripts must be safe to re-run where possible. Check state before changes.
 # 4. Safety: Use 'setopt ERR_EXIT NO_UNSET PIPE_FAIL'.
 # 5. Context: No hardcoded secrets.
 # 6. Syntax: Use Zsh native modifiers and tooling.
