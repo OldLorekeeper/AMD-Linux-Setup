@@ -279,7 +279,7 @@ CORE_PKGS=(
     # GUI / GRAPHICs
     "plasma-meta" "sddm" "sddm-kcm" "konsole" "dolphin" "ark" "kate" "spectacle"
     "pipewire" "pipewire-pulse" "pipewire-alsa" "wireplumber"
-    "mesa" "vulkan-radeon"
+    "mesa" "vulkan-radeon" "kwallet-pam"
     # COMMON FOR DESKTOOP ANDD LAPTOP
     "7zip" "bash-language-server" "chromium" "cmake" "cmake-extras" "cpupower"
     "cups" "dkms" "dnsmasq" "dosfstools" "edk2-ovmf" "ethtool" "extra-cmake-modules"
