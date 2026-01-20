@@ -45,7 +45,7 @@ The project uses a unified lifecycle model:
 
 ## 5. MCP Integration & Resource Usage
 
-Always use the following URI schemes, executable tools and/or workflows to retrieve system data before generating scripts or advice (note this list may not be exhaustive): 
+ Use the following non-exhaustive list of MCP URI schemes, executable tools and/or workflows when necessary.
 
 ### 5.1 URI Schemes
 
