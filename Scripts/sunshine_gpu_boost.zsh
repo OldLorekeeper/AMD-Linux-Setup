@@ -6,13 +6,12 @@
 #
 # DEVELOPMENT RULES (Read before editing):
 # 1. Formatting: Keep layout compact. No vertical whitespace inside blocks.
-# 2. Separators: Use 'Sandwich' headers (# ------) with strict spacing (1 line before, 0 lines after).
+# 2. Separators: Use 'Sandwich' headers (# ------) with strict spacing (1 line before).
 # 3. Idempotency: Scripts must be safe to re-run. Check state before changes.
 # 4. Safety: Use 'setopt ERR_EXIT NO_UNSET PIPE_FAIL'.
-# 5. Context: Hardcoded for AMD Ryzen 7000/Radeon 7000. No hardcoded secrets.
-# 6. Syntax: Use Zsh native modifiers (e.g. ${VAR:h}) over subshells.
-# 7. Output: Use 'print'. Do NOT use 'echo'.
-# 8. Documentation: Precede sections with 'Purpose'/'Rationale'. No meta-comments inside code blocks.
+# 5. Context: No hardcoded secrets.
+# 6. Syntax: Use Zsh native modifiers and tooling
+# 8. Documentation: Start section with 'Purpose' comment block (1 line before and after). No meta or inline comments within code.
 #
 # ------------------------------------------------------------------------------
 
@@ -24,8 +23,7 @@ zmodload zsh/datetime
 # 1. Configuration
 # ------------------------------------------------------------------------------
 
-# Purpose: Define sysfs path for GPU power control.
-# - Path: Hardcoded to 'card1' because dynamic enumeration proved unreliable on this specific hardware config.
+# Purpose: Define sysfs path for GPU power control - hardcoded to 'card1' because dynamic enumeration proved unreliable on this specific hardware config.
 
 GPU_SYSFS="/sys/class/drm/card1/device/power_dpm_force_performance_level"
 LOG_FILE="/tmp/sunshine_gpu_boost.log"
@@ -37,7 +35,6 @@ LOG_FILE="/tmp/sunshine_gpu_boost.log"
 # Purpose: Toggle GPU performance level based on argument.
 
 strftime -s DATE_STR '%Y-%m-%d %H:%M:%S' $EPOCHSECONDS
-
 case "$1" in
     start)
         print "high" > "$GPU_SYSFS"

@@ -6,13 +6,12 @@
 #
 # DEVELOPMENT RULES (Read before editing):
 # 1. Formatting: Keep layout compact. No vertical whitespace inside blocks.
-# 2. Separators: Use 'Sandwich' headers (# ------) with strict spacing (1 line before, 0 lines after).
+# 2. Separators: Use 'Sandwich' headers (# ------) with strict spacing (1 line before).
 # 3. Idempotency: Scripts must be safe to re-run. Check state before changes.
 # 4. Safety: Use 'setopt ERR_EXIT NO_UNSET PIPE_FAIL'.
-# 5. Context: Hardcoded for AMD Ryzen 7000/Radeon 7000. No hardcoded secrets.
-# 6. Syntax: Use Zsh native modifiers (e.g. ${VAR:h}) over subshells.
-# 7. Output: Use 'print'. Do NOT use 'echo'.
-# 8. Documentation: Precede sections with 'Purpose'/'Rationale'. No meta-comments inside code blocks.
+# 5. Context: No hardcoded secrets.
+# 6. Syntax: Use Zsh native modifiers and tooling
+# 8. Documentation: Start section with 'Purpose' comment block (1 line before and after). No meta or inline comments within code.
 #
 # ------------------------------------------------------------------------------
 
@@ -40,7 +39,6 @@ if [[ -f "$HOME/.zshrc" ]]; then
     ZSH_SKIP_OMZ_CHECK=1 source "$HOME/.zshrc" >/dev/null 2>&1
     setopt ERR_EXIT
 fi
-
 if [[ -n "${KWIN_PROFILE:-}" ]]; then
     PROFILE_TYPE="${(C)KWIN_PROFILE}"
     print -P "Detected Profile: %F{green}$PROFILE_TYPE%f"
@@ -68,7 +66,6 @@ fi
 
 print -P "%F{green}--- System Updates ---%f"
 yay -Syu --noconfirm
-
 print -P "%F{green}--- Firmware Updates ---%f"
 fwupdmgr refresh --force
 if fwupdmgr get-updates | grep -q "Devices with updates"; then
@@ -92,7 +89,6 @@ if pacman -Qdtq >/dev/null 2>&1; then
 else
     print -P "%F{yellow}No orphans to remove.%f"
 fi
-
 print "Cleaning package cache (keeping last 3)..."
 if (( $+commands[paccache] )); then
     paccache -rk3
@@ -121,7 +117,6 @@ if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
         fi
     done
     print -P "Service Memberships: %F{green}OK%f"
-
     TARGET="/mnt/Media"
     if grep -q "$TARGET" /proc/mounts; then
         print "Enforcing Access Control Lists (ACLs)..."
@@ -147,7 +142,6 @@ zmodload zsh/datetime; strftime -s DATE_STR '%Y-%m-%d' $EPOCHSECONDS
 PROFILE_NAME="$PROFILE_TYPE Dock $DATE_STR"
 REPO_ROOT=${SCRIPT_DIR:h}
 EXPORT_DIR="$REPO_ROOT/Resources/Konsave"
-
 if (( $+commands[konsave] )); then
     print "Saving profile internally: $PROFILE_NAME"
     PYTHONWARNINGS="ignore" konsave -s "$PROFILE_NAME" -f
@@ -157,7 +151,6 @@ if (( $+commands[konsave] )); then
     else
         print -P "%F{yellow}Warning: Export directory not found at $EXPORT_DIR%f"
     fi
-
     KONSAVE_CONFIG="$HOME/.config/konsave/profiles"
     if [[ -d "$KONSAVE_CONFIG" ]]; then
         local -a internal_profiles=( "$KONSAVE_CONFIG"/"$PROFILE_TYPE Dock "*(-/On) )
@@ -168,7 +161,6 @@ if (( $+commands[konsave] )); then
             done
         fi
     fi
-
     if [[ -d "$EXPORT_DIR" ]]; then
         local -a repo_files=( "$EXPORT_DIR"/"$PROFILE_TYPE Dock "*.knsv(.On) )
         if (( ${#repo_files} > 3 )); then

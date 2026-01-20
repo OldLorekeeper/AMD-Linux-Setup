@@ -6,13 +6,12 @@
 #
 # DEVELOPMENT RULES (Read before editing):
 # 1. Formatting: Keep layout compact. No vertical whitespace inside blocks.
-# 2. Separators: Use 'Sandwich' headers (# ------) with strict spacing (1 line before, 0 lines after).
+# 2. Separators: Use 'Sandwich' headers (# ------) with strict spacing (1 line before).
 # 3. Idempotency: Scripts must be safe to re-run. Check state before changes.
 # 4. Safety: Use 'setopt ERR_EXIT NO_UNSET PIPE_FAIL'.
-# 5. Context: Hardcoded for AMD Ryzen 7000/Radeon 7000. No hardcoded secrets.
-# 6. Syntax: Use Zsh native modifiers (e.g. ${VAR:h}) over subshells.
-# 7. Output: Use 'print'. Do NOT use 'echo'.
-# 8. Documentation: Precede sections with 'Purpose'/'Rationale'. No meta-comments inside code blocks.
+# 5. Context: No hardcoded secrets.
+# 6. Syntax: Use Zsh native modifiers and tooling
+# 8. Documentation: Start section with 'Purpose' comment block (1 line before and after). No meta or inline comments within code.
 #
 # ------------------------------------------------------------------------------
 
@@ -28,7 +27,6 @@ SCRIPT_DIR=${0:a:h}
 HDR_SCRIPT="$SCRIPT_DIR/sunshine_hdr.zsh"
 RES_SCRIPT="$SCRIPT_DIR/sunshine_res.zsh"
 LAPTOP_SCRIPT="$SCRIPT_DIR/sunshine_laptop.zsh"
-
 if [[ ! -f "$HDR_SCRIPT" || ! -f "$RES_SCRIPT" || ! -f "$LAPTOP_SCRIPT" ]]; then
     print -P "%F{red}Error: Target Sunshine scripts not found in $SCRIPT_DIR%f"
     exit 1

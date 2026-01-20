@@ -6,13 +6,12 @@
 #
 # DEVELOPMENT RULES (Read before editing):
 # 1. Formatting: Keep layout compact. No vertical whitespace inside blocks.
-# 2. Separators: Use 'Sandwich' headers (# ------) with strict spacing (1 line before, 0 lines after).
+# 2. Separators: Use 'Sandwich' headers (# ------) with strict spacing (1 line before).
 # 3. Idempotency: Scripts must be safe to re-run. Check state before changes.
 # 4. Safety: Use 'setopt ERR_EXIT NO_UNSET PIPE_FAIL'.
-# 5. Context: Hardcoded for AMD Ryzen 7000/Radeon 7000. No hardcoded secrets.
-# 6. Syntax: Use Zsh native modifiers (e.g. ${VAR:h}) over subshells.
-# 7. Output: Use 'print'. Do NOT use 'echo'.
-# 8. Documentation: Precede sections with 'Purpose'/'Rationale'. No meta-comments inside code blocks.
+# 5. Context: No hardcoded secrets.
+# 6. Syntax: Use Zsh native modifiers and tooling
+# 8. Documentation: Start section with 'Purpose' comment block (1 line before and after). No meta or inline comments within code.
 #
 # ------------------------------------------------------------------------------
 
@@ -32,16 +31,13 @@ if ! (( $+commands[kid3-cli] )); then
     print -P "%F{red}Error: kid3-cli is not installed.%f"
     exit 1
 fi
-
 TARGET_DIR="${1:-$PWD}"
 if [[ ! -d "$TARGET_DIR" ]]; then
     print -P "%F{red}Error: Directory not found: $TARGET_DIR%f"
     exit 1
 fi
-
 local -a target_folders
 target_folders=("$TARGET_DIR" "$TARGET_DIR"/**/*(/e:"$match_code":))
-
 if (( ${#target_folders} == 0 )); then
     print -P "%F{yellow}No directories with valid cover art found.%f"
     exit 0
@@ -66,16 +62,14 @@ for folder in $target_folders; do
     elif [[ -f "$folder/folder.png" ]]; then
         cover_img="$folder/folder.png"
     fi
-
     local -a audio_files
     audio_files=("$folder"/*.{mp3,flac,m4a,ogg}(N))
-
     if (( ${#audio_files} > 0 )); then
         print -P "%F{green}Processing: ${folder:t}%f"
         print "  Source: ${cover_img:t}"
         for file in $audio_files; do
             if output=$(kid3-cli -c "set picture:\"$cover_img\" \"\"" "$file" 2>&1); then
-                 : # Success
+                 :
             else
                  print -P "%F{red}    Failed: ${file:t}%f"
             fi
