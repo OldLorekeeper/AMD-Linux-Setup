@@ -138,7 +138,7 @@ fi
 print -P "%F{green}--- Service Health Check ---%f"
 typeset -a TARGET_SERVICES
 TARGET_SERVICES=(
-    "NetworkManager" "bluetooth" "sshd" "sddm" "fstrim.timer" "fwupd"
+    "NetworkManager" "bluetooth" "sshd" "sddm" "fwupd"
     "reflector.timer" "btrfs-balance.timer" "btrfs-scrub@-.timer" "timeshift-hourly.timer"
 )
 
