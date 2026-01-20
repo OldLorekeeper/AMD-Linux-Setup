@@ -17,7 +17,7 @@ DO NOT MAKE ANY CHANGES TO FILES UNLESS YOU HAVE FIRST PRESENTED THE CHANGE TO T
 The project uses a unified lifecycle model:
 
 - **Installation:** `Scripts/setup_install.zsh`
-    - Monolithic installer replacing the previous tiered approach.
+    - Monolithic installer
     - Handles partitioning, base system, user identity, dotfiles, and device-specific configuration (Desktop/Laptop) in a single execution.
 - **Maintenance:** `Scripts/system_maintain.zsh`
     - Routine updates (System, AUR, Firmware).
