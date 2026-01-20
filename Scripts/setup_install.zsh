@@ -386,7 +386,7 @@ chown "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/Games"
 mkdir -p /etc/NetworkManager/conf.d
 print -l "[device]" "wifi.backend=iwd" > /etc/NetworkManager/conf.d/wifi_backend.conf
 sed -i 's/^#*\(Experimental = \).*/\1true/' /etc/bluetooth/main.conf
-systemctl enable NetworkManager bluetooth sshd sddm fstrim.timer fwupd.service
+systemctl enable NetworkManager bluetooth sshd sddm fwupd.service
 mkdir -p /etc/xdg/reflector
 print -l -- "--country GB,IE,NL,DE,FR,EU" "--latest 20" "--sort rate" "--save /etc/pacman.d/mirrorlist" > /etc/xdg/reflector/reflector.conf
 systemctl enable reflector.timer
@@ -744,7 +744,7 @@ UNIT
             setfacl -R -m g:media:rwX /mnt/Media
             setfacl -R -m d:g:media:rwX /mnt/Media
         fi
-        for svc in sonarr radarr lidarr prowlarr transmission-daemon slskd jellyfin; do
+        for svc in sonarr radarr lidarr prowlarr transmission slskd jellyfin; do
             mkdir -p "/etc/systemd/system/$svc.service.d"
             print -l "[Unit]" "RequiresMountsFor=/mnt/Media" > "/etc/systemd/system/$svc.service.d/media-mount.conf"
             [[ "$svc" != "jellyfin" ]] && print -l "[Service]" "UMask=0002" > "/etc/systemd/system/$svc.service.d/permissions.conf"
@@ -759,7 +759,11 @@ UNIT
     usermod -aG render,video jellyfin || true
     chattr +C /var/lib/jellyfin || true
     wget -O /etc/udev/rules.d/42-solaar-uinput.rules https://raw.githubusercontent.com/pwr-Solaar/Solaar/refs/heads/master/rules.d-uinput/42-logitech-unify-permissions.rules
-    systemctl enable jellyfin transmission-daemon sonarr radarr lidarr prowlarr sunshine slskd
+    systemctl enable jellyfin transmission sonarr radarr lidarr prowlarr slskd
+    mkdir -p /var/lib/systemd/linger
+    touch "/var/lib/systemd/linger/$TARGET_USER"
+    mkdir -p "/home/$TARGET_USER/.config/systemd/user/default.target.wants"
+    ln -sf /usr/lib/systemd/user/sunshine.service "/home/$TARGET_USER/.config/systemd/user/default.target.wants/sunshine.service"
 elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
     print "Applying Laptop Configuration..."
     GRUB_CMDLINE="loglevel=3 quiet amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=2560x1600@60 amd_pstate=active"
