@@ -19,7 +19,8 @@ The scripts and steps contained in this repo are tailored to the below system pr
 | **GPU**         | Gigabyte Radeon RX 7900 XT | [TechPowerUp](https://www.techpowerup.com/gpu-specs/gigabyte-rx-7900-xt-gaming-oc.b9940)                                                                                                  |
 | **RAM**         | Corsair Vengeance DDR5     | [32GB (2x16GB) 6400MT/s CL36](https://www.corsair.com/uk/en/p/ddr5-ram/cmk32gx5m2b6400c36/vengeance-32gb-2x16gb-ddr5-dram-6400mt-s-c36-memory-kit-black-cmk32gx5m2b6400c36#tab-techspecs) |
 | **PSU**         | Corsair SF750              | [750W 80+ Platinum SFX](https://www.corsair.com/ww/en/p/psu/cp-9020186-uk/sf-series-sf750-750-watt-80-plus-platinum-certified-high-performance-sfx-psu-uk-cp-9020186-uk#tab-techspecs)    |
-| **SSD**         | Samsung 970 EVO Plus       | [1TB NVMe M.2](https://www.techpowerup.com/ssd-specs/samsung-970-evo-plus-1-tb.d61)                                                                                                       |
+| **SSD (OS)**    | Samsung 970 EVO Plus       | [1TB NVMe M.2](https://www.techpowerup.com/ssd-specs/samsung-970-evo-plus-1-tb.d61)                                                                                                       |
+| **SSD (Media)** | Samsung 970 EVO Plus       | [2TB NVMe M.2](https://www.techpowerup.com/ssd-specs/samsung-970-evo-plus-2-tb.d62)                                                                                                       |
 | **Network**     | Intel I225-V / Wi-Fi 6E    | 2.5GbE LAN / 802.11ax                                                                                                                                                                     |
 #### Laptop profile:
 
