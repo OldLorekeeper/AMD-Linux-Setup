@@ -8,7 +8,7 @@ This repository hosts a bespoke automation suite for deploying a high-performanc
 
 ## Hardware targets
 
-For full details, see [Hardware Spec](./7-Hardware-Specs) files.
+For full details, see [Hardware Spec](./4-Hardware-Specs) files.
 
 | Profile | CPU | GPU | System |
 | :--- | :--- | :--- | :--- |
