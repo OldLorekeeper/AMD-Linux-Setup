@@ -79,14 +79,14 @@ print -P "\n%K{blue}%F{black} 2. USER CONFIGURATION %k%f\n"
 print -P "%K{yellow}%F{black} SYSTEM CONFIGURATION %k%f\n" # Uses trailing \n for spacing after
 if [[ -z "${HOSTNAME:-}" ]]; then
     print -P "%F{yellow}Enter System Hostname (Network ID):%f"
-    read "HOSTNAME?Hostname [NCC-1701]: "
+    read "HOSTNAME?Hostname [Default: NCC-1701]: "
     HOSTNAME=${HOSTNAME:-NCC-1701}
 else
     print -P "Hostname:     %F{green}$HOSTNAME%f"
 fi
 if [[ -z "${TARGET_USER:-}" ]]; then
     print -P "%F{yellow}Enter Primary Username:%f"
-    read "TARGET_USER?Username [user]: "
+    read "TARGET_USER?Username [Default: user]: "
     TARGET_USER=${TARGET_USER:-user}
 else
     print -P "Username:     %F{green}$TARGET_USER%f"
@@ -107,7 +107,7 @@ fi
 print -P "\n%K{yellow}%F{black} EXTERNAL IDENTITY (GIT/GITHUB) %k%f\n" # Leading \n used here (follows previous block)
 if [[ -z "${GIT_NAME:-}" ]]; then
     print -P "%F{yellow}Enter Git Commit Name:%f"
-    print -P "%F{cyan}ℹ Context: Metadata for commit logs (user.name).%f"
+    print -P "%F{cyan}ℹ Context: Metadata for commit logs (Username or Real Name).%f"
     read "GIT_NAME?Name (e.g. Jean-Luc Picard): "
 else
     print -P "Git Name:     %F{green}$GIT_NAME%f"
@@ -122,7 +122,7 @@ fi
 if [[ -n "${GIT_PAT:-}" ]]; then
     print -P "Git PAT:      %F{green}Loaded from secrets%f"
 else
-    print -P "%F{yellow}Enter GitHub Personal Access Token (Scope: repo):%f"
+    print -P "%F{yellow}Enter GitHub Personal Access Token:%f"
     read -s "GIT_PAT?Token: "; print ""
 fi
 if [[ -z "${GIT_PAT:-}" ]]; then
@@ -134,7 +134,7 @@ print -P "\n%K{yellow}%F{black} DESKTOP THEMING %k%f\n"
 if [[ -z "${APPLY_KONSAVE:-}" ]]; then
     print -P "%F{yellow}Apply custom Konsave profile?%f"
     print -P "%F{cyan}ℹ Context: Panels, Widgets, and Visuals.%f"
-    print -P "%F{red}Warning: Overwrites existing KDE configuration.%f"
+    print -P "%F{red}Warning: Overwrites default KDE configuration.%f"
     read "APPLY_KONSAVE?Apply Theme? [Y/n]: "
     [[ "$APPLY_KONSAVE" == (#i)n* ]] && APPLY_KONSAVE="false" || APPLY_KONSAVE="true"
 else
