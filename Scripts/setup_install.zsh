@@ -534,6 +534,7 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "/usr/share/nvm/init-nvm.sh" ] && source "/usr/share/nvm/init-nvm.sh"
 alias mkinit="sudo mkinitcpio -P"
 alias mkgrub="sudo grub-mkconfig -o /boot/grub/grub.cfg"
+alias gemini-arch="cd ~/Obsidian/AMD-Linux-Setup/ && gemini"
 
 # Auto-organise clones
 
