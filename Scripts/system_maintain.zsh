@@ -10,8 +10,16 @@
 # 3. Idempotency: Scripts must be safe to re-run. Check state before changes.
 # 4. Safety: Use 'setopt ERR_EXIT NO_UNSET PIPE_FAIL'.
 # 5. Context: No hardcoded secrets.
-# 6. Syntax: Use Zsh native modifiers and tooling
-# 8. Documentation: Start section with 'Purpose' comment block (1 line before and after). No meta or inline comments within code.
+# 6. Syntax: Use Zsh native modifiers and tooling.
+# 7. Documentation: Start section with 'Purpose' comment block (1 line before and after). No meta or inline comments within code.
+# 8. UI & Theming:
+#    - Headers: Blue (%K{blue}%F{black}) for sections, Yellow (%K{yellow}%F{black}) for sub-sections.
+#    - Spacing: One empty line before and after headers. Use embedded \n to save lines.
+#      * Exception: If a header follows another header immediately, omit the leading \n to avoid double gaps.
+#    - Inputs: Yellow description line (%F{yellow}) followed by minimal prompt (read "VAR?Prompt: ").
+#    - Context: Cyan (%F{cyan}) for info/metadata (prefixed with ℹ).
+#    - Status: Green (%F{green}) for success/loaded, Red (%F{red}) for errors/warnings.
+#    - Silence: Do not repeat/confirm manual user input. Only print confirmation (%F{green}) if the value was pre-loaded from secrets.
 #
 # ------------------------------------------------------------------------------
 
@@ -24,16 +32,15 @@ sudo -v
 SUDO_PID=$!
 trap 'kill $SUDO_PID' EXIT
 
-print -P "%F{green}--- Starting System Maintenance ---%f"
+print -P "\n%K{green}%F{black} STARTING SYSTEM MAINTENANCE %k%f\n"
 
 # ------------------------------------------------------------------------------
 # 1. Environment & Profile
 # ------------------------------------------------------------------------------
 
 # Purpose: Detect or prompt for the device profile to ensure correct backup labeling.
-# - Action: Sources .zshrc to find KWIN_PROFILE; prompts user if missing.
 
-print -P "%F{green}--- Environment Check ---%f"
+print -P "\n%K{blue}%F{black} 1. ENVIRONMENT & PROFILE %k%f\n"
 if [[ -f "$HOME/.zshrc" ]]; then
     unsetopt ERR_EXIT
     ZSH_SKIP_OMZ_CHECK=1 source "$HOME/.zshrc" >/dev/null 2>&1
@@ -41,36 +48,34 @@ if [[ -f "$HOME/.zshrc" ]]; then
 fi
 if [[ -n "${KWIN_PROFILE:-}" ]]; then
     PROFILE_TYPE="${(C)KWIN_PROFILE}"
-    print -P "Detected Profile: %F{green}$PROFILE_TYPE%f"
+    print -P "Profile: %F{green}Loaded ($PROFILE_TYPE)%f"
 else
-    print -P "%F{yellow}KWIN_PROFILE not detected.%f"
-    print "Select Device Type for Backup:"
-    print "1) Desktop"
-    print "2) Laptop"
+    print -P "%F{yellow}Select Device Type for Backup:%f"
+    print -P "%F{cyan}ℹ 1) Desktop, 2) Laptop%f"
     read "kwin_choice?Choice [1-2]: "
     case $kwin_choice in
         1) PROFILE_TYPE="Desktop" ;;
         2) PROFILE_TYPE="Laptop" ;;
         *) print -P "%F{red}Invalid selection. Exiting.%f"; exit 1 ;;
     esac
-    print -P "Selected Profile: %F{green}$PROFILE_TYPE%f"
 fi
 
 # ------------------------------------------------------------------------------
 # 2. Updates (System & Firmware)
 # ------------------------------------------------------------------------------
 
-# Purpose: Upgrade all software layers.
-# - Packages: Updates official and AUR packages via yay.
-# - Firmware: Checks lvfs for hardware updates using fwupdmgr.
+# Purpose: Upgrade all software layers and firmware.
 
-print -P "%F{green}--- System Updates ---%f"
+print -P "\n%K{blue}%F{black} 2. UPDATES (SYSTEM & FIRMWARE) %k%f\n"
+print -P "%K{yellow}%F{black} SYSTEM UPDATES %k%f"
+print ""
 yay -Syu --noconfirm
 if (( $+commands[npm] )); then
-    print "Updating Gemini CLI..."
+    print -P "%F{cyan}ℹ Updating Gemini CLI...%f"
     sudo npm update -g @google/gemini-cli
 fi
-print -P "%F{green}--- Firmware Updates ---%f"
+print -P "\n%K{yellow}%F{black} FIRMWARE UPDATES %k%f"
+print ""
 fwupdmgr refresh --force
 if fwupdmgr get-updates | grep -q "Devices with updates"; then
     fwupdmgr update -y
@@ -82,11 +87,9 @@ fi
 # 3. Cleanup
 # ------------------------------------------------------------------------------
 
-# Purpose: Reclaim disk space.
-# - Orphans: Removes unused dependencies.
-# - Cache: Retains only the 3 most recent package versions for rollback safety.
+# Purpose: Reclaim disk space and manage package cache.
 
-print -P "%F{green}--- Cleanup ---%f"
+print -P "\n%K{blue}%F{black} 3. CLEANUP %k%f\n"
 if pacman -Qdtq >/dev/null 2>&1; then
     print "Removing orphans..."
     yay -Yc --noconfirm
@@ -105,13 +108,11 @@ fi
 # ------------------------------------------------------------------------------
 
 # Purpose: Prevent permission drift on the shared media drive.
-# - Groups: Ensures media services belong to the 'media' group.
-# - ACLs: Recursively enforces read/write permissions on /mnt/Media.
 
+print -P "\n%K{blue}%F{black} 4. MEDIA INTEGRITY CHECKS %k%f\n"
 if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
-    print -P "%F{green}--- Media Integrity Checks ---%f"
     SERVICES=("sonarr" "radarr" "lidarr" "prowlarr" "jellyfin" "transmission" "slskd")
-    print "Verifying service group memberships..."
+    print -P "%F{cyan}ℹ Verifying service group memberships...%f"
     for svc in $SERVICES; do
         if id "$svc" &>/dev/null; then
             if ! id -nG "$svc" | grep -qw "media"; then
@@ -123,13 +124,15 @@ if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
     print -P "Service Memberships: %F{green}OK%f"
     TARGET="/mnt/Media"
     if grep -q "$TARGET" /proc/mounts; then
-        print "Enforcing Access Control Lists (ACLs)..."
+        print -P "%F{cyan}ℹ Enforcing Access Control Lists (ACLs)...%f"
         sudo setfacl -R -m g:media:rwX "$TARGET"
         sudo setfacl -R -m d:g:media:rwX "$TARGET"
         print -P "ACLs Enforced: %F{green}OK%f"
     else
         print -P "%F{yellow}Media drive not mounted. Skipping ACL checks.%f"
     fi
+else
+    print -P "%F{yellow}Skipped (Not Desktop).%f"
 fi
 
 # ------------------------------------------------------------------------------
@@ -137,9 +140,8 @@ fi
 # ------------------------------------------------------------------------------
 
 # Purpose: Ensure critical system services are enabled and running based on profile.
-# - Auto-Fix: Enables and starts services that have drifted to inactive/disabled.
 
-print -P "%F{green}--- Service Health Check ---%f"
+print -P "\n%K{blue}%F{black} 5. SERVICE HEALTH CHECK %k%f\n"
 typeset -a TARGET_SERVICES
 TARGET_SERVICES=(
     "NetworkManager" "bluetooth" "sshd" "sddm" "fwupd"
@@ -173,20 +175,18 @@ print -P "Service Status: %F{green}OK%f"
 # ------------------------------------------------------------------------------
 
 # Purpose: Export and version control the current KDE Plasma configuration.
-# - Export: Saves current state as a 'Dock' profile.
-# - Prune: Retains only the 3 most recent backups to prevent bloat.
-# - Sorting: Uses Name Descending ('On') instead of Modification Time ('om') to survive Git cloning.
 
-print -P "%F{green}--- Visual Backup (Konsave) ---%f"
+print -P "\n%K{blue}%F{black} 6. VISUAL BACKUP (KONSAVE) %k%f\n"
 zmodload zsh/datetime; strftime -s DATE_STR '%Y-%m-%d' $EPOCHSECONDS
 PROFILE_NAME="$PROFILE_TYPE Dock $DATE_STR"
 REPO_ROOT=${SCRIPT_DIR:h}
 EXPORT_DIR="$REPO_ROOT/Resources/Konsave"
+
 if (( $+commands[konsave] )); then
-    print "Saving profile internally: $PROFILE_NAME"
+    print -P "%F{cyan}ℹ Saving profile internally: $PROFILE_NAME%f"
     PYTHONWARNINGS="ignore" konsave -s "$PROFILE_NAME" -f
     if [[ -d "$EXPORT_DIR" ]]; then
-        print "Exporting to repo: $EXPORT_DIR"
+        print -P "%F{cyan}ℹ Exporting to repo: $EXPORT_DIR%f"
         PYTHONWARNINGS="ignore" konsave -e "$PROFILE_NAME" -d "$EXPORT_DIR" -f
     else
         print -P "%F{yellow}Warning: Export directory not found at $EXPORT_DIR%f"
@@ -219,4 +219,4 @@ fi
 # End
 # ------------------------------------------------------------------------------
 
-print -P "%F{green}--- System Maintenance Complete ---%f"
+print -P "\n%K{green}%F{black} SYSTEM MAINTENANCE COMPLETE %k%f\n"

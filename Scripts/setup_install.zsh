@@ -5,20 +5,28 @@
 # Target: AMD Ryzen 7000+ & Radeon 7000+ | KDE Plasma 6 | CachyOS Kernel
 # ------------------------------------------------------------------------------
 #
-# GENERAL ZSH DEVELOPMENT RULES (Read before editing):
+# DEVELOPMENT RULES (Read before editing):
 # 1. Formatting: Keep layout compact. No vertical whitespace inside blocks.
 # 2. Separators: Use 'Sandwich' headers (# ------) with strict spacing (1 line before).
-# 3. Idempotency: Scripts must be safe to re-run where possible. Check state before changes.
+# 3. Idempotency: Scripts must be safe to re-run. Check state before changes.
 # 4. Safety: Use 'setopt ERR_EXIT NO_UNSET PIPE_FAIL'.
 # 5. Context: No hardcoded secrets.
 # 6. Syntax: Use Zsh native modifiers and tooling.
-# 8. Documentation: Start section with 'Purpose' comment block (1 line before and after). No meta or inline comments within code.
+# 7. Documentation: Start section with 'Purpose' comment block (1 line before and after). No meta or inline comments within code.
+# 8. UI & Theming:
+#    - Headers: Blue (%K{blue}%F{black}) for sections, Yellow (%K{yellow}%F{black}) for sub-sections.
+#    - Spacing: One empty line before and after headers. Use embedded \n to save lines.
+#      * Exception: If a header follows another header immediately, omit the leading \n to avoid double gaps.
+#    - Inputs: Yellow description line (%F{yellow}) followed by minimal prompt (read "VAR?Prompt: ").
+#    - Context: Cyan (%F{cyan}) for info/metadata (prefixed with ℹ).
+#    - Status: Green (%F{green}) for success/loaded, Red (%F{red}) for errors/warnings.
+#    - Silence: Do not repeat/confirm manual user input. Only print confirmation (%F{green}) if the value was pre-loaded from secrets.
 #
 # ------------------------------------------------------------------------------
 
 setopt ERR_EXIT NO_UNSET PIPE_FAIL EXTENDED_GLOB
 
-print -P "%F{green}--- Starting AMD-Linux-Setup (Zen 4) ---%f"
+print -P "\n%K{green}%F{black} STARTING AMD-LINUX-SETUP (ZEN 4) %k%f\n"
 
 # ------------------------------------------------------------------------------
 # 1. Pre-flight Checks & Secrets
@@ -34,7 +42,8 @@ if ! ping -c 3 archlinux.org &>/dev/null; then
     print -P "%F{red}[!] Error: No internet connection.%f"
     exit 1
 fi
-print -P "%F{yellow}--- Credentials Setup ---%f"
+
+print -P "\n%K{blue}%F{black} 1. CREDENTIALS SETUP %k%f\n"
 SECRETS_FILE="setup_secrets.enc"
 RAW_URL="https://raw.githubusercontent.com/OldLorekeeper/AMD-Linux-Setup/main/Scripts/$SECRETS_FILE"
 if [[ ! -f "$SECRETS_FILE" ]]; then
@@ -46,7 +55,8 @@ if [[ ! -f "$SECRETS_FILE" ]]; then
     fi
 fi
 if [[ -f "$SECRETS_FILE" ]]; then
-    read -s "DECRYPT_PASS?Enter Decryption Password: "; print ""
+    print -P "%F{yellow}Enter Decryption Password:%f"
+    read -s "DECRYPT_PASS?Password: "; print ""
     if DECRYPTED=$(openssl enc -d -aes-256-cbc -pbkdf2 -in "$SECRETS_FILE" -k "$DECRYPT_PASS" 2>/dev/null); then
         source <(print -r "$DECRYPTED")
         if [[ "${SECRETS_LOADED:-}" == "true" ]]; then
@@ -63,45 +73,72 @@ fi
 # 2. User Configuration
 # ------------------------------------------------------------------------------
 
-# Purpose: configure basic system identity variables (Hostname, User, Passwords) and Git credentials. Uses defaults if variables were not loaded via secrets.
+# Purpose: Configure basic system identity variables (Hostname, User, Passwords) and Git credentials. Uses defaults if variables were not loaded via secrets.
 
-print -P "%F{yellow}--- System Configuration ---%f"
+print -P "\n%K{blue}%F{black} 2. USER CONFIGURATION %k%f\n"
+print -P "%K{yellow}%F{black} SYSTEM CONFIGURATION %k%f\n" # Uses trailing \n for spacing after
 if [[ -z "${HOSTNAME:-}" ]]; then
-    read "HOSTNAME?Hostname [Default: NCC-1701]: "
+    print -P "%F{yellow}Enter System Hostname (Network ID):%f"
+    read "HOSTNAME?Hostname [NCC-1701]: "
     HOSTNAME=${HOSTNAME:-NCC-1701}
 else
-    print -P "Hostname loaded: %F{green}$HOSTNAME%f"
+    print -P "Hostname:     %F{green}$HOSTNAME%f"
 fi
 if [[ -z "${TARGET_USER:-}" ]]; then
-    read "TARGET_USER?Username [Default: user]: "
+    print -P "%F{yellow}Enter Primary Username:%f"
+    read "TARGET_USER?Username [user]: "
     TARGET_USER=${TARGET_USER:-user}
 else
-    print -P "Username loaded: %F{green}$TARGET_USER%f"
+    print -P "Username:     %F{green}$TARGET_USER%f"
 fi
 if [[ -z "${ROOT_PASS:-}" ]]; then
     print -P "%F{yellow}Set Root Password:%f"
     read -s "ROOT_PASS?Password: "; print ""
+else
+    print -P "Root Pass:    %F{green}Loaded from secrets%f"
 fi
 if [[ -z "${USER_PASS:-}" ]]; then
     print -P "%F{yellow}Set User (${TARGET_USER}) Password:%f"
     read -s "USER_PASS?Password: "; print ""
+else
+    print -P "User Pass:    %F{green}Loaded from secrets%f"
 fi
+
+print -P "\n%K{yellow}%F{black} EXTERNAL IDENTITY (GIT/GITHUB) %k%f\n" # Leading \n used here (follows previous block)
 if [[ -z "${GIT_NAME:-}" ]]; then
-    read "GIT_NAME?Git Name [Default: OldLorekeeper]: "
-    GIT_NAME=${GIT_NAME:-OldLorekeeper}
+    print -P "%F{yellow}Enter Git Commit Name:%f"
+    print -P "%F{cyan}ℹ Context: Metadata for commit logs (user.name).%f"
+    read "GIT_NAME?Name (e.g. Jean-Luc Picard): "
+else
+    print -P "Git Name:     %F{green}$GIT_NAME%f"
 fi
 if [[ -z "${GIT_EMAIL:-}" ]]; then
-    read "GIT_EMAIL?Git Email: "
+    print -P "%F{yellow}Enter Git Email:%f"
+    print -P "%F{cyan}ℹ Context: Must match GitHub account for attribution.%f"
+    read "GIT_EMAIL?Email: "
+else
+    print -P "Git Email:    %F{green}$GIT_EMAIL%f"
 fi
 if [[ -n "${GIT_PAT:-}" ]]; then
-    print -P "%F{green}Git PAT configured.%f"
+    print -P "Git PAT:      %F{green}Loaded from secrets%f"
 else
-    print -P "%F{yellow}Enter GitHub Personal Access Token:%f"
-    read -s "GIT_PAT?Token (Hidden): "; print ""
+    print -P "%F{yellow}Enter GitHub Personal Access Token (Scope: repo):%f"
+    read -s "GIT_PAT?Token: "; print ""
 fi
 if [[ -z "${GIT_PAT:-}" ]]; then
     print -P "%F{red}[!] Error: Git PAT is required to clone private dotfiles.%f"
     exit 1
+fi
+
+print -P "\n%K{yellow}%F{black} DESKTOP THEMING %k%f\n"
+if [[ -z "${APPLY_KONSAVE:-}" ]]; then
+    print -P "%F{yellow}Apply custom Konsave profile?%f"
+    print -P "%F{cyan}ℹ Context: Panels, Widgets, and Visuals.%f"
+    print -P "%F{red}Warning: Overwrites existing KDE configuration.%f"
+    read "APPLY_KONSAVE?Apply Theme? [Y/n]: "
+    [[ "$APPLY_KONSAVE" == (#i)n* ]] && APPLY_KONSAVE="false" || APPLY_KONSAVE="true"
+else
+    print -P "Apply Theme:  %F{green}$APPLY_KONSAVE%f"
 fi
 
 # ------------------------------------------------------------------------------
@@ -110,44 +147,53 @@ fi
 
 # Purpose: Determine the hardware profile (Desktop/Laptop) to govern package selection and KWin rules. Collects additional data for desktops (Media UUID, specific credentials, Monitor EDID).
 
-print -P "%F{yellow}--- Device Profile ---%f"
+print -P "\n%K{blue}%F{black} 3. DEVICE PROFILE %k%f\n"
 print -l "1) Desktop (Ryzen 7800X3D / RX 7900 XT)" "2) Laptop (Ryzen 7840HS / 780M)"
-read "PROFILE_SEL?Select Profile [1-2]: "
+print -P "%F{yellow}Select Hardware Profile:%f"
+read "PROFILE_SEL?Selection [1-2]: "
 case $PROFILE_SEL in
     1) DEVICE_PROFILE="desktop" ;;
     2) DEVICE_PROFILE="laptop" ;;
     *) print -P "%F{red}Invalid selection.%f"; exit 1 ;;
 esac
+
 SLSKD_USER="${SLSKD_USER:-}"
 SLSKD_PASS="${SLSKD_PASS:-}"
 SOULSEEK_USER="${SOULSEEK_USER:-}"
 SOULSEEK_PASS="${SOULSEEK_PASS:-}"
 MEDIA_UUID=""
 EDID_ENABLE=""; MONITOR_PORT=""
+
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
-    print -P "%F{yellow}--- Desktop Automation & Storage ---%f"
+    print -P "\n%K{yellow}%F{black} DESKTOP AUTOMATION & STORAGE %k%f\n"
     print "Existing Partitions (for Media Drive):"
     lsblk -o NAME,SIZE,FSTYPE,LABEL,UUID | grep -v loop || true
-    read "MEDIA_UUID?Enter UUID for /mnt/Media (Leave empty to skip): "
-    print -P "%F{yellow}Slskd & Soulseek Credentials:%f"
+    print -P "%F{yellow}Enter Media Drive UUID:%f"
+    read "MEDIA_UUID?UUID (Leave empty to skip): "
+
+    print -P "\n%K{yellow}%F{black} SLSKD & SOULSEEK CREDENTIALS %k%f\n"
     if [[ -z "$SLSKD_USER" ]]; then
-        read "SLSKD_USER?Slskd WebUI Username: "
+        print -P "%F{yellow}Enter Slskd Credentials:%f"
+        read "SLSKD_USER?Username: "
     else
-        print -P "Slskd User: %F{green}Loaded from secrets%f"
+        print -P "Slskd User:   %F{green}Loaded from secrets%f"
     fi
     if [[ -z "$SLSKD_PASS" ]]; then
-        read -s "SLSKD_PASS?Slskd WebUI Password: "; print ""
+        read -s "SLSKD_PASS?Password: "; print ""
     fi
     if [[ -z "$SOULSEEK_USER" ]]; then
-        read "SOULSEEK_USER?Soulseek Username: "
+        print -P "%F{yellow}Enter Soulseek Credentials:%f"
+        read "SOULSEEK_USER?Username: "
     else
         print -P "Soulseek User: %F{green}Loaded from secrets%f"
     fi
     if [[ -z "$SOULSEEK_PASS" ]]; then
-        read -s "SOULSEEK_PASS?Soulseek Password: "; print ""
+        read -s "SOULSEEK_PASS?Password: "; print ""
     fi
-    print -P "%F{yellow}Display Configuration (Headless/Streaming):%f"
-    read "EDID_ENABLE?Enable custom 2560x1600 EDID? [y/N]: "
+
+    print -P "\n%K{yellow}%F{black} DISPLAY CONFIGURATION %k%f\n"
+    print -P "%F{yellow}Configure Custom Display EDID:%f"
+    read "EDID_ENABLE?Enable 2560x1600 EDID? [y/N]: "
     if [[ "$EDID_ENABLE" == (#i)y* ]]; then
         print "Detecting connected ports..."
         typeset -a CONNECTED_PORTS
@@ -177,22 +223,27 @@ fi
 
 # Purpose: Select installation target disk, wipe confirmation, and optimize the live environment (pacman config, reflector mirrors, CachyOS repositories/keys).
 
-print -P "%F{yellow}--- Installation Target ---%f"
-lsblk -d -n -o NAME,SIZE,MODEL,TYPE | grep disk
-read "DISK_SEL?Target Disk (e.g. nvme0n1): "
+print -P "\n%K{blue}%F{black} 4. LIVE PREPARATION %k%f\n"
+print -P "%K{yellow}%F{black} INSTALLATION TARGET %k%f\n"
+print -P "%F{yellow}Installation Target:%f"
+read "DISK_SEL?Disk (e.g. nvme0n1): "
 DISK="/dev/$DISK_SEL"
 [[ ! -b "$DISK" ]] && { print -P "%F{red}Error: Invalid disk '$DISK'.%f"; exit 1; }
 print -P "%F{red}WARNING: ALL DATA ON $DISK WILL BE ERASED!%f"
+print -P "%F{yellow}Confirm Disk Wipe:%f"
 read "CONFIRM?Type 'yes' to confirm: "
 [[ "$CONFIRM" != "yes" ]] && { print "Aborted."; exit 1; }
-print -P "%F{green}--- Preparing Live Environment ---%f"
+
+print -P "\n%K{yellow}%F{black} LIVE ENVIRONMENT PREP %k%f\n"
 timedatectl set-ntp true
 print "Optimising pacman.conf (Live Env)..."
 sed -i 's/^Architecture = auto$/Architecture = auto x86_64_v4/' /etc/pacman.conf
 sed -i 's/^#Color/Color/' /etc/pacman.conf
 sed -i 's/^#*ParallelDownloads\s*=.*/ParallelDownloads = 20/' /etc/pacman.conf
+
 print "Optimising mirrors..."
 reflector --country GB,IE,NL,DE,FR,EU --latest 20 --sort rate --save /etc/pacman.d/mirrorlist
+
 print "Adding CachyOS repositories..."
 pacman-key --recv-keys F3B607488DB35A47 --keyserver keyserver.ubuntu.com
 pacman-key --lsign-key F3B607488DB35A47
@@ -226,7 +277,7 @@ pacman -Sy
 
 # Purpose: Execute sgdisk to create a GPT layout (EFI + Root), format with VFAT/Btrfs, create optimized subvolumes (Timeshift/Snapper standard), and mount to /mnt.
 
-print -P "%F{green}--- Partitioning & Formatting ---%f"
+print -P "\n%K{blue}%F{black} 5. PARTITIONING & FORMATTING %k%f\n"
 sgdisk -Z "$DISK"
 sgdisk -o "$DISK"
 sgdisk -n 1:0:+1G -t 1:ef00 -c 1:"EFI" "$DISK"
@@ -269,7 +320,7 @@ mount "$PART1" /mnt/efi
 
 # Purpose: Install core packages using pacstrap. Includes kernel, firmware, base-devel, network tools, and desktop environment metadata packages based on profile. Generates fstab.
 
-print -P "%F{green}--- Installing Base System ---%f"
+print -P "\n%K{blue}%F{black} 6. BASE INSTALLATION %k%f\n"
 CORE_PKGS=(
     # BASE / KERNEL
     "base" "base-devel" "linux-cachyos" "linux-cachyos-headers" "cachyos-settings" "linux-firmware"
@@ -321,7 +372,7 @@ fi
 
 # Purpose: Generate and execute the internal script to run inside `arch-chroot`. This handles locale, users, bootloader, AUR (yay), dotfiles cloning, device-specific tweaks, and systemd services.
 
-print -P "%F{green}--- Configuring System (Chroot) ---%f"
+print -P "\n%K{blue}%F{black} 7. SYSTEM CONFIGURATION (CHROOT) %k%f\n"
 cat <<VARS > /mnt/install_vars.zsh
 TARGET_USER=${(q)TARGET_USER}
 ROOT_PASS=${(q)ROOT_PASS}
@@ -330,6 +381,7 @@ HOSTNAME=${(q)HOSTNAME}
 GIT_NAME=${(q)GIT_NAME}
 GIT_EMAIL=${(q)GIT_EMAIL}
 GIT_PAT=${(q)GIT_PAT}
+APPLY_KONSAVE=${(q)APPLY_KONSAVE}
 DEVICE_PROFILE=${(q)DEVICE_PROFILE}
 SLSKD_USER=${(q)SLSKD_USER}
 SLSKD_PASS=${(q)SLSKD_PASS}
@@ -349,8 +401,8 @@ trap 'rm -f /etc/sudoers.d/99_setup_temp' EXIT
 # 7.1 Identity & Locale
 # ------------------------------------------------------------------------------
 
-# Purpose: Set timezone, locale (en_GB/en_US), keymap, hostname, and hosts file.
-
+# NO Leading \n here because it follows the Blue Header
+print -P "%K{yellow}%F{black} IDENTITY & LOCALE %k%f\n"
 ln -sf /usr/share/zoneinfo/Europe/London /etc/localtime
 hwclock --systohc
 print -l "en_GB.UTF-8 UTF-8" "en_US.UTF-8 UTF-8" > /etc/locale.gen
@@ -364,8 +416,8 @@ print -l "127.0.0.1   localhost" "::1         localhost" "127.0.1.1   $HOSTNAME.
 # 7.2 Users & Permissions
 # ------------------------------------------------------------------------------
 
-# Purpose: Create users/groups, set passwords, configure sudoers (with temporary NOPASSWD), and create media/games directories with correct ownership.
-
+# Leading \n used here because it follows previous command output
+print -P "\n%K{yellow}%F{black} USERS & PERMISSIONS %k%f\n"
 print "Creating user $TARGET_USER..."
 groupadd --gid 102 polkit 2>/dev/null || true
 useradd -m -G wheel,input,render,video,storage,gamemode,libvirt -s /bin/zsh "$TARGET_USER"
@@ -385,8 +437,7 @@ chown "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/Games"
 # 7.3 Network & Services
 # ------------------------------------------------------------------------------
 
-# Purpose: Config NetworkManager (iwd backend), Bluetooth, Reflector, custom dispatcher scripts for Tailscale/WiFi power, and enable essential systemd units.
-
+print -P "\n%K{yellow}%F{black} NETWORK & SERVICES %k%f\n"
 mkdir -p /etc/NetworkManager/conf.d
 print -l "[device]" "wifi.backend=iwd" > /etc/NetworkManager/conf.d/wifi_backend.conf
 sed -i 's/^#*\(Experimental = \).*/\1true/' /etc/bluetooth/main.conf
@@ -410,8 +461,7 @@ chmod +x /etc/NetworkManager/dispatcher.d/disable-wifi-powersave
 # 7.4 Bootloader
 # ------------------------------------------------------------------------------
 
-# Purpose: Install GRUB to EFI directory and reduce timeout.
-
+print -P "\n%K{yellow}%F{black} BOOTLOADER %k%f\n"
 grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB
 sed -i 's/^GRUB_TIMEOUT=5/GRUB_TIMEOUT=2/' /etc/default/grub
 
@@ -419,8 +469,7 @@ sed -i 's/^GRUB_TIMEOUT=5/GRUB_TIMEOUT=2/' /etc/default/grub
 # 7.5 Build Environment & Repos
 # ------------------------------------------------------------------------------
 
-# Purpose: Optimize makepkg.conf (CFLAGS, MAKEFLAGS), configure pacman.conf (v3/v4 arch), init pacman keys, and add third-party repos (LizardByte).
-
+print -P "\n%K{yellow}%F{black} BUILD ENV & REPOS %k%f\n"
 sed -i 's/-march=x86-64 -mtune=generic/-march=native/' /etc/makepkg.conf
 sed -i "s/^#*MAKEFLAGS=.*/MAKEFLAGS=\"-j\$(nproc)\"/" /etc/makepkg.conf
 if [[ "$(findmnt -n -o FSTYPE /tmp)" == "tmpfs" ]]; then
@@ -453,8 +502,7 @@ pacman -Sy
 # 7.6 AUR Helper (Yay)
 # ------------------------------------------------------------------------------
 
-# Purpose: Clone and build Yay as the target user.
-
+print -P "\n%K{yellow}%F{black} AUR HELPER %k%f\n"
 chown -R "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER"
 cd "/home/$TARGET_USER"
 sudo -u "$TARGET_USER" git clone https://aur.archlinux.org/yay.git
@@ -467,8 +515,7 @@ rm -rf yay
 # 7.7 Extended Packages (AUR Only)
 # ------------------------------------------------------------------------------
 
-# Purpose: Install profile-specific AUR packages using the newly installed Yay.
-
+print -P "\n%K{yellow}%F{black} EXTENDED PACKAGES %k%f\n"
 CORE_AUR=(
     "darkly-bin" "geekbench" "google-chrome" "konsave" "kwin-effects-better-blur-dx"
     "papirus-folders" "plasma6-applets-panel-colorizer" "timeshift-systemd-timer"
@@ -493,9 +540,8 @@ sudo -u "$TARGET_USER" yay -S --needed --noconfirm "${TARGET_AUR[@]}"
 # 7.8 Dotfiles & Home
 # ------------------------------------------------------------------------------
 
-# Purpose: Clone dotfiles repo, setup git credentials, install Oh-My-Zsh plugins, configure Zsh aliases/functions, install Gemini CLI, and apply theming (Konsole/Plasmoids).
-
-mkdir -p "/home/$TARGET_USER"/{Make,Obsidian} "/home/$TARGET_USER/.local/bin"
+print -P "\n%K{yellow}%F{black} DOTFILES & HOME %k%f\n"
+mkdir -p "/home/$TARGET_USER"{Make,Obsidian} "/home/$TARGET_USER/.local/bin"
 chown -R "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER"
 if [[ -n "$GIT_NAME" ]]; then
     sudo -u "$TARGET_USER" git config --global user.name "$GIT_NAME"
@@ -574,13 +620,14 @@ maintain() {
 # KWin Management
 
 update-kwin() {
-    local target="${1:-$KWIN_PROFILE}"
+    local target="${1:-"$KWIN_PROFILE"}"
     if [[ -z "$target" ]]; then
         print -u2 "Error: No profile specified and KWIN_PROFILE not set."
         return 1
     fi
 
-    print -P "%F{green}--- Syncing and Updating for Profile: $target ---%f"
+    print -P "%F{green}--- Syncing and Updating for Profile: $target ---
+%f"
     local current_dir="$PWD"
     local repo_dir="$HOME/Obsidian/AMD-Linux-Setup"
 
@@ -604,7 +651,7 @@ update-kwin() {
 }
 
 edit-kwin() {
-    local target="${1:-$KWIN_PROFILE}"
+    local target="${1:-"$KWIN_PROFILE"}"
     local repo_dir="$HOME/Obsidian/AMD-Linux-Setup/Resources/Kwin"
     local file_path=""
 
@@ -665,26 +712,29 @@ mkdir -p "/home/$TARGET_USER/.local/share/"{icons,kxmlgui5,plasma,color-schemes,
 # 7.9 Device Specific Logic & Theming
 # ------------------------------------------------------------------------------
 
-# Purpose: Apply Konsave profiles, KWin rules, kernel parameters, udev rules, and device-specific services (Sunshine/Media stack for Desktop, Power profiles for Laptop).
-
+print -P "\n%K{yellow}%F{black} DEVICE LOGIC & THEME %k%f\n"
 print "Fixing permissions and applying Konsave Theme..."
 # Ensure the user owns everything created so far (especially .local/share) before Konsave runs
 chown -R "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER"
 
-PROFILE_DIR="$REPO_DIR/Resources/Konsave"
-if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
-    LATEST_KNSV=$(ls -t "$PROFILE_DIR"/Desktop*.knsv 2>/dev/null | head -n1)
+if [[ "$APPLY_KONSAVE" == "true" ]]; then
+    PROFILE_DIR="$REPO_DIR/Resources/Konsave"
+    if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
+        LATEST_KNSV=$(ls -t "$PROFILE_DIR"/Desktop*.knsv 2>/dev/null | head -n1)
+    else
+        LATEST_KNSV=$(ls -t "$PROFILE_DIR"/Laptop*.knsv 2>/dev/null | head -n1)
+    fi
+    if [[ -f "$LATEST_KNSV" ]]; then
+        print "Found latest Konsave profile: ${LATEST_KNSV:t}"
+        sudo -u "$TARGET_USER" konsave -i "$LATEST_KNSV" --force
+        PROFILE_NAME="${LATEST_KNSV:t:r}"
+        print "Applying Profile: $PROFILE_NAME"
+        sudo -u "$TARGET_USER" konsave -a "$PROFILE_NAME"
+    else
+        print -P "%F{red}No Konsave profile found!%f"
+    fi
 else
-    LATEST_KNSV=$(ls -t "$PROFILE_DIR"/Laptop*.knsv 2>/dev/null | head -n1)
-fi
-if [[ -f "$LATEST_KNSV" ]]; then
-    print "Found latest Konsave profile: ${LATEST_KNSV:t}"
-    sudo -u "$TARGET_USER" konsave -i "$LATEST_KNSV" --force
-    PROFILE_NAME="${LATEST_KNSV:t:r}"
-    print "Applying Profile: $PROFILE_NAME"
-    sudo -u "$TARGET_USER" konsave -a "$PROFILE_NAME"
-else
-    print -P "%F{red}No Konsave profile found!%f"
+    print -P "%F{yellow}Skipping Konsave profile application as requested.%f"
 fi
 print "Applying KWin Rules..."
 chmod +x "$REPO_DIR/Scripts/kwin_apply_rules.zsh"
@@ -810,8 +860,7 @@ fi
 # 7.10 Final System Tuning
 # ------------------------------------------------------------------------------
 
-# Purpose: Cleanup meta-packages, configure ZRAM/sysctl/BBR, setup Btrfs maintenance services, add pacman hooks for initramfs/grub, and regenerate boot images.
-
+print -P "\n%K{yellow}%F{black} FINAL TUNING %k%f\n"
 print "Removing Discover and Plasma Meta..."
 if pacman -Qi plasma-meta &>/dev/null; then
     pacman -R --noconfirm plasma-meta
@@ -868,8 +917,7 @@ grub-mkconfig -o /boot/grub/grub.cfg
 # 7.11 First Boot Automation
 # ------------------------------------------------------------------------------
 
-# Purpose: Create a one-time autostart script to handle interactive tasks (Tailscale login, Sunshine monitor config) upon the user's first desktop login.
-
+print -P "\n%K{yellow}%F{black} FIRST BOOT SETUP %k%f\n"
 print "Scheduling First Boot Setup..."
 mkdir -p "/home/$TARGET_USER/.config/autostart"
 cat <<BOOTSCRIPT > "/home/$TARGET_USER/.local/bin/first_boot.zsh"
@@ -890,8 +938,8 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
         sudo systemctl start transmission
     fi
 fi
-if [[ "$DEVICE_PROFILE" == "desktop" ]] && (( \$+commands[kscreen-doctor] )); then
-    print -P "\n%F{yellow}--- Sunshine Resolution/HDR Configuration ---%f"
+if [[ "$DEVICE_PROFILE" == "desktop" ]] && (( $+commands[kscreen-doctor] )); then
+    print -P "\n%K{yellow}%F{black} SUNSHINE RESOLUTION/HDR CONFIGURATION %k%f\n"
     print "Current Output Configuration:"
     kscreen-doctor -o; print ""
     if read -q "CONFIRM?Configure Sunshine Monitor and Mode Indexes now? [y/N] "; then
@@ -934,7 +982,7 @@ arch-chroot /mnt /setup_internal.zsh
 
 # Purpose: Clean up temporary scripts and unmount the new system.
 
-print -P "%F{green}--- Installation Complete ---%f"
+print -P "\n%K{blue}%F{black} 8. COMPLETION %k%f\n"
 rm /mnt/setup_internal.zsh
 umount -R /mnt
-print -P "%F{yellow}System ready. Please remove installation media and reboot.%f"
+print -P "\n%K{green}%F{black} PROCESS COMPLETE %k%f\n"
