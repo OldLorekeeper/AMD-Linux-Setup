@@ -14,7 +14,8 @@
 # 7. Documentation: Start section with 'Purpose' comment block (1 line before and after). No meta or inline comments within code.
 # 8. UI & Theming:
 #    - Headers: Blue (%K{blue}%F{black}) for sections, Yellow (%K{yellow}%F{black}) for sub-sections.
-#    - Spacing: One empty line before and after headers (avoid double empty lines between headers).
+#    - Spacing: One empty line before and after headers. Use embedded \n to save lines.
+#      * Exception: If a header follows another header immediately, omit the leading \n to avoid double gaps.
 #    - Inputs: Yellow description line (%F{yellow}) followed by minimal prompt (read "VAR?Prompt: ").
 #    - Context: Cyan (%F{cyan}) for info/metadata (prefixed with ℹ).
 #    - Status: Green (%F{green}) for success/loaded, Red (%F{red}) for errors/warnings.
@@ -47,8 +48,9 @@ fi
 # Purpose: [Description of the main task/actions].
 
 print -P "\n%K{blue}%F{black} 2. USER INTERACTION %k%f\n"
-print -P "%K{yellow}%F{black} SUB-SECTION TITLE %k%f"
-print ""
+
+# CASE A: Sub-section follows Header (No Leading \n)
+print -P "%K{yellow}%F{black} CONFIGURATION %k%f\n"
 
 # Example of conditional silence pattern
 if [[ -z "${VAR_NAME:-}" ]]; then
@@ -59,6 +61,9 @@ if [[ -z "${VAR_NAME:-}" ]]; then
 else
     print -P "Configuration: %F{green}Loaded from secrets%f"
 fi
+
+# CASE B: Sub-section follows Content (With Leading \n)
+print -P "\n%K{yellow}%F{black} FILE OPERATIONS %k%f\n"
 
 TARGET_FILE="/path/to/config"
 if [[ ! -f "$TARGET_FILE" ]]; then

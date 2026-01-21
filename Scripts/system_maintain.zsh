@@ -67,15 +67,14 @@ fi
 # Purpose: Upgrade all software layers and firmware.
 
 print -P "\n%K{blue}%F{black} 2. UPDATES (SYSTEM & FIRMWARE) %k%f\n"
-print -P "%K{yellow}%F{black} SYSTEM UPDATES %k%f"
-print ""
+print -P "%K{yellow}%F{black} SYSTEM UPDATES %k%f\n"
 yay -Syu --noconfirm
 if (( $+commands[npm] )); then
     print -P "%F{cyan}ℹ Updating Gemini CLI...%f"
     sudo npm update -g @google/gemini-cli
 fi
-print -P "\n%K{yellow}%F{black} FIRMWARE UPDATES %k%f"
-print ""
+
+print -P "\n%K{yellow}%F{black} FIRMWARE UPDATES %k%f\n"
 fwupdmgr refresh --force
 if fwupdmgr get-updates | grep -q "Devices with updates"; then
     fwupdmgr update -y
