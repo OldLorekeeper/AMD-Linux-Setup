@@ -296,7 +296,7 @@ DESKTOP_PKGS=(
     "python-requests" "python-setuptools" "python-wheel" "solaar" "yt-dlp"
 )
 LAPTOP_PKGS=(
-    "moonlight-qt" "power-profiles-daemon"
+    "moonlight-qt" "power-profiles-daemon" "sof-firmware"
 )
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     CORE_PKGS+=("${DESKTOP_PKGS[@]}")
