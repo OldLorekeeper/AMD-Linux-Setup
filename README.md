@@ -6,15 +6,29 @@ This repository hosts a bespoke automation suite for deploying a high-performanc
 
 ### [Get Started ⇢](1-Install/1.1-USB.md)
 
-## Hardware targets
+---
+## Hardware specs
 
-For full details, see [Hardware Spec](./4-Hardware-Specs) files.
+The scripts and steps contained in this repo are tailored to the below system profiles.
+#### Desktop profile:
 
-| Profile | CPU | GPU | System |
-| :--- | :--- | :--- | :--- |
-| **Desktop** | Ryzen 7 7800X3D | Radeon RX 7900 XT | Asus ROG Strix X670E-I |
-| **Laptop** | Ryzen 7 7840HS | Radeon 780M (iGPU) | Slimbook EXCALIBUR-16 |
+| Component       | Model                      | Specs / Link                                                                                                                                                                              |
+| :-------------- | :------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Motherboard** | Asus ROG Strix X670E-I     | [Specifications](https://rog.asus.com/uk/motherboards/rog-strix/rog-strix-x670e-i-gaming-wifi-model/spec/)                                                                                |
+| **CPU**         | AMD Ryzen 7 7800X3D        | [TechPowerUp](https://www.techpowerup.com/cpu-specs/ryzen-7-7800x3d.c3022)                                                                                                                |
+| **GPU**         | Gigabyte Radeon RX 7900 XT | [TechPowerUp](https://www.techpowerup.com/gpu-specs/gigabyte-rx-7900-xt-gaming-oc.b9940)                                                                                                  |
+| **RAM**         | Corsair Vengeance DDR5     | [32GB (2x16GB) 6400MT/s CL36](https://www.corsair.com/uk/en/p/ddr5-ram/cmk32gx5m2b6400c36/vengeance-32gb-2x16gb-ddr5-dram-6400mt-s-c36-memory-kit-black-cmk32gx5m2b6400c36#tab-techspecs) |
+| **PSU**         | Corsair SF750              | [750W 80+ Platinum SFX](https://www.corsair.com/ww/en/p/psu/cp-9020186-uk/sf-series-sf750-750-watt-80-plus-platinum-certified-high-performance-sfx-psu-uk-cp-9020186-uk#tab-techspecs)    |
+| **SSD**         | Samsung 970 EVO Plus       | [1TB NVMe M.2](https://www.techpowerup.com/ssd-specs/samsung-970-evo-plus-1-tb.d61)                                                                                                       |
+#### Laptop profile:
 
+| Component | Model                      | Details                                                     |
+| :-------- | :------------------------- | :---------------------------------------------------------- |
+| **Model** | Slimbook EXCALIBUR-16-AMD7 | [Product Page](https://slimbook.com/en/excalibur-r7-7840hs) |
+| **CPU**   | AMD Ryzen 7 7840HS         | 8 Cores / 16 Threads @ 5.14 GHz                             |
+| **GPU**   | AMD Radeon 780M            | Integrated Graphics                                         |
+
+---
 ## Architecture
 
 ​The setup utilises a unified, monolithic installer to ensure consistency and atomic configuration.
@@ -42,6 +56,7 @@ For full details, see [Hardware Spec](./4-Hardware-Specs) files.
 
 - ​**Tasks:** Installation of proprietary fonts, authentication of Obsidian, and application-specific setup.
 
+---
 ## Development standards
 
 This repository adheres to strict scripting standards to maintain stability:
@@ -49,8 +64,9 @@ This repository adheres to strict scripting standards to maintain stability:
 - **Shell:** `zsh` is used for all system logic and configuration.
 - **Idempotency:** Post-install scripts are designed to be safe to re-run to repair configuration drift.
 - **Safety:** All zsh scripts utilise `setopt ERR_EXIT NO_UNSET PIPE_FAIL`.
-- **Formatting:** Scripts utilise compact layouts with double-dotted line separators for readability (see [TEMPLATES](./Scripts/TEMPLATES) folder)
+- **Formatting:** Scripts utilise compact layouts with double-dotted line separators for readability (see [TEMPLATES](./Scripts/TEMPLATES) folder))
 
+---
 ## License and disclaimer
 
 This is a personal configuration repository provided "as-is". No warranty is implied. Use these scripts at your own risk.
