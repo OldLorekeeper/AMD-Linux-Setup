@@ -1,41 +1,50 @@
-### Configure Timeshift backup and snapshots
+## 6.1.1 | Timeshift Backups
 
-[https://wiki.archlinux.org/title/Timeshift](https://wiki.archlinux.org/title/Timeshift)
-
----
-### Enable printing (CUPS)
-
-[https://wiki.archlinux.org/title/CUPS](https://wiki.archlinux.org/title/CUPS) 
+Configure Timeshift backup and snapshots.
+[ArchWiki: Timeshift](https://wiki.archlinux.org/title/Timeshift)
 
 ---
-### Enable performance enhancements
 
-[https://wiki.archlinux.org/title/Improving_performance](https://wiki.archlinux.org/title/Improving_performance) 
+## 6.1.2 | Printing (CUPS)
 
----
-### Enable gaming enhancements
-
-[https://wiki.archlinux.org/title/Gaming](https://wiki.archlinux.org/title/Gaming) 
+Enable and configure printing.
+[ArchWiki: CUPS](https://wiki.archlinux.org/title/CUPS)
 
 ---
-### Edit desktop files to start apps minimised
 
-Steam:
+## 6.1.3 | Performance Enhancements
 
+General system performance tuning.
+[ArchWiki: Improving Performance](https://wiki.archlinux.org/title/Improving_performance)
+
+---
+
+## 6.1.4 | Gaming Enhancements
+
+Gaming specific configuration and optimization.
+[ArchWiki: Gaming](https://wiki.archlinux.org/title/Gaming)
+
+---
+
+## 6.1.5 | App Startup Behaviour
+
+Edit desktop files to start applications minimised.
+
+### Steam
+Command:
+```bash
+/usr/bin/steam-runtime -silent %U
 ```
-/usr/bin/steam-runtime -silent %U  
-```
 
-Solaar:
-
-```
+### Solaar
+Command:
+```bash
 solaar --window=hide
 ```
 
-
 ---
 
-### List  of Packages For Complete KDE Plasma Experience
+## 6.1.6 | KDE Plasma Experience
 
-[https://github.com/shvedes/awesome-kde](https://github.com/shvedes/awesome-kde)**
-
+A curated list of KDE Plasma resources.
+[GitHub: awesome-kde](https://github.com/shvedes/awesome-kde)

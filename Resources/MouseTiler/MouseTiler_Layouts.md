@@ -1,5 +1,8 @@
-## Desktop
+## MouseTiler Configuration
 
+### Desktop Layouts
+
+```text
 50,50,2000px,1250px,CENTER,CENTER
 50,50,1500px,950px,CENTER,CENTER
 50,50,1000px,650px,CENTER,CENTER
@@ -9,9 +12,11 @@
 3x1
 0,0,25,100+75,0,25,100+25,0,50,100
 2x2
+```
 
-## Laptop
+### Laptop Layouts
 
+```text
 50,50,1730px,1130px,CENTER,CENTER
 50,50,1116px,1056px,CENTER,CENTER
 50,50,900px,600px,CENTER,CENTER
@@ -21,3 +26,4 @@
 3x1
 0,0,25,100+75,0,25,100+25,0,50,100
 2x2
+```
