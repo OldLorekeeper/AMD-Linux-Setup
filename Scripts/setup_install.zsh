@@ -272,7 +272,7 @@ mount "$PART1" /mnt/efi
 print -P "%F{green}--- Installing Base System ---%f"
 CORE_PKGS=(
     # BASE / KERNEL
-    "base" "base-devel" "linux-cachyos" "linux-cachyos-headers" "linux-firmware"
+    "base" "base-devel" "linux-cachyos" "linux-cachyos-headers" "cachyos-settings" "linux-firmware"
     "cachyos-keyring" "cachyos-mirrorlist" "cachyos-v4-mirrorlist"
     "amd-ucode" "btrfs-progs" "timeshift" "networkmanager" "inetutils" "bluez" "bluez-utils" "git" "vim" "sudo" "efibootmgr"
     "grub" "grub-btrfs" "zsh" "pacman-contrib" "reflector" "openssh" "zram-generator"
@@ -818,7 +818,7 @@ if pacman -Qi plasma-meta &>/dev/null; then
 fi
 pacman -Rns --noconfirm discover || true
 print -l "[zram0]" "zram-size = ram / 2" "compression-algorithm = lz4" "swap-priority = 100" > /etc/systemd/zram-generator.conf
-print -l "vm.swappiness = 150" "vm.page-cluster = 0" > /etc/sysctl.d/99-swappiness.conf
+print -l "vm.swappiness = 150" "vm.page-cluster = 0" "vm.max_map_count = 2147483642" > /etc/sysctl.d/99-swappiness.conf
 print -l "net.core.default_qdisc = cake" "net.ipv4.tcp_congestion_control = bbr" > /etc/sysctl.d/99-bbr.conf
 print -l "net.ipv4.ip_forward = 1" "net.ipv6.conf.all.forwarding = 1" > /etc/sysctl.d/99-tailscale.conf
 print -l "[Unit]" "Description=Run Btrfs Balance Monthly" "[Timer]" "OnCalendar=monthly" "Persistent=true" "[Install]" "WantedBy=timers.target" > /etc/systemd/system/btrfs-balance.timer
