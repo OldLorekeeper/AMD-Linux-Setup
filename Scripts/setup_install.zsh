@@ -277,9 +277,10 @@ CORE_PKGS=(
     "amd-ucode" "btrfs-progs" "timeshift" "networkmanager" "networkmanager-qt" "inetutils" "bluez" "bluez-utils" "git" "vim" "sudo" "efibootmgr"
     "grub" "grub-btrfs" "zsh" "pacman-contrib" "reflector" "openssh" "zram-generator"
     # GUI / GRAPHICs
-    "plasma-meta" "sddm" "sddm-kcm" "konsole" "dolphin" "partitionmanager" "ark" "kate" "spectacle"
+    "plasma-meta" "plasma-nm" "plasma-pa" "bluedevil" "powerdevil" "kscreen" "kinfocenter"
+    "sddm" "sddm-kcm" "konsole" "dolphin" "partitionmanager" "ark" "kate" "spectacle"
     "pipewire" "pipewire-pulse" "pipewire-alsa" "wireplumber"
-    "mesa" "vulkan-radeon" "kwallet-pam"
+    "mesa" "vulkan-radeon" "kwallet-pam" "plasma-systemmonitor"
     # COMMON FOR DESKTOOP ANDD LAPTOP
     "7zip" "bash-language-server" "chromium" "cmake" "cmake-extras" "cpupower"
     "cups" "dkms" "dnsmasq" "dosfstools" "edk2-ovmf" "ethtool" "extra-cmake-modules"
