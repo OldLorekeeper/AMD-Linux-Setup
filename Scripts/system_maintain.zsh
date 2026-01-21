@@ -68,7 +68,7 @@ print -P "%F{green}--- System Updates ---%f"
 yay -Syu --noconfirm
 if (( $+commands[npm] )); then
     print "Updating Gemini CLI..."
-    npm update -g @google/gemini-cli
+    sudo npm update -g @google/gemini-cli
 fi
 print -P "%F{green}--- Firmware Updates ---%f"
 fwupdmgr refresh --force
