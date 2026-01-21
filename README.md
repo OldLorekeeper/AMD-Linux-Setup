@@ -22,11 +22,14 @@ The scripts and steps contained in this repo are tailored to the below system pr
 | **SSD**         | Samsung 970 EVO Plus       | [1TB NVMe M.2](https://www.techpowerup.com/ssd-specs/samsung-970-evo-plus-1-tb.d61)                                                                                                       |
 #### Laptop profile:
 
-| Component | Model                      | Details                                                     |
-| :-------- | :------------------------- | :---------------------------------------------------------- |
-| **Model** | Slimbook EXCALIBUR-16-AMD7 | [Product Page](https://slimbook.com/en/excalibur-r7-7840hs) |
-| **CPU**   | AMD Ryzen 7 7840HS         | 8 Cores / 16 Threads @ 5.14 GHz                             |
-| **GPU**   | AMD Radeon 780M            | Integrated Graphics                                         |
+| Component       | Model                      | Specs / Link                                                                                               |
+| :-------------- | :------------------------- | :--------------------------------------------------------------------------------------------------------- |
+| **Model**       | Slimbook Excalibur Gen 6   | [Product Page](https://slimbook.com/en/excalibur-r7-7840hs)                                                |
+| **CPU**         | AMD Ryzen 7 7840HS         | [8 Cores / 16 Threads @ 5.1GHz](https://www.amd.com/en/products/apu/amd-ryzen-7-7840hs)                    |
+| **GPU**         | AMD Radeon 780M            | Integrated Graphics                                                                                        |
+| **RAM**         | Crucial DDR5               | 32GB (2x16GB) 5600MT/s                                                                                     |
+| **SSD**         | TeamGroup TM8FP6001T       | 1TB NVMe M.2                                                                                               |
+| **Network**     | Realtek RTL8852BE          | Wi-Fi 6 / Bluetooth 5.2                                                                                    |
 
 ---
 ## Architecture
