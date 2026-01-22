@@ -47,7 +47,7 @@ print -P "\n%K{blue}%F{black} 1. CREDENTIALS SETUP %k%f\n"
 SECRETS_FILE="setup_secrets.enc"
 RAW_URL="https://raw.githubusercontent.com/OldLorekeeper/AMD-Linux-Setup/main/Scripts/$SECRETS_FILE"
 if [[ ! -f "$SECRETS_FILE" ]]; then
-    print -P "%F{cyan}Secrets file not found locally. Attempting remote fetch...%f"
+    print -P "%F{cyan}ℹ Secrets file not found locally. Attempting remote fetch...%f"
     if curl -fsSL "$RAW_URL" -o "$SECRETS_FILE"; then
         print -P "%F{green}Successfully downloaded $SECRETS_FILE%f"
     else
@@ -76,7 +76,7 @@ fi
 # Purpose: Configure basic system identity variables (Hostname, User, Passwords) and Git credentials. Uses defaults if variables were not loaded via secrets.
 
 print -P "\n%K{blue}%F{black} 2. USER CONFIGURATION %k%f\n"
-print -P "%K{yellow}%F{black} SYSTEM CONFIGURATION %k%f\n" # Uses trailing \n for spacing after
+print -P "%K{yellow}%F{black} SYSTEM CONFIGURATION %k%f\n"
 if [[ -z "${HOSTNAME:-}" ]]; then
     print -P "%F{yellow}Enter System Hostname (Network ID):%f"
     read "HOSTNAME?Hostname [Default: NCC-1701]: "
@@ -104,7 +104,7 @@ else
     print -P "User Pass:    %F{green}Loaded from secrets%f"
 fi
 
-print -P "\n%K{yellow}%F{black} EXTERNAL IDENTITY (GIT/GITHUB) %k%f\n" # Leading \n used here (follows previous block)
+print -P "\n%K{yellow}%F{black} EXTERNAL IDENTITY (GIT/GITHUB) %k%f\n"
 if [[ -z "${GIT_NAME:-}" ]]; then
     print -P "%F{yellow}Enter Git Commit Name:%f"
     print -P "%F{cyan}ℹ Context: Metadata for commit logs (Username or Real Name).%f"
@@ -171,7 +171,6 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     lsblk -o NAME,SIZE,FSTYPE,LABEL,UUID | grep -v loop || true
     print -P "%F{yellow}Enter Media Drive UUID:%f"
     read "MEDIA_UUID?UUID (Leave empty to skip): "
-
     print -P "\n%K{yellow}%F{black} SLSKD & SOULSEEK CREDENTIALS %k%f\n"
     if [[ -z "$SLSKD_USER" ]]; then
         print -P "%F{yellow}Enter Slskd Credentials:%f"
@@ -183,7 +182,7 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
         read -s "SLSKD_PASS?Password: "; print ""
     fi
     if [[ -z "$SLSKD_API_KEY" ]]; then
-        print -P "Slskd API Key: %F{cyan}Generating random key...%f"
+        print -P "Slskd API Key: %F{cyan}ℹ Generating random key...%f"
         SLSKD_API_KEY=$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 32)
     else
         print -P "Slskd API Key: %F{green}Loaded from secrets%f"
@@ -197,7 +196,6 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     if [[ -z "$SOULSEEK_PASS" ]]; then
         read -s "SOULSEEK_PASS?Password: "; print ""
     fi
-
     print -P "\n%K{yellow}%F{black} DISPLAY CONFIGURATION %k%f\n"
     print -P "%F{yellow}Configure Custom Display EDID:%f"
     read "EDID_ENABLE?Enable 2560x1600 EDID? [y/N]: "
@@ -211,6 +209,7 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
         done
         if (( ${#CONNECTED_PORTS} == 0 )); then
             print -P "%F{red}No monitors detected. Enter manually (e.g. DP-1).%f"
+            print -P "%F{yellow}Enter Monitor Port:%f"
             read "MONITOR_PORT?Port: "
         elif (( ${#CONNECTED_PORTS} == 1 )); then
             MONITOR_PORT="${CONNECTED_PORTS[1]}"
@@ -412,7 +411,6 @@ trap 'rm -f /etc/sudoers.d/99_setup_temp' EXIT
 # 7.1 Identity & Locale
 # ------------------------------------------------------------------------------
 
-# NO Leading \n here because it follows the Blue Header
 print -P "%K{yellow}%F{black} IDENTITY & LOCALE %k%f\n"
 ln -sf /usr/share/zoneinfo/Europe/London /etc/localtime
 hwclock --systohc
@@ -427,7 +425,6 @@ print -l "127.0.1.1   $HOSTNAME.localdomain $HOSTNAME" "127.0.0.1   localhost" "
 # 7.2 Users & Permissions
 # ------------------------------------------------------------------------------
 
-# Leading \n used here because it follows previous command output
 print -P "\n%K{yellow}%F{black} USERS & PERMISSIONS %k%f\n"
 print "Creating user $TARGET_USER..."
 groupadd --gid 102 polkit 2>/dev/null || true
@@ -439,8 +436,6 @@ print "$TARGET_USER ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/99_setup_temp
 chmod 440 /etc/sudoers.d/99_setup_temp
 groupadd -f media
 usermod -aG media "$TARGET_USER"
-mkdir -p "/home/$TARGET_USER/Games"
-chown "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/Games"
 mkdir -p "/home/$TARGET_USER/Games"
 chown "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/Games"
 
@@ -582,7 +577,6 @@ sudo -u "$TARGET_USER" git clone https://github.com/zsh-users/zsh-syntax-highlig
 ln -sf "/home/$TARGET_USER/.oh-my-zsh" /root/.oh-my-zsh
 ln -sf "/home/$TARGET_USER/.zshrc" /root/.zshrc
 
-# FIX: Explicitly write the profile variable with expansion enabled
 print "export KWIN_PROFILE=\"$DEVICE_PROFILE\"" >> "/home/$TARGET_USER/.zshrc"
 
 cat <<'ZSHCONF' >> "/home/$TARGET_USER/.zshrc"
