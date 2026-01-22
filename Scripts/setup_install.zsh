@@ -440,6 +440,8 @@ chown "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/Games"
 print -P "\n%K{yellow}%F{black} NETWORK & SERVICES %k%f\n"
 mkdir -p /etc/NetworkManager/conf.d
 print -l "[device]" "wifi.backend=iwd" > /etc/NetworkManager/conf.d/wifi_backend.conf
+mkdir -p /etc/iwd
+print -l "[General]" "Country=GB" > /etc/iwd/main.conf
 sed -i 's/^#*\(Experimental = \).*/\1true/' /etc/bluetooth/main.conf
 systemctl enable NetworkManager bluetooth sshd sddm fwupd.service
 mkdir -p /etc/xdg/reflector
