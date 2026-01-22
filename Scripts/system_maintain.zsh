@@ -76,6 +76,7 @@ done
 
 print -P "\n%K{yellow}%F{black} SYSTEM UPDATES %k%f\n"
 yay -Syu --noconfirm
+print -P "\n%K{yellow}%F{black} UPDATE GEMINI %k%f\n"
 if (( $+commands[npm] )); then
     print -P "%F{cyan}ℹ Updating Gemini CLI...%f"
     sudo npm update -g @google/gemini-cli
