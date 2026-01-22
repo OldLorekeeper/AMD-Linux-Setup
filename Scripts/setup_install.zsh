@@ -309,6 +309,7 @@ mount -o "$MOUNT_OPTS,subvol=@.snapshots" "$PART2" /mnt/.snapshots
 mkdir -p /mnt/tmp_games
 mount -o "$MOUNT_OPTS,subvol=@games" "$PART2" /mnt/tmp_games
 chattr +C /mnt/tmp_games
+chown 1000:1000 /mnt/tmp_games
 umount /mnt/tmp_games
 rmdir /mnt/tmp_games
 mkdir -p /mnt/efi
@@ -432,7 +433,7 @@ groupadd -f media
 usermod -aG media "$TARGET_USER"
 mkdir -p "/home/$TARGET_USER/Games"
 chown "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/Games"
-mount "/home/$TARGET_USER/Games" 2>/dev/null || true
+mkdir -p "/home/$TARGET_USER/Games"
 chown "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/Games"
 
 # ------------------------------------------------------------------------------
