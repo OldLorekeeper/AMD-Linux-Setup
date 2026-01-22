@@ -325,14 +325,14 @@ CORE_PKGS=(
     # BASE / KERNEL
     "base" "base-devel" "linux-cachyos" "linux-cachyos-headers" "cachyos-settings" "linux-firmware"
     "cachyos-keyring" "cachyos-mirrorlist" "cachyos-v4-mirrorlist"
-    "amd-ucode" "btrfs-progs" "timeshift" "networkmanager" "networkmanager-qt" "inetutils" "bluez" "bluez-utils" "git" "vim" "sudo" "efibootmgr"
+    "amd-ucode" "btrfs-progs" "timeshift" "networkmanager" "networkmanager-qt" "inetutils" "bluez" "bluez-utils" "git" "vim" "sudo" "efibootmgr" "wireless-regdb"
     "grub" "grub-btrfs" "zsh" "pacman-contrib" "reflector" "openssh" "zram-generator"
     # GUI / GRAPHICs
     "plasma-meta" "plasma-nm" "plasma-pa" "bluedevil" "powerdevil" "kscreen" "kinfocenter"
     "sddm" "sddm-kcm" "konsole" "dolphin" "partitionmanager" "ark" "kate" "spectacle"
     "pipewire" "pipewire-pulse" "pipewire-alsa" "wireplumber"
     "mesa" "vulkan-radeon" "kwallet-pam" "plasma-systemmonitor"
-    # COMMON FOR DESKTOOP ANDD LAPTOP
+    # COMMON FOR DESKTOP ANDD LAPTOP
     "7zip" "bash-language-server" "chromium" "cmake" "cmake-extras" "cpupower"
     "cups" "dkms" "dnsmasq" "dosfstools" "edk2-ovmf" "ethtool" "extra-cmake-modules"
     "fastfetch" "fwupd" "gamemode" "gamescope" "gwenview" "hunspell-en_gb"
