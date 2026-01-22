@@ -341,7 +341,7 @@ CORE_PKGS=(
     "inkscape" "isoimagewriter" "iw" "iwd" "jq" "kio-admin" "kio-gdrive" "lib32-gamemode"
     "lib32-gnutls" "lib32-vulkan-radeon" "libva-utils" "libvirt" "lz4" "mkinitcpio-firmware"
     "npm" "nss-mdns" "obsidian" "papirus-icon-theme" "protontricks" "protonup-qt"
-    "python-pip" "qemu-desktop" "steam" "tailscale" "transmission-cli" "uv" "vdpauinfo"
+    "python-pip" "qemu-desktop" "realtime-privileges" "steam" "tailscale" "transmission-cli" "uv" "vdpauinfo"
     "virt-manager" "vlc" "vlc-plugin-ffmpeg" "vulkan-headers" "wayland-protocols"
     "wine" "wine-mono" "winetricks" "xpadneo-dkms"
 )
@@ -422,7 +422,7 @@ print -l "127.0.0.1   localhost" "::1         localhost" "127.0.1.1   $HOSTNAME.
 print -P "\n%K{yellow}%F{black} USERS & PERMISSIONS %k%f\n"
 print "Creating user $TARGET_USER..."
 groupadd --gid 102 polkit 2>/dev/null || true
-useradd -m -G wheel,input,render,video,storage,gamemode,libvirt -s /bin/zsh "$TARGET_USER"
+useradd -m -G wheel,input,render,video,storage,gamemode,libvirt,realtime -s /bin/zsh "$TARGET_USER"
 print "root:$ROOT_PASS" | chpasswd
 print "$TARGET_USER:$USER_PASS" | chpasswd
 print "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/wheel
@@ -525,7 +525,7 @@ CORE_AUR=(
     "papirus-folders" "plasma6-applets-panel-colorizer" "timeshift-systemd-timer"
 )
 DESKTOP_AUR=(
-    "lidarr-bin" "prowlarr-bin" "python-schedule" "radarr-bin"
+    "lact" "lidarr-bin" "prowlarr-bin" "python-schedule" "radarr-bin"
     "slskd-bin" "sonarr-bin" "sunshine"
 )
 LAPTOP_AUR=(
@@ -749,6 +749,7 @@ sudo -u "$TARGET_USER" "$REPO_DIR/Scripts/kwin_apply_rules.zsh" "$DEVICE_PROFILE
 print "LIBVA_DRIVER_NAME=radeonsi" >> /etc/environment
 print "VDPAU_DRIVER=radeonsi" >> /etc/environment
 print "WINEFSYNC=1" >> /etc/environment
+print "RADV_PERFTEST=gpl" >> /etc/environment
 print 'ACTION=="add|change", KERNEL=="nvme[0-9]n[0-9]", ATTR{queue/scheduler}="kyber"' > /etc/udev/rules.d/60-iosched.rules
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     print "Applying Desktop Configuration..."
@@ -792,6 +793,34 @@ Description = Replacing Sunshine tray icons...
 When = PostTransaction
 Exec = /usr/local/bin/replace-sunshine-icons.sh
 HOOK
+    mkdir -p /etc/lact
+    cat << 'LACTYAML' > /etc/lact/config.yaml
+version: 5
+apply_settings_timer: 5
+daemon:
+  log_level: info
+  admin_group: wheel
+gpus:
+  default:
+    fan_control_enabled: true
+    fan_control_settings:
+      mode: curve
+      temperature_key: junction
+      hysteresis: 3
+      curve:
+        40: 0.2
+        55: 0.35
+        70: 0.5
+        85: 0.75
+        95: 1.0
+      spindown_delay_ms: 10000
+      change_threshold: 3
+    pmfw_options:
+      zero_rpm: false
+    power_cap: 310.0
+    performance_level: manual
+LACTYAML
+    systemctl enable lactd
     print "$TARGET_USER ALL=(ALL) NOPASSWD: /usr/local/bin/sunshine_gpu_boost" > /etc/sudoers.d/90-sunshine-boost
     chmod 440 /etc/sudoers.d/90-sunshine-boost
     for script in sunshine_gpu_boost.zsh sunshine_hdr.zsh sunshine_res.zsh sunshine_laptop.zsh; do
