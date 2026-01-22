@@ -34,6 +34,13 @@ The project uses a unified lifecycle model:
 - **Networking:** Primary connectivity via Tailscale; Desktop acts as an exit node.
 - **Optimisation:** Target `-march=native` for all compilation. Use `lz4` for ZRAM and initramfs compression.
 - **Visuals:** Manage KDE Plasma state via `konsave` profiles (e.g. "Desktop Dock") and KWin rule fragments in `Resources/Kwin/`.
+
+## 4. Local Intelligence
+
+- **Chat History:** Access to external Gemini chat history is enabled via a symbolic link at `.gemini/history_link`. This allows for cross-session context retrieval and review of past architectural decisions.
+    - `recall_history`: Access the entire linked chat history.
+    - `recall_recent`: Access only the last three messages from the linked history.
+
 ## 5. MCP Integration & Resource Usage
 
 Gemini has native access to the **Arch Linux Operations** toolset via the Gemini CLI and MCP Server integration.

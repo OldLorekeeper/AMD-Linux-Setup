@@ -699,6 +699,9 @@ cat << 'JSON' > "/home/$TARGET_USER/.gemini/settings.json"
   }
 }
 JSON
+mkdir -p "/home/$TARGET_USER/.gemini"
+mkdir -p "$REPO_DIR/.gemini"
+ln -sf "/home/$TARGET_USER/.gemini/history" "$REPO_DIR/.gemini/history_link"
 mkdir -p "/home/$TARGET_USER/.local/share/konsole"
 cp -f "$REPO_DIR/Resources/Konsole"/* "/home/$TARGET_USER/.local/share/konsole/" 2>/dev/null || true
 TRANS_ARCHIVE="$REPO_DIR/Resources/Plasmoids/transmission-plasmoid.tar.gz"
