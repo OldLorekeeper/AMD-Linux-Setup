@@ -64,10 +64,17 @@ fi
 # 2. Updates (System & Firmware)
 # ------------------------------------------------------------------------------
 
-# Purpose: Upgrade all software layers and firmware.
+# Purpose: Upgrade all software layers, plugins, and firmware.
 
 print -P "\n%K{blue}%F{black} 2. UPDATES (SYSTEM & FIRMWARE) %k%f\n"
-print -P "%K{yellow}%F{black} SYSTEM UPDATES %k%f\n"
+print -P "%K{yellow}%F{black} ZSH PLUGIN UPDATES %k%f\n"
+ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
+for plugin in "$ZSH_CUSTOM"/plugins/*/.git(N:h); do
+    print -P "Updating plugin: %F{cyan}${plugin:t}%f"
+    git -C "$plugin" pull
+done
+
+print -P "\n%K{yellow}%F{black} SYSTEM UPDATES %k%f\n"
 yay -Syu --noconfirm
 if (( $+commands[npm] )); then
     print -P "%F{cyan}ℹ Updating Gemini CLI...%f"
@@ -80,6 +87,23 @@ if fwupdmgr get-updates | grep -q "Devices with updates"; then
     fwupdmgr update -y
 else
     print -P "%F{yellow}No firmware updates available.%f"
+fi
+
+print -P "\n%K{yellow}%F{black} SOULARR UPDATES %k%f\n"
+SOULARR_DIR="/opt/soularr"
+if [[ -d "$SOULARR_DIR" ]]; then
+    print -P "%F{cyan}ℹ Checking Soularr updates...%f"
+    # Note: Assumes current user has ownership (set in setup_install)
+    if git -C "$SOULARR_DIR" pull | grep -q "Already up to date"; then
+         print -P "%F{green}Soularr is up to date.%f"
+    else
+         print -P "%F{green}Soularr updated. Refreshing Python dependencies...%f"
+         uv pip install -U -r "$SOULARR_DIR/requirements.txt" --python "$SOULARR_DIR/.venv"
+         print -P "%F{yellow}Restarting Soularr service...%f"
+         sudo systemctl restart soularr.timer
+    fi
+else
+    print -P "%F{yellow}Soularr directory not found. Skipping.%f"
 fi
 
 # ------------------------------------------------------------------------------
@@ -100,6 +124,13 @@ if (( $+commands[paccache] )); then
     paccache -rk3
 else
     print -P "%F{red}Error: paccache not found. Install pacman-contrib.%f"
+fi
+
+print -P "\n%F{cyan}ℹ Btrfs Filesystem Usage:%f"
+sudo btrfs filesystem usage / -h | grep -E "Device size:|Free \(estimated\):"
+if mountpoint -q /mnt/Media; then
+    print -P "%F{cyan}ℹ Media Drive Usage:%f"
+    sudo btrfs filesystem usage /mnt/Media -h | grep -E "Device size:|Free \(estimated\):"
 fi
 
 # ------------------------------------------------------------------------------
