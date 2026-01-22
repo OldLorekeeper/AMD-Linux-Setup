@@ -421,7 +421,7 @@ locale-gen
 print "LANG=en_GB.UTF-8" > /etc/locale.conf
 print "KEYMAP=uk" > /etc/vconsole.conf
 print "$HOSTNAME" > /etc/hostname
-print -l "127.0.0.1   localhost" "::1         localhost" "127.0.1.1   $HOSTNAME.localdomain $HOSTNAME" >> /etc/hosts
+print -l "127.0.1.1   $HOSTNAME.localdomain $HOSTNAME" "127.0.0.1   localhost" "::1         localhost" >> /etc/hosts
 
 # ------------------------------------------------------------------------------
 # 7.2 Users & Permissions
@@ -846,13 +846,32 @@ LACTYAML
     chown -R "$TARGET_USER:$TARGET_USER" /opt/soularr
     sudo -u "$TARGET_USER" uv venv /opt/soularr/.venv
     sudo -u "$TARGET_USER" uv pip install -r /opt/soularr/requirements.txt
-    [[ -f /opt/soularr/config.ini ]] && cp /opt/soularr/config.ini /opt/soularr/config/config.ini || true
-    if [[ -n "$SLSKD_API_KEY" ]] && [[ -f "/opt/soularr/config/config.ini" ]]; then
+
+    # --------------------------------------------------------------------------------
+    # Soularr Config: Robust Logic
+    # --------------------------------------------------------------------------------
+    mkdir -p /opt/soularr/config
+    if [[ -f /opt/soularr/config.ini ]]; then
+        cp /opt/soularr/config.ini /opt/soularr/config/config.ini
+    elif [[ -f /opt/soularr/config.ini.example ]]; then
+        cp /opt/soularr/config.ini.example /opt/soularr/config/config.ini
+    else
+        # Skeleton fallback
+        print -l "[App]" "prefix = /soularr" "[Slskd]" "host_url = http://slskd:5030" "api_key =" "[Lidarr]" "host_url = http://lidarr:8686" "api_key =" > /opt/soularr/config/config.ini
+    fi
+    chown -R "$TARGET_USER:$TARGET_USER" /opt/soularr/config
+
+    if [[ -n "$SLSKD_API_KEY" ]]; then
         print "Setting Slskd API Key and Hosts in Soularr config..."
+        # Ensure file exists before sed
+        [[ ! -f /opt/soularr/config/config.ini ]] && touch /opt/soularr/config/config.ini
+
         sed -i "/^\[Slskd\]/,/^\[/ s|^api_key.*|api_key = $SLSKD_API_KEY|" /opt/soularr/config/config.ini
         sed -i "/^\[Slskd\]/,/^\[/ s|^host_url.*|host_url = http://localhost:5030|" /opt/soularr/config/config.ini
         sed -i "/^\[Lidarr\]/,/^\[/ s|^host_url.*|host_url = http://localhost:8686|" /opt/soularr/config/config.ini
     fi
+    # --------------------------------------------------------------------------------
+
     cat << 'UNIT' > /etc/systemd/system/soularr.service
 [Unit]
 Description=Soularr
