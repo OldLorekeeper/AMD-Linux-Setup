@@ -159,6 +159,7 @@ esac
 
 SLSKD_USER="${SLSKD_USER:-}"
 SLSKD_PASS="${SLSKD_PASS:-}"
+SLSKD_API_KEY="${SLSKD_API_KEY:-}"
 SOULSEEK_USER="${SOULSEEK_USER:-}"
 SOULSEEK_PASS="${SOULSEEK_PASS:-}"
 MEDIA_UUID=""
@@ -180,6 +181,12 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     fi
     if [[ -z "$SLSKD_PASS" ]]; then
         read -s "SLSKD_PASS?Password: "; print ""
+    fi
+    if [[ -z "$SLSKD_API_KEY" ]]; then
+        print -P "Slskd API Key: %F{cyan}Generating random key...%f"
+        SLSKD_API_KEY=$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 32)
+    else
+        print -P "Slskd API Key: %F{green}Loaded from secrets%f"
     fi
     if [[ -z "$SOULSEEK_USER" ]]; then
         print -P "%F{yellow}Enter Soulseek Credentials:%f"
@@ -388,6 +395,7 @@ APPLY_KONSAVE=${(q)APPLY_KONSAVE}
 DEVICE_PROFILE=${(q)DEVICE_PROFILE}
 SLSKD_USER=${(q)SLSKD_USER}
 SLSKD_PASS=${(q)SLSKD_PASS}
+SLSKD_API_KEY=${(q)SLSKD_API_KEY}
 SOULSEEK_USER=${(q)SOULSEEK_USER}
 SOULSEEK_PASS=${(q)SOULSEEK_PASS}
 MEDIA_UUID=${(q)MEDIA_UUID}
@@ -830,6 +838,7 @@ LACTYAML
     done
     mkdir -p /etc/slskd
     print -l "web:" "  port: 5030" "  authentication:" "    username: $SLSKD_USER" "    password: $SLSKD_PASS" \
+             "    api_keys:" "      master:" "        key: $SLSKD_API_KEY" "        role: administrator" "        cidr: 127.0.0.1/32,::1/128" \
              "soulseek:" "  username: $SOULSEEK_USER" "  password: $SOULSEEK_PASS" \
              "directories:" "  downloads: /mnt/Media/Downloads/slskd/Complete" "  incomplete: /mnt/Media/Downloads/slskd/Incomplete" > /etc/slskd/slskd.yml
     cd /opt
@@ -838,6 +847,12 @@ LACTYAML
     sudo -u "$TARGET_USER" uv venv /opt/soularr/.venv
     sudo -u "$TARGET_USER" uv pip install -r /opt/soularr/requirements.txt
     [[ -f /opt/soularr/config.ini ]] && cp /opt/soularr/config.ini /opt/soularr/config/config.ini || true
+    if [[ -n "$SLSKD_API_KEY" ]] && [[ -f "/opt/soularr/config/config.ini" ]]; then
+        print "Setting Slskd API Key and Hosts in Soularr config..."
+        sed -i "/^\[Slskd\]/,/^\[/ s|^api_key.*|api_key = $SLSKD_API_KEY|" /opt/soularr/config/config.ini
+        sed -i "/^\[Slskd\]/,/^\[/ s|^host_url.*|host_url = http://localhost:5030|" /opt/soularr/config/config.ini
+        sed -i "/^\[Lidarr\]/,/^\[/ s|^host_url.*|host_url = http://localhost:8686|" /opt/soularr/config/config.ini
+    fi
     cat << 'UNIT' > /etc/systemd/system/soularr.service
 [Unit]
 Description=Soularr
