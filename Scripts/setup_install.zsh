@@ -323,15 +323,17 @@ mount "$PART1" /mnt/efi
 print -P "\n%K{blue}%F{black} 6. BASE INSTALLATION %k%f\n"
 CORE_PKGS=(
     # BASE / KERNEL
-    "base" "base-devel" "linux-cachyos" "linux-cachyos-headers" "cachyos-settings" "linux-firmware"
-    "cachyos-keyring" "cachyos-mirrorlist" "cachyos-v4-mirrorlist"
-    "amd-ucode" "btrfs-progs" "timeshift" "networkmanager" "networkmanager-qt" "inetutils" "bluez" "bluez-utils" "git" "vim" "sudo" "efibootmgr" "wireless-regdb"
-    "grub" "grub-btrfs" "zsh" "pacman-contrib" "reflector" "openssh" "zram-generator"
+    "amd-ucode" "base" "base-devel" "bluez" "bluez-utils" "btrfs-progs"
+    "cachyos-keyring" "cachyos-mirrorlist" "cachyos-settings" "cachyos-v4-mirrorlist"
+    "efibootmgr" "git" "grub" "grub-btrfs" "inetutils" "linux-cachyos"
+    "linux-cachyos-headers" "linux-firmware" "networkmanager" "networkmanager-qt"
+    "openssh" "pacman-contrib" "reflector" "sudo" "timeshift" "vim"
+    "wireless-regdb" "zram-generator" "zsh"
     # GUI / GRAPHICs
-    "plasma-meta" "plasma-nm" "plasma-pa" "bluedevil" "powerdevil" "kscreen" "kinfocenter"
-    "sddm" "sddm-kcm" "konsole" "dolphin" "partitionmanager" "ark" "kate" "spectacle"
-    "pipewire" "pipewire-pulse" "pipewire-alsa" "wireplumber"
-    "mesa" "vulkan-radeon" "kwallet-pam" "plasma-systemmonitor"
+    "ark" "bluedevil" "dolphin" "kate" "kinfocenter" "konsole" "kscreen"
+    "kwallet-pam" "mesa" "partitionmanager" "pipewire" "pipewire-alsa"
+    "pipewire-pulse" "plasma-meta" "plasma-nm" "plasma-pa" "plasma-systemmonitor"
+    "powerdevil" "sddm" "sddm-kcm" "spectacle" "vulkan-radeon" "wireplumber"
     # COMMON FOR DESKTOP ANDD LAPTOP
     "7zip" "bash-language-server" "chromium" "cmake" "cmake-extras" "cpupower"
     "cups" "dkms" "dnsmasq" "dosfstools" "edk2-ovmf" "ethtool" "extra-cmake-modules"
