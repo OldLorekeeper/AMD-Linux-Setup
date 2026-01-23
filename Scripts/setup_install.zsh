@@ -551,7 +551,10 @@ sudo -u "$TARGET_USER" yay -S --needed --noconfirm "${TARGET_AUR[@]}"
 print -P "\n%K{yellow}%F{black} DOTFILES & HOME %k%f\n"
 mkdir -p "/home/$TARGET_USER"{Make,Obsidian} "/home/$TARGET_USER/.local/bin"
 chown -R "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER"
+
+# 1. Git Identity
 if [[ -n "$GIT_NAME" ]]; then
+    print -P "%F{cyan}ℹ Configuring Git Identity...%f"
     sudo -u "$TARGET_USER" git config --global user.name "$GIT_NAME"
     sudo -u "$TARGET_USER" git config --global user.email "$GIT_EMAIL"
     if [[ -n "$GIT_PAT" ]]; then
@@ -562,35 +565,72 @@ if [[ -n "$GIT_NAME" ]]; then
     else
         sudo -u "$TARGET_USER" git config --global credential.helper libsecret
     fi
+    print -P "%F{green}Git identity configured.%f"
 fi
+
+# 2. Main Repo Clone
 REPO_DIR="/home/$TARGET_USER/Obsidian/AMD-Linux-Setup"
 if [[ ! -d "$REPO_DIR" ]]; then
+    print -P "%F{cyan}ℹ Cloning Main Repository...%f"
     sudo -u "$TARGET_USER" git clone https://github.com/OldLorekeeper/AMD-Linux-Setup "$REPO_DIR"
+    print -P "%F{green}Repository cloned.%f"
+fi
+
+# 3. Secrets Repo Clone (Nested)
+SECRETS_DIR="$REPO_DIR/.secrets"
+if [[ ! -d "$SECRETS_DIR" ]]; then
+    print -P "%F{cyan}ℹ Cloning Private Secrets Repository...%f"
+    if [[ -n "$GIT_PAT" ]]; then
+        # Use PAT for authentication to clone the private repo
+        if sudo -u "$TARGET_USER" git clone "https://$GIT_NAME:$GIT_PAT@github.com/OldLorekeeper/AMD-Linux-Secrets.git" "$SECRETS_DIR"; then
+            print -P "%F{green}Secrets repository cloned successfully.%f"
+        else
+            print -P "%F{red}Failed to clone secrets repository.%f"
+        fi
+    else
+        print -P "%F{yellow}No PAT provided. Skipping secrets clone.%f"
+        mkdir -p "$SECRETS_DIR"
+    fi
 fi
 chmod +x "$REPO_DIR/Scripts/"*.zsh
+
+# 4. Oh My Zsh
 if [[ ! -d "/home/$TARGET_USER/.oh-my-zsh" ]]; then
+    print -P "%F{cyan}ℹ Installing Oh My Zsh...%f"
     sudo -u "$TARGET_USER" sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 fi
 ZSH_CUSTOM="/home/$TARGET_USER/.oh-my-zsh/custom"
-sudo -u "$TARGET_USER" git clone https://github.com/zsh-users/zsh-autosuggestions "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
-sudo -u "$TARGET_USER" git clone https://github.com/zsh-users/zsh-syntax-highlighting "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
+sudo -u "$TARGET_USER" git clone https://github.com/zsh-users/zsh-autosuggestions "$ZSH_CUSTOM/plugins/zsh-autosuggestions" 2>/dev/null || true
+sudo -u "$TARGET_USER" git clone https://github.com/zsh-users/zsh-syntax-highlighting "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" 2>/dev/null || true
 ln -sf "/home/$TARGET_USER/.oh-my-zsh" /root/.oh-my-zsh
 ln -sf "/home/$TARGET_USER/.zshrc" /root/.zshrc
+sed -i 's/^plugins=(git)$/plugins=(git archlinux zsh-autosuggestions zsh-syntax-highlighting)/' "/home/$TARGET_USER/.zshrc"
 
+# 5. Append Custom Configuration
+print -P "%F{cyan}ℹ Appending Custom Zsh Configuration...%f"
 print "export KWIN_PROFILE=\"$DEVICE_PROFILE\"" >> "/home/$TARGET_USER/.zshrc"
 
 cat <<'ZSHCONF' >> "/home/$TARGET_USER/.zshrc"
 
-# --- Custom Configuration ---
+# ------------------------------------------------------------------------------
+# 1. CUSTOM CONFIGURATION
+# ------------------------------------------------------------------------------
 
 export PATH="$HOME/.local/bin:$PATH"
 export NVM_DIR="$HOME/.nvm"
 [ -s "/usr/share/nvm/init-nvm.sh" ] && source "/usr/share/nvm/init-nvm.sh"
+
+# Core Aliases
 alias mkinit="sudo mkinitcpio -P"
 alias mkgrub="sudo grub-mkconfig -o /boot/grub/grub.cfg"
-alias gemini-arch="cd ~/Obsidian/AMD-Linux-Setup/ && gemini"
 
-# Auto-organise clones
+# Repo Variables
+export ARCH_REPO="$HOME/Obsidian/AMD-Linux-Setup"
+alias gemini-arch="cd $ARCH_REPO && gemini"
+
+# ------------------------------------------------------------------------------
+# 2. GIT AUTO-ORGANISATION
+# ------------------------------------------------------------------------------
 
 git() {
     if (( EUID == 0 )); then
@@ -611,56 +651,115 @@ git() {
     fi
 }
 
-# Run maintenance script
+# ------------------------------------------------------------------------------
+# 3. ARCH REPO MANAGEMENT
+# ------------------------------------------------------------------------------
+
+arch-pull() {
+    print -P "\n%K{blue}%F{black} ARCH SYNC: PULL %k%f\n"
+
+    print -P "%K{yellow}%F{black} MAIN REPO %k%f\n"
+    (cd "$ARCH_REPO" && git pull)
+
+    print -P "\n%K{yellow}%F{black} SECRETS (PRIVATE) %k%f\n"
+    (cd "$ARCH_REPO/.secrets" && git pull)
+
+    print -P "\n%F{green}Sync complete.%f"
+}
+
+arch-commit() {
+    local msg="${1:-System update}"
+
+    print -P "\n%K{blue}%F{black} ARCH SYNC: COMMIT %k%f\n"
+
+    print -P "%K{yellow}%F{black} SECRETS %k%f\n"
+    (cd "$ARCH_REPO/.secrets" && git add . && git commit -m "$msg")
+
+    print -P "\n%K{yellow}%F{black} MAIN REPO %k%f\n"
+    (cd "$ARCH_REPO" && git add . && git commit -m "$msg")
+}
+
+arch-push() {
+    print -P "\n%K{blue}%F{black} ARCH SYNC: PUSH %k%f\n"
+
+    print -P "%K{yellow}%F{black} SECRETS %k%f\n"
+    (cd "$ARCH_REPO/.secrets" && git push)
+
+    print -P "\n%K{yellow}%F{black} MAIN REPO %k%f\n"
+    (cd "$ARCH_REPO" && git push)
+}
+
+# ------------------------------------------------------------------------------
+# 4. SYSTEM MAINTENANCE
+# ------------------------------------------------------------------------------
 
 maintain() {
-    local script="$HOME/Obsidian/AMD-Linux-Setup/Scripts/system_maintain.zsh"
+    local script="$ARCH_REPO/Scripts/system_maintain.zsh"
+
+    print -P "\n%K{blue}%F{black} SYSTEM MAINTENANCE %k%f\n"
+
     if [[ -f "$script" ]]; then
         [[ -x "$script" ]] || chmod +x "$script"
+        print -P "%F{cyan}ℹ Executing: $script%f"
         "$script"
     else
-        print -P "%F{red}Error: Maintenance script not found at:%f\n$script"
+        print -P "%F{red}Error: Maintenance script not found at:%f"
+        print -P "%F{red}$script%f"
         return 1
     fi
 }
 
-# KWin Management
+# ------------------------------------------------------------------------------
+# 5. KWIN MANAGEMENT
+# ------------------------------------------------------------------------------
 
-update-kwin() {
-    local target="${1:-"$KWIN_PROFILE"}"
+kwin-sync() {
+    local target="${1:-$KWIN_PROFILE}"
+
+    print -P "\n%K{blue}%F{black} KWIN SYNC & UPDATE %k%f\n"
+
+    # Context Check
     if [[ -z "$target" ]]; then
-        print -u2 "Error: No profile specified and KWIN_PROFILE not set."
+        print -P "%F{red}Error: No profile specified and KWIN_PROFILE not set.%f"
         return 1
     fi
+    print -P "%F{cyan}ℹ Profile: $target%f"
 
-    print -P "%F{green}--- Syncing and Updating for Profile: $target ---
-%f"
     local current_dir="$PWD"
-    local repo_dir="$HOME/Obsidian/AMD-Linux-Setup"
+    cd "$ARCH_REPO" || return
 
-    cd "$repo_dir" || return
-
-    # Auto-commit common fragment changes
+    # Step 1: Auto-commit
+    print -P "\n%K{yellow}%F{black} FRAGMENT CHECK %k%f\n"
     if git status --porcelain Resources/Kwin/common.kwinrule.fragment | grep -q '^ M'; then
-        print -P "%F{yellow}Committing changes to common.kwinrule.fragment...%f"
+        print -P "%F{yellow}Changes detected in common fragment. Committing...%f"
         git add Resources/Kwin/common.kwinrule.fragment
         git commit -m "AUTOSYNC: KWin common fragment update from ${HOST}"
+        print -P "%F{green}Committed.%f"
+    else
+        print -P "%F{green}No changes in common fragment.%f"
     fi
 
+    # Step 2: Git Pull
+    print -P "\n%K{yellow}%F{black} UPDATING REPO %k%f\n"
     if ! git pull; then
         print -P "%F{red}Error: Git pull failed.%f"
         cd "$current_dir"
         return 1
     fi
 
+    # Step 3: Apply Rules
+    print -P "\n%K{yellow}%F{black} APPLYING RULES %k%f\n"
     ./Scripts/kwin_apply_rules.zsh "$target"
+
     cd "$current_dir"
 }
 
-edit-kwin() {
-    local target="${1:-"$KWIN_PROFILE"}"
-    local repo_dir="$HOME/Obsidian/AMD-Linux-Setup/Resources/Kwin"
+kwin-edit() {
+    local target="${1:-$KWIN_PROFILE}"
+    local repo_dir="$ARCH_REPO/Resources/Kwin"
     local file_path=""
+
+    print -P "\n%K{blue}%F{black} EDIT KWIN TEMPLATE %k%f\n"
 
     case "$target" in
         "desktop") file_path="$repo_dir/desktop.rule.template" ;;
@@ -670,18 +769,24 @@ edit-kwin() {
     esac
 
     if [[ -f "$file_path" ]]; then
-        print "Opening template for: $target"
+        print -P "%F{cyan}ℹ Opening: $file_path%f"
         kate "$file_path" &!
+        print -P "%F{green}Editor launched.%f"
     else
-        print -u2 "Error: File not found: $file_path"
+        print -P "%F{red}Error: File not found: $file_path%f"
+        return 1
     fi
 }
 ZSHCONF
-sed -i 's/^plugins=(git)$/plugins=(git archlinux zsh-autosuggestions zsh-syntax-highlighting)/' "/home/$TARGET_USER/.zshrc"
-print "Installing Gemini CLI..."
-npm install -g @google/gemini-cli
+
+# 6. Gemini CLI Setup
+print -P "\n%K{yellow}%F{black} GEMINI CLI CONFIGURATION %k%f\n"
+print -P "%F{cyan}ℹ Installing Gemini CLI...%f"
+npm install -g @google/gemini-cli 1>/dev/null 2>&1
 mkdir -p "/home/$TARGET_USER/.gemini"
-cat << 'JSON' > "/home/$TARGET_USER/.gemini/settings.json"
+
+print -P "%F{cyan}ℹ Generating Settings in Secrets Repo...%f"
+cat << JSON > "$SECRETS_DIR/settings.json"
 {
   "general": {
     "previewFeatures": true
@@ -692,21 +797,54 @@ cat << 'JSON' > "/home/$TARGET_USER/.gemini/settings.json"
     }
   },
   "mcpServers": {
-    "arch-linux": {
+    "arch-ops": {
       "command": "uvx",
       "args": [
         "arch-ops-server"
+      ]
+    },
+    "memory": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
       ],
       "env": {
-        "PATH": "/usr/local/bin:/usr/bin:/bin"
+        "MEMORY_FILE_PATH": "$SECRETS_DIR/memory.json"
       }
+    },
+    "fetch": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-fetch"
+      ]
+    },
+    "gitArch": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-git",
+        "--repository",
+        "$REPO_DIR"
+      ]
     }
   }
 }
 JSON
-mkdir -p "/home/$TARGET_USER/.gemini"
+chown "$TARGET_USER:$TARGET_USER" "$SECRETS_DIR/settings.json"
+
+print -P "%F{cyan}ℹ Creating Symlinks...%f"
+# Symlink Settings (Force overwrite if default exists)
+ln -sf "$SECRETS_DIR/settings.json" "/home/$TARGET_USER/.gemini/settings.json"
+# Symlink Context (Only if it exists in secrets)
+if [[ -f "$SECRETS_DIR/GEMINI.md" ]]; then
+    ln -sf "$SECRETS_DIR/GEMINI.md" "/home/$TARGET_USER/.gemini/GEMINI.md"
+fi
 mkdir -p "$REPO_DIR/.gemini"
 ln -sf "/home/$TARGET_USER/.gemini/history" "$REPO_DIR/.gemini/history_link"
+print -P "%F{green}Gemini Configured.%f"
+
+# 7. Final Theming
+print -P "\n%K{yellow}%F{black} FINAL THEMING %k%f\n"
 mkdir -p "/home/$TARGET_USER/.local/share/konsole"
 cp -f "$REPO_DIR/Resources/Konsole"/* "/home/$TARGET_USER/.local/share/konsole/" 2>/dev/null || true
 TRANS_ARCHIVE="$REPO_DIR/Resources/Plasmoids/transmission-plasmoid.tar.gz"
@@ -717,6 +855,7 @@ if [[ -f "$TRANS_ARCHIVE" ]]; then
 fi
 papirus-folders -C breeze --theme Papirus-Dark || true
 mkdir -p "/home/$TARGET_USER/.local/share/"{icons,kxmlgui5,plasma,color-schemes,aurorae,fonts,wallpapers}
+print -P "%F{green}Theming resources applied.%f"
 
 # ------------------------------------------------------------------------------
 # 7.9 Device Specific Logic & Theming
