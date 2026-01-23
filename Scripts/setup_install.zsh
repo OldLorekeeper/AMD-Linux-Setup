@@ -656,11 +656,16 @@ git() {
 # ------------------------------------------------------------------------------
 
 repo-pull() {
-    print -P "\n%K{green}%F{black} REPO SYNC: PULL %k%f\n"
+    # Header
+    if [[ -n "$_REPO_SYNC_ACTIVE" ]]; then
+        print -P "%K{blue}%F{black} PULL %k%f\n"
+    else
+        print -P "\n%K{green}%F{black} REPO SYNC: PULL %k%f\n"
+    fi
 
     # Main Repo
     if [[ -d "$ARCH_REPO" ]]; then
-        print -P "%K{blue}%F{black} MAIN REPO %k%f\n"
+        print -P "%F{cyan}→ Main Repo%f\n"
         (cd "$ARCH_REPO" && command git pull)
     else
         print -P "%F{red}Error: Main repo not found at $ARCH_REPO%f"
@@ -668,62 +673,96 @@ repo-pull() {
 
     # Secrets Repo
     if [[ -d "$ARCH_REPO/.secrets" ]]; then
-        print -P "\n%K{blue}%F{black} SECRETS FOLDER %k%f\n"
+        print -P "\n%F{cyan}→ Secrets Folder%f\n"
         (cd "$ARCH_REPO/.secrets" && command git pull)
-    else
-        print -P "%F{red}Warning: Secrets repo not found at $ARCH_REPO/.secrets%f"
     fi
 
-    print -P "\n%K{green}%F{black} PULL COMPLETE %k%f\n"
+    # Footer (Only show if running standalone)
+    if [[ -z "$_REPO_SYNC_ACTIVE" ]]; then
+        print -P "\n%K{green}%F{black} PULL COMPLETE %k%f\n"
+    fi
 }
 
 repo-commit() {
     local msg="${1:-System update}"
 
-    print -P "\n%K{green}%F{black} REPO SYNC: COMMIT %k%f\n"
+    # Header
+    if [[ -n "$_REPO_SYNC_ACTIVE" ]]; then
+        print -P "\n%K{blue}%F{black} COMMIT %k%f\n"
+    else
+        print -P "\n%K{green}%F{black} REPO SYNC: COMMIT %k%f\n"
+    fi
 
     # Secrets Repo (Commit First)
     if [[ -d "$ARCH_REPO/.secrets" ]]; then
-        print -P "%K{blue}%F{black} SECRETS FOLDER %k%f\n"
+        print -P "%F{cyan}→ Secrets Folder%f\n"
         (cd "$ARCH_REPO/.secrets" && command git add . && command git commit -m "$msg")
     fi
 
-    # Main Repo (Commit Second)
+    # Main Repo
     if [[ -d "$ARCH_REPO" ]]; then
-        print -P "\n%K{blue}%F{black} MAIN REPO %k%f\n"
+        print -P "\n%F{cyan}→ Main Repo%f\n"
         (cd "$ARCH_REPO" && command git add . && command git commit -m "$msg")
     fi
 
-    print -P "\n%K{green}%F{black} COMMIT COMPLETE %k%f\n"
+    # Footer (Only show if running standalone)
+    if [[ -z "$_REPO_SYNC_ACTIVE" ]]; then
+        print -P "\n%K{green}%F{black} COMMIT COMPLETE %k%f\n"
+    fi
 }
 
 repo-push() {
-    print -P "\n%K{green}%F{black} REPO SYNC: PUSH %k%f\n"
+    # Header
+    if [[ -n "$_REPO_SYNC_ACTIVE" ]]; then
+        print -P "\n%K{blue}%F{black} PUSH %k%f\n"
+    else
+        print -P "\n%K{green}%F{black} REPO SYNC: PUSH %k%f\n"
+    fi
 
     # Secrets Repo
     if [[ -d "$ARCH_REPO/.secrets" ]]; then
-        print -P "%K{blue}%F{black} SECRETS FOLDER %k%f\n"
+        print -P "%F{cyan}→ Secrets Folder%f\n"
         (cd "$ARCH_REPO/.secrets" && command git push)
     fi
 
     # Main Repo
     if [[ -d "$ARCH_REPO" ]]; then
-        print -P "\n%K{blue}%F{black} MAIN REPO %k%f\n"
+        print -P "\n%F{cyan}→ Main Repo%f\n"
         (cd "$ARCH_REPO" && command git push)
     fi
 
-    print -P "\n%K{green}%F{black} PUSH COMPLETE %k%f\n"
+    # Footer (Only show if running standalone)
+    if [[ -z "$_REPO_SYNC_ACTIVE" ]]; then
+        print -P "\n%K{green}%F{black} PUSH COMPLETE %k%f\n"
+    fi
 }
 
 repo-sync() {
-    # 1. Pull latest changes first to avoid conflicts
-    repo-pull
+    # Set flag to trigger Blue headers and hide individual footers
+    export _REPO_SYNC_ACTIVE="true"
 
-    # 2. Commit new changes (passes arguments to repo-commit)
+    # Green Starter Header
+    print -P "\n%K{green}%F{black} AMD-LINUX SYSTEM SYNC %k%f\n"
+
+    # 1. Pull
+    repo-pull
+    if [[ $? -ne 0 ]]; then
+        print -P "\n%F{red}Sync aborted due to pull error.%f"
+        unset _REPO_SYNC_ACTIVE
+        return 1
+    fi
+
+    # 2. Commit
     repo-commit "$@"
 
-    # 3. Push everything to GitHub
+    # 3. Push
     repo-push
+
+    # Green End Header
+    print -P "\n%K{green}%F{black} SYNC COMPLETE %k%f\n"
+
+    # Cleanup flag
+    unset _REPO_SYNC_ACTIVE
 }
 
 # ------------------------------------------------------------------------------
