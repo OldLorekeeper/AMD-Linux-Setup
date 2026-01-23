@@ -1020,6 +1020,25 @@ UNIT
     touch "/var/lib/systemd/linger/$TARGET_USER"
     mkdir -p "/home/$TARGET_USER/.config/systemd/user/default.target.wants"
     ln -sf /usr/lib/systemd/user/sunshine.service "/home/$TARGET_USER/.config/systemd/user/default.target.wants/sunshine.service"
+    print "Installing Byparr..."
+    BYPARR_DIR="/home/$TARGET_USER/Make/Byparr"
+    sudo -u "$TARGET_USER" git clone https://github.com/ThePhaseless/Byparr "$BYPARR_DIR"
+    (cd "$BYPARR_DIR" && sudo -u "$TARGET_USER" uv sync)
+    cat << UNIT > "/home/$TARGET_USER/.config/systemd/user/byparr.service"
+[Unit]
+Description=Byparr (FlareSolverr Alternative)
+After=network.target
+[Service]
+Type=simple
+WorkingDirectory=%h/Make/Byparr
+ExecStart=/usr/bin/uv run main.py
+Restart=always
+RestartSec=5
+[Install]
+WantedBy=default.target
+UNIT
+    chown "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/.config/systemd/user/byparr.service"
+    ln -sf "/home/$TARGET_USER/.config/systemd/user/byparr.service" "/home/$TARGET_USER/.config/systemd/user/default.target.wants/byparr.service"
 elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
     print "Applying Laptop Configuration..."
     GRUB_CMDLINE="loglevel=3 quiet amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=2560x1600@60 amd_pstate=active"
