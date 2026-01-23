@@ -849,6 +849,14 @@ if [[ -f "$TRANS_ARCHIVE" ]]; then
     tar -xf "$TRANS_ARCHIVE" -C "${TRANS_DIR:h}"
 fi
 papirus-folders -C breeze --theme Papirus-Dark || true
+print -P "%F{cyan}ℹ Overwriting Kate Icons in Papirus...%f"
+KATE_SRC="$REPO_DIR/Resources/Icons/Kate"
+if [[ -d "$KATE_SRC" ]]; then
+    find /usr/share/icons/Papirus -type f \( -name "kate.svg" -o -name "kate-symbolic.svg" -o -name "kate2.svg" -o -name "org.kde.kate.svg" \) | while read -r icon; do
+        fname="${icon:t}"
+        [[ -f "$KATE_SRC/$fname" ]] && cp -f "$KATE_SRC/$fname" "$icon"
+    done
+fi
 mkdir -p "/home/$TARGET_USER/.local/share/"{icons,kxmlgui5,plasma,color-schemes,aurorae,fonts,wallpapers}
 print -P "%F{green}Theming resources applied.%f"
 
