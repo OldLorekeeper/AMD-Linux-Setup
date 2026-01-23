@@ -24,9 +24,11 @@
 #
 # ------------------------------------------------------------------------------
 
+# BEGIN
 setopt ERR_EXIT NO_UNSET PIPE_FAIL EXTENDED_GLOB
 
 print -P "\n%K{green}%F{black} STARTING AMD-LINUX-SETUP (ZEN 4) %k%f\n"
+# END
 
 # ------------------------------------------------------------------------------
 # 1. Pre-flight Checks & Secrets
@@ -34,6 +36,7 @@ print -P "\n%K{green}%F{black} STARTING AMD-LINUX-SETUP (ZEN 4) %k%f\n"
 
 # Purpose: Validate UEFI boot and internet connectivity. Retrieve and decrypt remote credentials if available, falling back to manual input if the file is missing or decryption fails.
 
+# BEGIN
 if [[ ! -d /sys/firmware/efi/efivars ]]; then
     print -P "%F{red}[!] Error: System is not booted in UEFI mode.%f"
     exit 1
@@ -68,6 +71,7 @@ if [[ -f "$SECRETS_FILE" ]]; then
         print -P "%F{red}Decryption failed. Continuing with manual prompts.%f"
     fi
 fi
+# END
 
 # ------------------------------------------------------------------------------
 # 2. User Configuration
@@ -75,6 +79,7 @@ fi
 
 # Purpose: Configure basic system identity variables (Hostname, User, Passwords) and Git credentials. Uses defaults if variables were not loaded via secrets.
 
+# BEGIN
 print -P "\n%K{blue}%F{black} 2. USER CONFIGURATION %k%f\n"
 print -P "%K{yellow}%F{black} SYSTEM CONFIGURATION %k%f\n"
 if [[ -z "${HOSTNAME:-}" ]]; then
@@ -140,13 +145,14 @@ if [[ -z "${APPLY_KONSAVE:-}" ]]; then
 else
     print -P "Apply Theme:  %F{green}$APPLY_KONSAVE%f"
 fi
-
+# END
 # ------------------------------------------------------------------------------
 # 3. Device Profile Selection
 # ------------------------------------------------------------------------------
 
 # Purpose: Determine the hardware profile (Desktop/Laptop) to govern package selection and KWin rules. Collects additional data for desktops (Media UUID, specific credentials, Monitor EDID).
 
+# BEGIN
 print -P "\n%K{blue}%F{black} 3. DEVICE PROFILE %k%f\n"
 print -l "1) Desktop (Ryzen 7800X3D / RX 7900 XT)" "2) Laptop (Ryzen 7840HS / 780M)"
 print -P "%F{yellow}Select Hardware Profile:%f"
@@ -222,6 +228,7 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
         fi
     fi
 fi
+# END
 
 # ------------------------------------------------------------------------------
 # 4. Live Environment Preparation
@@ -229,6 +236,7 @@ fi
 
 # Purpose: Select installation target disk, wipe confirmation, and optimize the live environment (pacman config, reflector mirrors, CachyOS repositories/keys).
 
+# BEGIN
 print -P "\n%K{blue}%F{black} 4. LIVE PREPARATION %k%f\n"
 print -P "%K{yellow}%F{black} INSTALLATION TARGET %k%f\n"
 print -P "%F{yellow}Installation Target:%f"
@@ -276,6 +284,7 @@ if ! grep -q "cachyos" /etc/pacman.conf; then
 fi
 sed -i "/\[multilib\]/,/Include/"'s/^#//' /etc/pacman.conf
 pacman -Sy
+# END
 
 # ------------------------------------------------------------------------------
 # 5. Partitioning & Formatting
@@ -283,6 +292,7 @@ pacman -Sy
 
 # Purpose: Execute sgdisk to create a GPT layout (EFI + Root), format with VFAT/Btrfs, create optimized subvolumes (Timeshift/Snapper standard), and mount to /mnt.
 
+# BEGIN
 print -P "\n%K{blue}%F{black} 5. PARTITIONING & FORMATTING %k%f\n"
 sgdisk -Z "$DISK"
 sgdisk -o "$DISK"
@@ -320,6 +330,7 @@ umount /mnt/tmp_games
 rmdir /mnt/tmp_games
 mkdir -p /mnt/efi
 mount "$PART1" /mnt/efi
+# END <<< 5. PARTITIONING
 
 # ------------------------------------------------------------------------------
 # 6. Base Installation
@@ -331,6 +342,7 @@ mount "$PART1" /mnt/efi
 # - Generates fstab.
 # - Copies pacman tweaks from live env to installed system
 
+# BEGIN
 print -P "\n%K{blue}%F{black} 6. BASE INSTALLATION %k%f\n"
 CORE_PKGS=(
     # BASE / KERNEL
@@ -379,6 +391,7 @@ if [[ -n "$MEDIA_UUID" ]]; then
 fi
 cp /etc/pacman.conf /mnt/etc/pacman.conf
 cp /etc/pacman.d/mirrorlist /mnt/etc/pacman.d/mirrorlist
+# END
 
 # ------------------------------------------------------------------------------
 # 7. System Configuration (Chroot)
@@ -386,8 +399,9 @@ cp /etc/pacman.d/mirrorlist /mnt/etc/pacman.d/mirrorlist
 
 # Purpose: Generate and execute the internal script to run inside `arch-chroot`. This handles locale, users, bootloader, AUR (yay), dotfiles cloning, device-specific tweaks, and systemd services.
 
+# BEGIN
 print -P "\n%K{blue}%F{black} 7. SYSTEM CONFIGURATION (CHROOT) %k%f\n"
-cat <<VARS > /mnt/install_vars.zsh
+cat <<ZSH > /mnt/install_vars.zsh
 TARGET_USER=${(q)TARGET_USER}
 ROOT_PASS=${(q)ROOT_PASS}
 USER_PASS=${(q)USER_PASS}
@@ -404,8 +418,8 @@ SOULSEEK_USER=${(q)SOULSEEK_USER}
 SOULSEEK_PASS=${(q)SOULSEEK_PASS}
 MEDIA_UUID=${(q)MEDIA_UUID}
 MONITOR_PORT=${(q)MONITOR_PORT}
-VARS
-cat << 'CHROOT_SCRIPT' > /mnt/setup_internal.zsh
+ZSH
+cat << 'ZSH' > /mnt/setup_internal.zsh
 #!/bin/zsh
 setopt ERR_EXIT NO_UNSET PIPE_FAIL EXTENDED_GLOB
 source /install_vars.zsh
@@ -465,15 +479,15 @@ mkdir -p /etc/xdg/reflector
 print -l -- "--country GB,IE,NL,DE,FR,EU" "--latest 20" "--sort rate" "--save /etc/pacman.d/mirrorlist" > /etc/xdg/reflector/reflector.conf
 systemctl enable reflector.timer
 mkdir -p /etc/NetworkManager/dispatcher.d
-cat << 'GRO' > /etc/NetworkManager/dispatcher.d/99-tailscale-gro
+cat << 'ZSH' > /etc/NetworkManager/dispatcher.d/99-tailscale-gro
 #!/bin/zsh
 [[ "$2" == "up" ]] && /usr/bin/ethtool -K "$1" rx-udp-gro-forwarding on rx-gro-list off 2>/dev/null || true
-GRO
+ZSH
 chmod +x /etc/NetworkManager/dispatcher.d/99-tailscale-gro
-cat << 'WIFI' > /etc/NetworkManager/dispatcher.d/disable-wifi-powersave
+cat << 'SH' > /etc/NetworkManager/dispatcher.d/disable-wifi-powersave
 #!/bin/sh
 [[ "$1" == wl* ]] && [[ "$2" == "up" ]] && /usr/bin/iw dev "$1" set power_save off
-WIFI
+SH
 chmod +x /etc/NetworkManager/dispatcher.d/disable-wifi-powersave
 
 # ------------------------------------------------------------------------------
@@ -616,7 +630,7 @@ sed -i 's/^plugins=(git)$/plugins=(git archlinux zsh-autosuggestions zsh-syntax-
 print -P "%F{cyan}ℹ Appending Custom Zsh Configuration...%f"
 print "export SYS_PROFILE=\"$DEVICE_PROFILE\"" >> "/home/$TARGET_USER/.zshrc"
 
-cat <<'ZSHCONF' >> "/home/$TARGET_USER/.zshrc"
+cat <<'ZSH' >> "/home/$TARGET_USER/.zshrc"
 
 # ------------------------------------------------------------------------------
 # 1. CUSTOM CONFIGURATION
@@ -805,7 +819,7 @@ kwin-edit() {
         return 1
     fi
 }
-ZSHCONF
+ZSH
 
 print -P "\n%K{yellow}%F{black} GEMINI CLI CONFIGURATION %k%f\n"
 print -P "%F{cyan}ℹ Installing Gemini CLI...%f"
@@ -888,7 +902,7 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     sed -i "s|^GRUB_CMDLINE_LINUX_DEFAULT=.*|GRUB_CMDLINE_LINUX_DEFAULT=\"$GRUB_CMDLINE\"|" /etc/default/grub
     ln -sf "$REPO_DIR/Scripts/jellyfin_fix_cover_art.zsh" "/home/$TARGET_USER/.local/bin/fix_cover_art"
     chmod +x "/home/$TARGET_USER/.local/bin/fix_cover_art"
-    cat << 'HOOK' > /usr/local/bin/replace-sunshine-icons.sh
+    cat << 'BASH' > /usr/local/bin/replace-sunshine-icons.sh
 #!/bin/bash
 shopt -s nullglob
 DEST="/usr/share/icons/hicolor/scalable/status"
@@ -899,11 +913,11 @@ if [[ -n "$SUNSHINE" ]]; then
     REAL_PATH=$(readlink -f "$SUNSHINE")
     setcap cap_sys_admin+p "$REAL_PATH"
 fi
-HOOK
+BASH
     chmod +x /usr/local/bin/replace-sunshine-icons.sh
     /usr/local/bin/replace-sunshine-icons.sh
     mkdir -p /etc/pacman.d/hooks
-    cat << 'HOOK' > /etc/pacman.d/hooks/sunshine-icons.hook
+    cat << 'INI' > /etc/pacman.d/hooks/sunshine-icons.hook
 [Trigger]
 Operation = Install
 Operation = Upgrade
@@ -913,9 +927,9 @@ Target = sunshine
 Description = Replacing Sunshine tray icons...
 When = PostTransaction
 Exec = /usr/local/bin/replace-sunshine-icons.sh
-HOOK
+INI
     mkdir -p /etc/lact
-    cat << 'LACTYAML' > /etc/lact/config.yaml
+    cat << 'YAML' > /etc/lact/config.yaml
 version: 5
 apply_settings_timer: 5
 daemon:
@@ -940,7 +954,7 @@ gpus:
       zero_rpm: false
     power_cap: 310.0
     performance_level: manual
-LACTYAML
+YAML
     systemctl enable lactd
     print "$TARGET_USER ALL=(ALL) NOPASSWD: /usr/local/bin/sunshine_gpu_boost" > /etc/sudoers.d/90-sunshine-boost
     chmod 440 /etc/sudoers.d/90-sunshine-boost
@@ -974,7 +988,7 @@ LACTYAML
         sed -i "/^\[Slskd\]/,/^\[/ s|^host_url.*|host_url = http://localhost:5030|" /opt/soularr/config/config.ini
         sed -i "/^\[Lidarr\]/,/^\[/ s|^host_url.*|host_url = http://localhost:8686|" /opt/soularr/config/config.ini
     fi
-    cat << UNIT > /etc/systemd/system/soularr.service
+    cat << INI > /etc/systemd/system/soularr.service
 [Unit]
 Description=Soularr
 Wants=network-online.target lidarr.service slskd.service
@@ -987,7 +1001,7 @@ Group=$(id -gn $TARGET_USER)
 UMask=0002
 WorkingDirectory=/opt/soularr
 ExecStart=/opt/soularr/.venv/bin/python /opt/soularr/soularr.py --config-dir /opt/soularr/config --no-lock-file
-UNIT
+INI
     print -l "[Unit]" "Description=Run Soularr every 30 minutes" "[Timer]" "OnCalendar=*:0/30" "Persistent=true" "[Install]" "WantedBy=timers.target" > /etc/systemd/system/soularr.timer
     systemctl enable soularr.timer
     if [[ -n "$MEDIA_UUID" ]]; then
@@ -1024,7 +1038,7 @@ UNIT
     BYPARR_DIR="/home/$TARGET_USER/Make/Byparr"
     sudo -u "$TARGET_USER" git clone https://github.com/ThePhaseless/Byparr "$BYPARR_DIR"
     (cd "$BYPARR_DIR" && sudo -u "$TARGET_USER" uv sync)
-    cat << UNIT > "/home/$TARGET_USER/.config/systemd/user/byparr.service"
+    cat << INI > "/home/$TARGET_USER/.config/systemd/user/byparr.service"
 [Unit]
 Description=Byparr (FlareSolverr Alternative)
 After=network.target
@@ -1036,7 +1050,7 @@ Restart=always
 RestartSec=5
 [Install]
 WantedBy=default.target
-UNIT
+INI
     chown "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/.config/systemd/user/byparr.service"
     ln -sf "/home/$TARGET_USER/.config/systemd/user/byparr.service" "/home/$TARGET_USER/.config/systemd/user/default.target.wants/byparr.service"
 elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
@@ -1077,7 +1091,7 @@ systemctl enable --now btrfs-balance.timer
 systemctl enable --now btrfs-scrub@-.timer
 systemctl enable timeshift-hourly.timer
 mkdir -p /etc/pacman.d/hooks
-cat <<HOOK > /etc/pacman.d/hooks/98-rebuild-initramfs.hook
+cat <<INI > /etc/pacman.d/hooks/98-rebuild-initramfs.hook
 [Trigger]
 Operation = Install
 Operation = Upgrade
@@ -1090,8 +1104,8 @@ Target = linux-cachyos-headers
 Description = Rebuilding initramfs...
 When = PostTransaction
 Exec = /usr/bin/mkinitcpio -P
-HOOK
-cat <<HOOK > /etc/pacman.d/hooks/99-update-grub.hook
+INI
+cat <<INI > /etc/pacman.d/hooks/99-update-grub.hook
 [Trigger]
 Operation = Install
 Operation = Upgrade
@@ -1102,7 +1116,7 @@ Target = linux-cachyos
 Description = Updating GRUB...
 When = PostTransaction
 Exec = /usr/bin/grub-mkconfig -o /boot/grub/grub.cfg
-HOOK
+INI
 sed -i 's|^MODULES=.*|MODULES=(amdgpu nvme)|' /etc/mkinitcpio.conf
 sed -i 's/^#COMPRESSION="zstd"/COMPRESSION="lz4"/' /etc/mkinitcpio.conf
 mkinitcpio -P
@@ -1117,7 +1131,7 @@ grub-mkconfig -o /boot/grub/grub.cfg
 print -P "\n%K{yellow}%F{black} FIRST BOOT SETUP %k%f\n"
 print "Scheduling First Boot Setup..."
 mkdir -p "/home/$TARGET_USER/.config/autostart"
-cat <<BOOTSCRIPT > "/home/$TARGET_USER/.local/bin/first_boot.zsh"
+cat <<ZSH > "/home/$TARGET_USER/.local/bin/first_boot.zsh"
 #!/bin/zsh
 source "/home/$TARGET_USER/.zshrc"
 sleep 5
@@ -1162,16 +1176,17 @@ print "You can scroll up to review any errors."
 read "k?Press Enter to cleanup and close this terminal..."
 rm "/home/$TARGET_USER/.config/autostart/first_boot.desktop"
 rm "/home/$TARGET_USER/.local/bin/first_boot.zsh"
-BOOTSCRIPT
+ZSH
 chmod +x "/home/$TARGET_USER/.local/bin/first_boot.zsh"
 chown "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/.local/bin/first_boot.zsh"
 print -l "[Desktop Entry]" "Type=Application" "Exec=konsole --separate --hide-tabbar -e /home/$TARGET_USER/.local/bin/first_boot.zsh" \
          "Hidden=false" "NoDisplay=false" "Name=First Boot Setup" "X-GNOME-Autostart-enabled=true" > "/home/$TARGET_USER/.config/autostart/first_boot.desktop"
 print "Finalizing permissions..."
 chown -R "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER"
-CHROOT_SCRIPT
+ZSH
 chmod +x /mnt/setup_internal.zsh
 arch-chroot /mnt /setup_internal.zsh
+# END
 
 # ------------------------------------------------------------------------------
 # 8. Completion
@@ -1179,7 +1194,11 @@ arch-chroot /mnt /setup_internal.zsh
 
 # Purpose: Clean up temporary scripts and unmount the new system.
 
+# BEGIN
 print -P "\n%K{blue}%F{black} 8. COMPLETION %k%f\n"
 rm /mnt/setup_internal.zsh
 umount -R /mnt
 print -P "\n%K{green}%F{black} PROCESS COMPLETE %k%f\n"
+# END
+
+# kate: hl Zsh; folding-markers on;
