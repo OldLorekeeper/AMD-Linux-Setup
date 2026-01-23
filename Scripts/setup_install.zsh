@@ -146,6 +146,7 @@ else
     print -P "Apply Theme:  %F{green}$APPLY_KONSAVE%f"
 fi
 # END
+
 # ------------------------------------------------------------------------------
 # 3. Device Profile Selection
 # ------------------------------------------------------------------------------
@@ -484,10 +485,13 @@ cat << 'ZSH' > /etc/NetworkManager/dispatcher.d/99-tailscale-gro
 [[ "$2" == "up" ]] && /usr/bin/ethtool -K "$1" rx-udp-gro-forwarding on rx-gro-list off 2>/dev/null || true
 ZSH
 chmod +x /etc/NetworkManager/dispatcher.d/99-tailscale-gro
-cat << 'SH' > /etc/NetworkManager/dispatcher.d/disable-wifi-powersave
-#!/bin/sh
-[[ "$1" == wl* ]] && [[ "$2" == "up" ]] && /usr/bin/iw dev "$1" set power_save off
-SH
+cat << 'BASH' > /etc/NetworkManager/dispatcher.d/disable-wifi-powersave
+#!/bin/bash
+if [[ "$1" == wl* ]] && [[ "$2" == "up" ]]; then
+    /usr/bin/iw dev "$1" set power_save off
+fi
+exit 0
+BASH
 chmod +x /etc/NetworkManager/dispatcher.d/disable-wifi-powersave
 
 # ------------------------------------------------------------------------------
@@ -1055,6 +1059,7 @@ INI
     ln -sf "/home/$TARGET_USER/.config/systemd/user/byparr.service" "/home/$TARGET_USER/.config/systemd/user/default.target.wants/byparr.service"
 elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
     print "Applying Laptop Configuration..."
+    print "options rtw89_pci disable_aspm_l1=y disable_aspm_l1ss=y" > /etc/modprobe.d/rtw89.conf
     GRUB_CMDLINE="loglevel=3 quiet amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=2560x1600@60 amd_pstate=active"
     sed -i "s|^GRUB_CMDLINE_LINUX_DEFAULT=.*|GRUB_CMDLINE_LINUX_DEFAULT=\"$GRUB_CMDLINE\"|" /etc/default/grub
     # Timeout set here for laptop profile consistency
