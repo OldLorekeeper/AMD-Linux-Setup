@@ -325,7 +325,11 @@ mount "$PART1" /mnt/efi
 # 6. Base Installation
 # ------------------------------------------------------------------------------
 
-# Purpose: Install core packages using pacstrap. Includes kernel, firmware, base-devel, network tools, and desktop environment metadata packages based on profile. Generates fstab.
+# Purpose: Install core packages using pacstrap.
+# - Includes kernel, firmware, base-devel, network tools, and desktop environment metadata packages based on profile.
+# - Desktop: Pre-creates Jellyfin directory with No-CoW to prevent fragmentation
+# - Generates fstab.
+# - Copies pacman tweaks from live env to installed system
 
 print -P "\n%K{blue}%F{black} 6. BASE INSTALLATION %k%f\n"
 CORE_PKGS=(
@@ -341,7 +345,7 @@ CORE_PKGS=(
     "kwallet-pam" "mesa" "partitionmanager" "pipewire" "pipewire-alsa"
     "pipewire-pulse" "plasma-meta" "plasma-nm" "plasma-pa" "plasma-systemmonitor"
     "powerdevil" "sddm" "sddm-kcm" "spectacle" "vulkan-radeon" "wireplumber"
-    # COMMON FOR DESKTOP ANDD LAPTOP
+    # COMMON FOR DESKTOP AND LAPTOP
     "7zip" "bash-language-server" "chromium" "cmake" "cmake-extras" "cpupower"
     "cups" "dkms" "dnsmasq" "dosfstools" "edk2-ovmf" "ethtool" "extra-cmake-modules"
     "fastfetch" "fwupd" "gamemode" "gamescope" "gwenview" "hunspell-en_gb"
@@ -361,7 +365,6 @@ LAPTOP_PKGS=(
 )
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     CORE_PKGS+=("${DESKTOP_PKGS[@]}")
-    # Pre-create Jellyfin directory with No-CoW to prevent fragmentation
     mkdir -p /mnt/var/lib/jellyfin
     chattr +C /mnt/var/lib/jellyfin
 elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
@@ -374,6 +377,8 @@ print "UUID=$ROOT_UUID  /home/$TARGET_USER/Games  btrfs  $MOUNT_OPTS,subvol=@gam
 if [[ -n "$MEDIA_UUID" ]]; then
     print "UUID=$MEDIA_UUID  /mnt/Media  btrfs  rw,nosuid,nodev,noatime,nofail,x-gvfs-hide,x-systemd.automount,compress=zstd:3,discard=async  0 0" >> /mnt/etc/fstab
 fi
+cp /etc/pacman.conf /mnt/etc/pacman.conf
+cp /etc/pacman.d/mirrorlist /mnt/etc/pacman.d/mirrorlist
 
 # ------------------------------------------------------------------------------
 # 7. System Configuration (Chroot)
@@ -479,7 +484,6 @@ chmod +x /etc/NetworkManager/dispatcher.d/disable-wifi-powersave
 
 print -P "\n%K{yellow}%F{black} BOOTLOADER %k%f\n"
 grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB
-sed -i 's/^GRUB_TIMEOUT=5/GRUB_TIMEOUT=2/' /etc/default/grub
 
 # ------------------------------------------------------------------------------
 # 7.5 Build Environment & Repos
@@ -495,20 +499,12 @@ if [[ "$(findmnt -n -o FSTYPE /tmp)" == "tmpfs" ]]; then
 fi
 sed -i 's/^#*COMPRESSZST=.*/COMPRESSZST=(zstd -c -z -q -T0 -3 -)/' /etc/makepkg.conf
 grep -q "RUSTFLAGS" /etc/makepkg.conf || print 'RUSTFLAGS="-C target-cpu=native"' >> /etc/makepkg.conf
-sed -i 's/^Architecture = auto$/Architecture = auto x86_64_v4/' /etc/pacman.conf
-sed -i 's/^#Color/Color/' /etc/pacman.conf
-sed -i 's/^#*ParallelDownloads\s*=.*/ParallelDownloads = 20/' /etc/pacman.conf
-sed -i "/\[multilib\]/,/Include/"'s/^#//' /etc/pacman.conf
+
+# PACMAN CONFIG ALREADY COPIED FROM LIVE ENV - Just Init Keys
 pacman-key --init
 pacman-key --populate archlinux
 if pacman -Q cachyos-keyring &>/dev/null; then
     pacman-key --populate cachyos
-fi
-if ! grep -q "cachyos" /etc/pacman.conf; then
-    print -l "" "[cachyos-znver4]" "Include = /etc/pacman.d/cachyos-v4-mirrorlist" \
-             "[cachyos-core-znver4]" "Include = /etc/pacman.d/cachyos-v4-mirrorlist" \
-             "[cachyos-extra-znver4]" "Include = /etc/pacman.d/cachyos-v4-mirrorlist" \
-             "[cachyos]" "Include = /etc/pacman.d/cachyos-mirrorlist" >> /etc/pacman.conf
 fi
 if ! grep -q "lizardbyte" /etc/pacman.conf; then
     print -l "" "[lizardbyte]" "SigLevel = Optional" \
@@ -816,53 +812,6 @@ print -P "%F{cyan}ℹ Installing Gemini CLI...%f"
 npm install -g @google/gemini-cli 1>/dev/null 2>&1
 mkdir -p "/home/$TARGET_USER/.gemini"
 
-print -P "%F{cyan}ℹ Generating Settings in Secrets Repo...%f"
-cat << JSON > "$SECRETS_DIR/settings.json"
-{
-  "general": {
-    "previewFeatures": true
-  },
-  "security": {
-    "auth": {
-      "selectedType": "oauth-personal"
-    }
-  },
-  "mcpServers": {
-    "arch-ops": {
-      "command": "uvx",
-      "args": [
-        "arch-ops-server"
-      ]
-    },
-    "memory": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-memory"
-      ],
-      "env": {
-        "MEMORY_FILE_PATH": "$SECRETS_DIR/memory.json"
-      }
-    },
-    "fetch": {
-      "command": "uvx",
-      "args": [
-        "mcp-server-fetch"
-      ]
-    },
-    "gitArch": {
-      "command": "uvx",
-      "args": [
-        "mcp-server-git",
-        "--repository",
-        "$REPO_DIR"
-      ]
-    }
-  }
-}
-JSON
-chown "$TARGET_USER:$TARGET_USER" "$SECRETS_DIR/settings.json"
-
 print -P "%F{cyan}ℹ Creating Symlinks...%f"
 ln -sf "$SECRETS_DIR/settings.json" "/home/$TARGET_USER/.gemini/settings.json"
 if [[ -f "$SECRETS_DIR/GEMINI.md" ]]; then
@@ -935,6 +884,7 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
             GRUB_CMDLINE="$GRUB_CMDLINE drm.edid_firmware=${MONITOR_PORT}:edid/custom_2560x1600.bin"
         fi
     fi
+    sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=2/' /etc/default/grub
     sed -i "s|^GRUB_CMDLINE_LINUX_DEFAULT=.*|GRUB_CMDLINE_LINUX_DEFAULT=\"$GRUB_CMDLINE\"|" /etc/default/grub
     ln -sf "$REPO_DIR/Scripts/jellyfin_fix_cover_art.zsh" "/home/$TARGET_USER/.local/bin/fix_cover_art"
     chmod +x "/home/$TARGET_USER/.local/bin/fix_cover_art"
@@ -1064,7 +1014,6 @@ UNIT
         usermod -aG media "$svc" 2>/dev/null || true
     done
     usermod -aG render,video jellyfin || true
-    chattr +C /var/lib/jellyfin || true
     wget -O /etc/udev/rules.d/42-solaar-uinput.rules https://raw.githubusercontent.com/pwr-Solaar/Solaar/refs/heads/master/rules.d-uinput/42-logitech-unify-permissions.rules
     systemctl enable jellyfin transmission sonarr radarr lidarr prowlarr slskd
     mkdir -p /var/lib/systemd/linger
@@ -1075,6 +1024,8 @@ elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
     print "Applying Laptop Configuration..."
     GRUB_CMDLINE="loglevel=3 quiet amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=2560x1600@60 amd_pstate=active"
     sed -i "s|^GRUB_CMDLINE_LINUX_DEFAULT=.*|GRUB_CMDLINE_LINUX_DEFAULT=\"$GRUB_CMDLINE\"|" /etc/default/grub
+    # Timeout set here for laptop profile consistency
+    sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=2/' /etc/default/grub
     grep -q "numlock" /etc/mkinitcpio.conf || sed -i 's/HOOKS=(\(.*\))/HOOKS=(\1 numlock)/' /etc/mkinitcpio.conf
     systemctl enable power-profiles-daemon
 fi
