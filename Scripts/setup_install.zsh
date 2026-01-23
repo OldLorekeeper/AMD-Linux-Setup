@@ -664,7 +664,7 @@ repo-pull() {
     print -P "\n%K{blue}%F{black} SECRETS FOLDER %k%f\n"
     (cd "$ARCH_REPO/.secrets" && git pull)
 
-    print -P "\n%F{green}Sync complete.%f"
+    print -P "\n%K{green}%F{black}} PULL COMPLETE %k%f\n"
 }
 
 repo-commit() {
@@ -677,6 +677,8 @@ repo-commit() {
 
     print -P "\n%K{blue}%F{black} MAIN REPO %k%f\n"
     (cd "$ARCH_REPO" && git add . && git commit -m "$msg")
+
+    print -P "\n%K{green}%F{black} COMMIT COMPLETE %k%f\n"
 }
 
 repo-push() {
@@ -687,6 +689,8 @@ repo-push() {
 
     print -P "\n%K{blue}%F{black} MAIN REPO %k%f\n"
     (cd "$ARCH_REPO" && git push)
+
+    print -P "\n%K{green}%F{black} PUSH COMPLETE %k%f\n"
 }
 
 # ------------------------------------------------------------------------------
