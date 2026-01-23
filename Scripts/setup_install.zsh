@@ -655,37 +655,37 @@ git() {
 # 3. ARCH REPO MANAGEMENT
 # ------------------------------------------------------------------------------
 
-arch-pull() {
-    print -P "\n%K{blue}%F{black} ARCH SYNC: PULL %k%f\n"
+repo-pull() {
+    print -P "\n%K{green}%F{black} REPO SYNC: PULL %k%f\n"
 
-    print -P "%K{yellow}%F{black} MAIN REPO %k%f\n"
+    print -P "%K{blue}%F{black} MAIN REPO %k%f\n"
     (cd "$ARCH_REPO" && git pull)
 
-    print -P "\n%K{yellow}%F{black} SECRETS (PRIVATE) %k%f\n"
+    print -P "\n%K{blue}%F{black} SECRETS FOLDER %k%f\n"
     (cd "$ARCH_REPO/.secrets" && git pull)
 
     print -P "\n%F{green}Sync complete.%f"
 }
 
-arch-commit() {
+repo-commit() {
     local msg="${1:-System update}"
 
-    print -P "\n%K{blue}%F{black} ARCH SYNC: COMMIT %k%f\n"
+    print -P "\n%K{green}%F{black} REPO SYNC: COMMIT %k%f\n"
 
-    print -P "%K{yellow}%F{black} SECRETS %k%f\n"
+    print -P "%K{blue}%F{black} SECRETS FOLDER %k%f\n"
     (cd "$ARCH_REPO/.secrets" && git add . && git commit -m "$msg")
 
-    print -P "\n%K{yellow}%F{black} MAIN REPO %k%f\n"
+    print -P "\n%K{blue}%F{black} MAIN REPO %k%f\n"
     (cd "$ARCH_REPO" && git add . && git commit -m "$msg")
 }
 
-arch-push() {
-    print -P "\n%K{blue}%F{black} ARCH SYNC: PUSH %k%f\n"
+repo-push() {
+    print -P "\n%K{green}%F{black} REPO SYNC: PUSH %k%f\n"
 
-    print -P "%K{yellow}%F{black} SECRETS %k%f\n"
+    print -P "%K{blue}%F{black} SECRETS FOLDER %k%f\n"
     (cd "$ARCH_REPO/.secrets" && git push)
 
-    print -P "\n%K{yellow}%F{black} MAIN REPO %k%f\n"
+    print -P "\n%K{blue}%F{black} MAIN REPO %k%f\n"
     (cd "$ARCH_REPO" && git push)
 }
 
@@ -696,11 +696,8 @@ arch-push() {
 maintain() {
     local script="$ARCH_REPO/Scripts/system_maintain.zsh"
 
-    print -P "\n%K{blue}%F{black} SYSTEM MAINTENANCE %k%f\n"
-
     if [[ -f "$script" ]]; then
         [[ -x "$script" ]] || chmod +x "$script"
-        print -P "%F{cyan}ℹ Executing: $script%f"
         "$script"
     else
         print -P "%F{red}Error: Maintenance script not found at:%f"
