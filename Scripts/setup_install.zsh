@@ -658,13 +658,23 @@ git() {
 repo-pull() {
     print -P "\n%K{green}%F{black} REPO SYNC: PULL %k%f\n"
 
-    print -P "%K{blue}%F{black} MAIN REPO %k%f\n"
-    (cd "$ARCH_REPO" && git pull)
+    # Main Repo
+    if [[ -d "$ARCH_REPO" ]]; then
+        print -P "%K{blue}%F{black} MAIN REPO %k%f\n"
+        (cd "$ARCH_REPO" && command git pull)
+    else
+        print -P "%F{red}Error: Main repo not found at $ARCH_REPO%f"
+    fi
 
-    print -P "\n%K{blue}%F{black} SECRETS FOLDER %k%f\n"
-    (cd "$ARCH_REPO/.secrets" && git pull)
+    # Secrets Repo
+    if [[ -d "$ARCH_REPO/.secrets" ]]; then
+        print -P "\n%K{blue}%F{black} SECRETS FOLDER %k%f\n"
+        (cd "$ARCH_REPO/.secrets" && command git pull)
+    else
+        print -P "%F{red}Warning: Secrets repo not found at $ARCH_REPO/.secrets%f"
+    fi
 
-    print -P "\n%K{green}%F{black}} PULL COMPLETE %k%f\n"
+    print -P "\n%K{green}%F{black} PULL COMPLETE %k%f\n"
 }
 
 repo-commit() {
@@ -672,11 +682,17 @@ repo-commit() {
 
     print -P "\n%K{green}%F{black} REPO SYNC: COMMIT %k%f\n"
 
-    print -P "%K{blue}%F{black} SECRETS FOLDER %k%f\n"
-    (cd "$ARCH_REPO/.secrets" && git add . && git commit -m "$msg")
+    # Secrets Repo (Commit First)
+    if [[ -d "$ARCH_REPO/.secrets" ]]; then
+        print -P "%K{blue}%F{black} SECRETS FOLDER %k%f\n"
+        (cd "$ARCH_REPO/.secrets" && command git add . && command git commit -m "$msg")
+    fi
 
-    print -P "\n%K{blue}%F{black} MAIN REPO %k%f\n"
-    (cd "$ARCH_REPO" && git add . && git commit -m "$msg")
+    # Main Repo (Commit Second)
+    if [[ -d "$ARCH_REPO" ]]; then
+        print -P "\n%K{blue}%F{black} MAIN REPO %k%f\n"
+        (cd "$ARCH_REPO" && command git add . && command git commit -m "$msg")
+    fi
 
     print -P "\n%K{green}%F{black} COMMIT COMPLETE %k%f\n"
 }
@@ -684,13 +700,30 @@ repo-commit() {
 repo-push() {
     print -P "\n%K{green}%F{black} REPO SYNC: PUSH %k%f\n"
 
-    print -P "%K{blue}%F{black} SECRETS FOLDER %k%f\n"
-    (cd "$ARCH_REPO/.secrets" && git push)
+    # Secrets Repo
+    if [[ -d "$ARCH_REPO/.secrets" ]]; then
+        print -P "%K{blue}%F{black} SECRETS FOLDER %k%f\n"
+        (cd "$ARCH_REPO/.secrets" && command git push)
+    fi
 
-    print -P "\n%K{blue}%F{black} MAIN REPO %k%f\n"
-    (cd "$ARCH_REPO" && git push)
+    # Main Repo
+    if [[ -d "$ARCH_REPO" ]]; then
+        print -P "\n%K{blue}%F{black} MAIN REPO %k%f\n"
+        (cd "$ARCH_REPO" && command git push)
+    fi
 
     print -P "\n%K{green}%F{black} PUSH COMPLETE %k%f\n"
+}
+
+repo-sync() {
+    # 1. Pull latest changes first to avoid conflicts
+    repo-pull
+
+    # 2. Commit new changes (passes arguments to repo-commit)
+    repo-commit "$@"
+
+    # 3. Push everything to GitHub
+    repo-push
 }
 
 # ------------------------------------------------------------------------------
