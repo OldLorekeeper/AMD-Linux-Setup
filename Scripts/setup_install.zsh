@@ -411,6 +411,8 @@ trap 'rm -f /etc/sudoers.d/99_setup_temp' EXIT
 # 7.1 Identity & Locale
 # ------------------------------------------------------------------------------
 
+# Purpose: Configure timezones, locale generation, keymaps, and hostname.
+
 print -P "%K{yellow}%F{black} IDENTITY & LOCALE %k%f\n"
 ln -sf /usr/share/zoneinfo/Europe/London /etc/localtime
 hwclock --systohc
@@ -424,6 +426,8 @@ print -l "127.0.1.1   $HOSTNAME.localdomain $HOSTNAME" "127.0.0.1   localhost" "
 # ------------------------------------------------------------------------------
 # 7.2 Users & Permissions
 # ------------------------------------------------------------------------------
+
+# Purpose: Create users, set passwords, and configure group memberships/sudoers.
 
 print -P "\n%K{yellow}%F{black} USERS & PERMISSIONS %k%f\n"
 print "Creating user $TARGET_USER..."
@@ -442,6 +446,8 @@ chown "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/Games"
 # ------------------------------------------------------------------------------
 # 7.3 Network & Services
 # ------------------------------------------------------------------------------
+
+# Purpose: Configure NetworkManager, Bluetooth, Reflector, and network dispatcher scripts.
 
 print -P "\n%K{yellow}%F{black} NETWORK & SERVICES %k%f\n"
 mkdir -p /etc/NetworkManager/conf.d
@@ -469,6 +475,8 @@ chmod +x /etc/NetworkManager/dispatcher.d/disable-wifi-powersave
 # 7.4 Bootloader
 # ------------------------------------------------------------------------------
 
+# Purpose: Install and configure GRUB bootloader.
+
 print -P "\n%K{yellow}%F{black} BOOTLOADER %k%f\n"
 grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB
 sed -i 's/^GRUB_TIMEOUT=5/GRUB_TIMEOUT=2/' /etc/default/grub
@@ -476,6 +484,8 @@ sed -i 's/^GRUB_TIMEOUT=5/GRUB_TIMEOUT=2/' /etc/default/grub
 # ------------------------------------------------------------------------------
 # 7.5 Build Environment & Repos
 # ------------------------------------------------------------------------------
+
+# Purpose: Configure makepkg compilation flags and pacman repositories (CachyOS/Chaotic).
 
 print -P "\n%K{yellow}%F{black} BUILD ENV & REPOS %k%f\n"
 sed -i 's/-march=x86-64 -mtune=generic/-march=native/' /etc/makepkg.conf
@@ -510,6 +520,8 @@ pacman -Sy
 # 7.6 AUR Helper (Yay)
 # ------------------------------------------------------------------------------
 
+# Purpose: Clone and build the 'yay' AUR helper.
+
 print -P "\n%K{yellow}%F{black} AUR HELPER %k%f\n"
 chown -R "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER"
 cd "/home/$TARGET_USER"
@@ -522,6 +534,8 @@ rm -rf yay
 # ------------------------------------------------------------------------------
 # 7.7 Extended Packages (AUR Only)
 # ------------------------------------------------------------------------------
+
+# Purpose: Install extended packages via AUR based on device profile.
 
 print -P "\n%K{yellow}%F{black} EXTENDED PACKAGES %k%f\n"
 CORE_AUR=(
@@ -548,11 +562,12 @@ sudo -u "$TARGET_USER" yay -S --needed --noconfirm "${TARGET_AUR[@]}"
 # 7.8 Dotfiles & Home
 # ------------------------------------------------------------------------------
 
+# Purpose: Clone dotfiles, configure Git identity, install Oh My Zsh, and set up custom shell environment.
+
 print -P "\n%K{yellow}%F{black} DOTFILES & HOME %k%f\n"
 mkdir -p "/home/$TARGET_USER"{Make,Obsidian} "/home/$TARGET_USER/.local/bin"
 chown -R "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER"
 
-# 1. Git Identity
 if [[ -n "$GIT_NAME" ]]; then
     print -P "%F{cyan}ℹ Configuring Git Identity...%f"
     sudo -u "$TARGET_USER" git config --global user.name "$GIT_NAME"
@@ -568,7 +583,6 @@ if [[ -n "$GIT_NAME" ]]; then
     print -P "%F{green}Git identity configured.%f"
 fi
 
-# 2. Main Repo Clone
 REPO_DIR="/home/$TARGET_USER/Obsidian/AMD-Linux-Setup"
 if [[ ! -d "$REPO_DIR" ]]; then
     print -P "%F{cyan}ℹ Cloning Main Repository...%f"
@@ -576,12 +590,10 @@ if [[ ! -d "$REPO_DIR" ]]; then
     print -P "%F{green}Repository cloned.%f"
 fi
 
-# 3. Secrets Repo Clone (Nested)
 SECRETS_DIR="$REPO_DIR/.secrets"
 if [[ ! -d "$SECRETS_DIR" ]]; then
     print -P "%F{cyan}ℹ Cloning Private Secrets Repository...%f"
     if [[ -n "$GIT_PAT" ]]; then
-        # Use PAT for authentication to clone the private repo
         if sudo -u "$TARGET_USER" git clone "https://$GIT_NAME:$GIT_PAT@github.com/OldLorekeeper/AMD-Linux-Secrets.git" "$SECRETS_DIR"; then
             print -P "%F{green}Secrets repository cloned successfully.%f"
         else
@@ -594,7 +606,6 @@ if [[ ! -d "$SECRETS_DIR" ]]; then
 fi
 chmod +x "$REPO_DIR/Scripts/"*.zsh
 
-# 4. Oh My Zsh
 if [[ ! -d "/home/$TARGET_USER/.oh-my-zsh" ]]; then
     print -P "%F{cyan}ℹ Installing Oh My Zsh...%f"
     sudo -u "$TARGET_USER" sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
@@ -606,7 +617,6 @@ ln -sf "/home/$TARGET_USER/.oh-my-zsh" /root/.oh-my-zsh
 ln -sf "/home/$TARGET_USER/.zshrc" /root/.zshrc
 sed -i 's/^plugins=(git)$/plugins=(git archlinux zsh-autosuggestions zsh-syntax-highlighting)/' "/home/$TARGET_USER/.zshrc"
 
-# 5. Append Custom Configuration
 print -P "%F{cyan}ℹ Appending Custom Zsh Configuration...%f"
 print "export SYS_PROFILE=\"$DEVICE_PROFILE\"" >> "/home/$TARGET_USER/.zshrc"
 
@@ -656,28 +666,21 @@ git() {
 # ------------------------------------------------------------------------------
 
 repo-pull() {
-    # Header
     if [[ -n "$_REPO_SYNC_ACTIVE" ]]; then
         print -P "%K{blue}%F{black} PULL %k%f\n"
     else
         print -P "\n%K{green}%F{black} REPO SYNC: PULL %k%f\n"
     fi
-
-    # Main Repo
     if [[ -d "$ARCH_REPO" ]]; then
         print -P "%F{cyan}→ Main Repo%f\n"
         (cd "$ARCH_REPO" && command git pull)
     else
         print -P "%F{red}Error: Main repo not found at $ARCH_REPO%f"
     fi
-
-    # Secrets Repo
     if [[ -d "$ARCH_REPO/.secrets" ]]; then
         print -P "\n%F{cyan}→ Secrets Folder%f\n"
         (cd "$ARCH_REPO/.secrets" && command git pull)
     fi
-
-    # Footer (Only show if running standalone)
     if [[ -z "$_REPO_SYNC_ACTIVE" ]]; then
         print -P "\n%K{green}%F{black} PULL COMPLETE %k%f\n"
     fi
@@ -685,83 +688,55 @@ repo-pull() {
 
 repo-commit() {
     local msg="${1:-System update}"
-
-    # Header
     if [[ -n "$_REPO_SYNC_ACTIVE" ]]; then
         print -P "\n%K{blue}%F{black} COMMIT %k%f\n"
     else
         print -P "\n%K{green}%F{black} REPO SYNC: COMMIT %k%f\n"
     fi
-
-    # Secrets Repo (Commit First)
     if [[ -d "$ARCH_REPO/.secrets" ]]; then
         print -P "%F{cyan}→ Secrets Folder%f\n"
         (cd "$ARCH_REPO/.secrets" && command git add . && command git commit -m "$msg")
     fi
-
-    # Main Repo
     if [[ -d "$ARCH_REPO" ]]; then
         print -P "\n%F{cyan}→ Main Repo%f\n"
         (cd "$ARCH_REPO" && command git add . && command git commit -m "$msg")
     fi
-
-    # Footer (Only show if running standalone)
     if [[ -z "$_REPO_SYNC_ACTIVE" ]]; then
         print -P "\n%K{green}%F{black} COMMIT COMPLETE %k%f\n"
     fi
 }
 
 repo-push() {
-    # Header
     if [[ -n "$_REPO_SYNC_ACTIVE" ]]; then
         print -P "\n%K{blue}%F{black} PUSH %k%f\n"
     else
         print -P "\n%K{green}%F{black} REPO SYNC: PUSH %k%f\n"
     fi
-
-    # Secrets Repo
     if [[ -d "$ARCH_REPO/.secrets" ]]; then
         print -P "%F{cyan}→ Secrets Folder%f\n"
         (cd "$ARCH_REPO/.secrets" && command git push)
     fi
-
-    # Main Repo
     if [[ -d "$ARCH_REPO" ]]; then
         print -P "\n%F{cyan}→ Main Repo%f\n"
         (cd "$ARCH_REPO" && command git push)
     fi
-
-    # Footer (Only show if running standalone)
     if [[ -z "$_REPO_SYNC_ACTIVE" ]]; then
         print -P "\n%K{green}%F{black} PUSH COMPLETE %k%f\n"
     fi
 }
 
 repo-sync() {
-    # Set flag to trigger Blue headers and hide individual footers
     export _REPO_SYNC_ACTIVE="true"
-
-    # Green Starter Header
     print -P "\n%K{green}%F{black} AMD-LINUX SYSTEM SYNC %k%f\n"
-
-    # 1. Pull
     repo-pull
     if [[ $? -ne 0 ]]; then
         print -P "\n%F{red}Sync aborted due to pull error.%f"
         unset _REPO_SYNC_ACTIVE
         return 1
     fi
-
-    # 2. Commit
     repo-commit "$@"
-
-    # 3. Push
     repo-push
-
-    # Green End Header
     print -P "\n%K{green}%F{black} SYNC COMPLETE %k%f\n"
-
-    # Cleanup flag
     unset _REPO_SYNC_ACTIVE
 }
 
@@ -771,7 +746,6 @@ repo-sync() {
 
 maintain() {
     local script="$ARCH_REPO/Scripts/system_maintain.zsh"
-
     if [[ -f "$script" ]]; then
         [[ -x "$script" ]] || chmod +x "$script"
         "$script"
@@ -788,20 +762,14 @@ maintain() {
 
 kwin-sync() {
     local target="${1:-$SYS_PROFILE}"
-
     print -P "\n%K{green}%F{black} KWIN SYNC & UPDATE %k%f\n"
-
-    # Context Check
     if [[ -z "$target" ]]; then
         print -P "%F{red}Error: No profile specified and SYS_PROFILE not set.%f"
         return 1
     fi
     print -P "%F{cyan}ℹ Profile: $target%f"
-
     local current_dir="$PWD"
     cd "$ARCH_REPO" || return
-
-    # Step 1: Auto-commit
     print -P "\n%K{yellow}%F{black} FRAGMENT CHECK: %k%f\n"
     if git status --porcelain Resources/Kwin/common.kwinrule.fragment | grep -q '^ M'; then
         print -P "%F{yellow}Changes detected in common fragment. Committing...%f"
@@ -811,18 +779,13 @@ kwin-sync() {
     else
         print -P "%F{green}No changes in common fragment.%f"
     fi
-
-    # Step 2: Git Pull
     print -P "\n%K{yellow}%F{black} UPDATING REPO %k%f\n"
     if ! git pull; then
         print -P "%F{red}Error: Git pull failed.%f"
         cd "$current_dir"
         return 1
     fi
-
-    # Step 3: Apply Rules
     ./Scripts/kwin_apply_rules.zsh "$target"
-
     cd "$current_dir"
 }
 
@@ -830,16 +793,13 @@ kwin-edit() {
     local target="${1:-$SYS_PROFILE}"
     local repo_dir="$ARCH_REPO/Resources/Kwin"
     local file_path=""
-
     print -P "\n%K{blue}%F{black} EDIT KWIN TEMPLATE %k%f\n"
-
     case "$target" in
         "desktop") file_path="$repo_dir/desktop.rule.template" ;;
         "laptop")  file_path="$repo_dir/laptop.rule.template" ;;
         "common")  file_path="$repo_dir/common.kwinrule.fragment" ;;
         *)         file_path="$repo_dir/common.kwinrule.fragment" ;;
     esac
-
     if [[ -f "$file_path" ]]; then
         print -P "%F{cyan}ℹ Opening: $file_path%f"
         kate "$file_path" &!
@@ -851,7 +811,6 @@ kwin-edit() {
 }
 ZSHCONF
 
-# 6. Gemini CLI Setup
 print -P "\n%K{yellow}%F{black} GEMINI CLI CONFIGURATION %k%f\n"
 print -P "%F{cyan}ℹ Installing Gemini CLI...%f"
 npm install -g @google/gemini-cli 1>/dev/null 2>&1
@@ -905,9 +864,7 @@ JSON
 chown "$TARGET_USER:$TARGET_USER" "$SECRETS_DIR/settings.json"
 
 print -P "%F{cyan}ℹ Creating Symlinks...%f"
-# Symlink Settings (Force overwrite if default exists)
 ln -sf "$SECRETS_DIR/settings.json" "/home/$TARGET_USER/.gemini/settings.json"
-# Symlink Context (Only if it exists in secrets)
 if [[ -f "$SECRETS_DIR/GEMINI.md" ]]; then
     ln -sf "$SECRETS_DIR/GEMINI.md" "/home/$TARGET_USER/.gemini/GEMINI.md"
 fi
@@ -915,7 +872,6 @@ mkdir -p "$REPO_DIR/.gemini"
 ln -sf "/home/$TARGET_USER/.gemini/history" "$REPO_DIR/.gemini/history_link"
 print -P "%F{green}Gemini Configured.%f"
 
-# 7. Final Theming
 print -P "\n%K{yellow}%F{black} FINAL THEMING %k%f\n"
 mkdir -p "/home/$TARGET_USER/.local/share/konsole"
 cp -f "$REPO_DIR/Resources/Konsole"/* "/home/$TARGET_USER/.local/share/konsole/" 2>/dev/null || true
@@ -933,9 +889,10 @@ print -P "%F{green}Theming resources applied.%f"
 # 7.9 Device Specific Logic & Theming
 # ------------------------------------------------------------------------------
 
+# Purpose: Apply device-specific configurations, Konsave themes, KWin rules, and hardware optimization (Sunshine/Lact/Soularr).
+
 print -P "\n%K{yellow}%F{black} DEVICE LOGIC & THEME %k%f\n"
 print "Fixing permissions and applying Konsave Theme..."
-# Ensure the user owns everything created so far (especially .local/share) before Konsave runs
 chown -R "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER"
 
 if [[ "$APPLY_KONSAVE" == "true" ]]; then
@@ -1051,33 +1008,23 @@ LACTYAML
     chown -R "$TARGET_USER:$TARGET_USER" /opt/soularr
     sudo -u "$TARGET_USER" uv venv /opt/soularr/.venv
     sudo -u "$TARGET_USER" uv pip install -r /opt/soularr/requirements.txt
-
-    # --------------------------------------------------------------------------------
-    # Soularr Config: Robust Logic
-    # --------------------------------------------------------------------------------
     mkdir -p /opt/soularr/config
     if [[ -f /opt/soularr/config.ini ]]; then
         cp /opt/soularr/config.ini /opt/soularr/config/config.ini
     elif [[ -f /opt/soularr/config.ini.example ]]; then
         cp /opt/soularr/config.ini.example /opt/soularr/config/config.ini
     else
-        # Skeleton fallback
         print -l "[App]" "prefix = /soularr" "[Slskd]" "host_url = http://slskd:5030" "api_key =" "[Lidarr]" "host_url = http://lidarr:8686" "api_key =" > /opt/soularr/config/config.ini
     fi
     chown -R "$TARGET_USER:$TARGET_USER" /opt/soularr/config
-
     if [[ -n "$SLSKD_API_KEY" ]]; then
         print "Setting Slskd API Key and Hosts in Soularr config..."
-        # Ensure file exists before sed
         [[ ! -f /opt/soularr/config/config.ini ]] && touch /opt/soularr/config/config.ini
-
         sed -i "/^\[Slskd\]/,/^\[/ s|^api_key.*|api_key = $SLSKD_API_KEY|" /opt/soularr/config/config.ini
         sed -i "/^\[Slskd\]/,/^\[/ s|^host_url.*|host_url = http://localhost:5030|" /opt/soularr/config/config.ini
         sed -i "/^\[Lidarr\]/,/^\[/ s|^host_url.*|host_url = http://localhost:8686|" /opt/soularr/config/config.ini
     fi
-    # --------------------------------------------------------------------------------
-
-    cat << 'UNIT' > /etc/systemd/system/soularr.service
+    cat << UNIT > /etc/systemd/system/soularr.service
 [Unit]
 Description=Soularr
 Wants=network-online.target lidarr.service slskd.service
@@ -1136,6 +1083,8 @@ fi
 # 7.10 Final System Tuning
 # ------------------------------------------------------------------------------
 
+# Purpose: Perform final system tuning (sysctl, zram, hooks) and regenerate initramfs/grub.
+
 print -P "\n%K{yellow}%F{black} FINAL TUNING %k%f\n"
 print "Removing Discover and Plasma Meta..."
 if pacman -Qi plasma-meta &>/dev/null; then
@@ -1193,6 +1142,8 @@ grub-mkconfig -o /boot/grub/grub.cfg
 # 7.11 First Boot Automation
 # ------------------------------------------------------------------------------
 
+# Purpose: Generate the first-boot setup script for post-install configuration.
+
 print -P "\n%K{yellow}%F{black} FIRST BOOT SETUP %k%f\n"
 print "Scheduling First Boot Setup..."
 mkdir -p "/home/$TARGET_USER/.config/autostart"
@@ -1200,7 +1151,7 @@ cat <<BOOTSCRIPT > "/home/$TARGET_USER/.local/bin/first_boot.zsh"
 #!/bin/zsh
 source "/home/$TARGET_USER/.zshrc"
 sleep 5
-print "Running First Boot Setup..."
+print -P "\n%K{green}%F{black} RUNNING FIRST BOOT SETUP %k%f\n"
 REPO_DIR="/home/$TARGET_USER/Obsidian/AMD-Linux-Setup"
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     print "Connecting to Tailscale..."
