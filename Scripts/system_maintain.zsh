@@ -46,8 +46,8 @@ if [[ -f "$HOME/.zshrc" ]]; then
     ZSH_SKIP_OMZ_CHECK=1 source "$HOME/.zshrc" >/dev/null 2>&1
     setopt ERR_EXIT
 fi
-if [[ -n "${KWIN_PROFILE:-}" ]]; then
-    PROFILE_TYPE="${(C)KWIN_PROFILE}"
+if [[ -n "${SYS_PROFILE:-}" ]]; then
+    PROFILE_TYPE="${(C)SYS_PROFILE}"
     print -P "Profile: %F{green}Loaded ($PROFILE_TYPE)%f"
 else
     print -P "%F{yellow}Select Device Type for Backup:%f"

@@ -77,7 +77,7 @@ Use these logic chains to guide complex tasks:
     - _Workflow:_ `check_critical_news` → `check_disk_space` → `check_updates_dry_run` → `check_failed_services` → Recommend `system_maintain.zsh` or manual intervention.
 
 - **`check_system_drift`**
-    - _Workflow:_ `get_system_info` (Profile) → `git_status` (Check for uncommitted changes) → `read_file` (Scripts/setup_install.zsh) → **Audit:** Packages, **System State** (`/etc/` configs, Kernel Params), **User State** (Dotfiles, `KWIN_PROFILE`, Permissions) → Report deviations.
+    - _Workflow:_ `get_system_info` (Profile) → `git_status` (Check for uncommitted changes) → `read_file` (Scripts/setup_install.zsh) → **Audit:** Packages, **System State** (`/etc/` configs, Kernel Params), **User State** (Dotfiles, `SYS_PROFILE`, Permissions) → Report deviations.
  
 ## 6 LLM Instructions
 

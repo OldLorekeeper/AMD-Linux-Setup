@@ -608,7 +608,7 @@ sed -i 's/^plugins=(git)$/plugins=(git archlinux zsh-autosuggestions zsh-syntax-
 
 # 5. Append Custom Configuration
 print -P "%F{cyan}ℹ Appending Custom Zsh Configuration...%f"
-print "export KWIN_PROFILE=\"$DEVICE_PROFILE\"" >> "/home/$TARGET_USER/.zshrc"
+print "export SYS_PROFILE=\"$DEVICE_PROFILE\"" >> "/home/$TARGET_USER/.zshrc"
 
 cat <<'ZSHCONF' >> "/home/$TARGET_USER/.zshrc"
 
@@ -787,13 +787,13 @@ maintain() {
 # ------------------------------------------------------------------------------
 
 kwin-sync() {
-    local target="${1:-$KWIN_PROFILE}"
+    local target="${1:-$SYS_PROFILE}"
 
-    print -P "\n%K{blue}%F{black} KWIN SYNC & UPDATE %k%f\n"
+    print -P "\n%K{green}%F{black} KWIN SYNC & UPDATE %k%f\n"
 
     # Context Check
     if [[ -z "$target" ]]; then
-        print -P "%F{red}Error: No profile specified and KWIN_PROFILE not set.%f"
+        print -P "%F{red}Error: No profile specified and SYS_PROFILE not set.%f"
         return 1
     fi
     print -P "%F{cyan}ℹ Profile: $target%f"
@@ -802,7 +802,7 @@ kwin-sync() {
     cd "$ARCH_REPO" || return
 
     # Step 1: Auto-commit
-    print -P "\n%K{yellow}%F{black} FRAGMENT CHECK %k%f\n"
+    print -P "\n%K{yellow}%F{black} FRAGMENT CHECK: %k%f\n"
     if git status --porcelain Resources/Kwin/common.kwinrule.fragment | grep -q '^ M'; then
         print -P "%F{yellow}Changes detected in common fragment. Committing...%f"
         git add Resources/Kwin/common.kwinrule.fragment
@@ -821,14 +821,13 @@ kwin-sync() {
     fi
 
     # Step 3: Apply Rules
-    print -P "\n%K{yellow}%F{black} APPLYING RULES %k%f\n"
     ./Scripts/kwin_apply_rules.zsh "$target"
 
     cd "$current_dir"
 }
 
 kwin-edit() {
-    local target="${1:-$KWIN_PROFILE}"
+    local target="${1:-$SYS_PROFILE}"
     local repo_dir="$ARCH_REPO/Resources/Kwin"
     local file_path=""
 
