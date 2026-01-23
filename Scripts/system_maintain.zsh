@@ -40,7 +40,7 @@ print -P "\n%K{green}%F{black} STARTING SYSTEM MAINTENANCE %k%f\n"
 
 # Purpose: Detect or prompt for the device profile to ensure correct backup labeling.
 
-print -P "\n%K{blue}%F{black} 1. ENVIRONMENT & PROFILE %k%f\n"
+print -P "%K{blue}%F{black} 1. ENVIRONMENT & PROFILE %k%f\n"
 if [[ -f "$HOME/.zshrc" ]]; then
     unsetopt ERR_EXIT
     ZSH_SKIP_OMZ_CHECK=1 source "$HOME/.zshrc" >/dev/null 2>&1
