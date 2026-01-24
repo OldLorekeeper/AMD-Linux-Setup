@@ -695,6 +695,12 @@ npm install -g @google/gemini-cli 1>/dev/null 2>&1
 mkdir -p "/home/$TARGET_USER/.gemini" "$REPO_DIR/.gemini"
 ln -sf "$SECRETS_DIR/settings.json" "/home/$TARGET_USER/.gemini/settings.json"
 ln -sf "$SECRETS_DIR/GEMINI.md" "/home/$TARGET_USER/.gemini/GEMINI.md"
+ln -sf "$SECRETS_DIR/memory.json" "/home/$TARGET_USER/.gemini/memory.json"
+if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
+    ln -sf "$SECRETS_DIR/Gemini-History/Desktop" "/home/$TARGET_USER/.gemini/tmp"
+elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
+    ln -sf "$SECRETS_DIR/Gemini-History/Laptop" "/home/$TARGET_USER/.gemini/tmp"
+fi
 ln -sf "/home/$TARGET_USER/.gemini/history" "$REPO_DIR/.gemini/history_link"
 
 print -P "\n%K{yellow}%F{black} FINAL THEMING %k%f\n"
