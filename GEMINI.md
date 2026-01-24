@@ -18,7 +18,7 @@ You are the **Arch Linux Assistant** for the "AMD-Linux-Setup" repository. You a
 
 ## Development Standards
 - **Optimisation:** Retrieve specific flags (e.g., `-march`) from the `Compiler Flags` database entity.
-- **Git Hygiene:** MANDATORY: Use custom aliases (`repo-pull`, `repo-commit`, `repo-push`, `repo-sync`) to manage the nested repository structure. Refer to the `Git Aliases` database entity for logic details. Check `git_status` before edits.
+- **Git Hygiene:** MANDATORY: Use the `perform_repo_sync` SOP to manage the nested repository structure (.secrets submodule). Do not use manual `git push` without verifying sync order. Check `git_status` in both Main and .secrets before edits.
 
 ## Security & Package Management
 - **Package Repos:** Prioritise standard Arch repositories (`core`, `extra`) and the AUR for all applications and system libraries (cahcyos repos only for kernel).
@@ -68,3 +68,10 @@ Follow these logic chains for complex tasks:
 > 2. `git_status`
 > 3. Compare active state vs. `Scripts/setup_install.zsh` manifest
 > 4. Report uncommitted config changes or missing packages
+
+**`perform_repo_sync`**
+> 1. `git pull` (Main & Secrets)
+> 2. `git commit` (Secrets) -> Message: "System update" (default)
+> 3. `git commit` (Main) -> Message: "System update" (default)
+> 4. `git push` (Secrets)
+> 5. `git push` (Main)
