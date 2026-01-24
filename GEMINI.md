@@ -46,9 +46,10 @@ The repository uses a **Lifecycle Model** separating public logic from private d
 - **AUR Audit:** MANDATORY: Run `analyze_pkgbuild_safety` AND `analyze_package_metadata_risk` on *every* AUR package before installation.
 - **Updates:** Check `check_critical_news` before major upgrades. Use `check_updates_dry_run` first.
 ## Local Intelligence (Assistant Metadata)
-- **History Access:** `.gemini_history/` is symlink to external Gemini chat history.
-    - `recall_history`: Access entire linked history.
-    - `recall_recent`: Access last three messages.
+- **History Access:** `.secrets/Gemini-History/Desktop/` and `.secrets/Gemini-History/Laptop/` contain all Gemini chat history
+    - `recall_history`: Access and review entire linked history for current system profile.
+    - `recall_recent`: Access and review last three chats for current system profile.
+    - `recall_last`: Access and review last chat for current system profile.
 
 ---
 # 5. Standard Operating Procedures (SOPs)
