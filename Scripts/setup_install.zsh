@@ -696,6 +696,7 @@ mkdir -p "/home/$TARGET_USER/.gemini" "$REPO_DIR/.gemini"
 ln -sf "$SECRETS_DIR/settings.json" "/home/$TARGET_USER/.gemini/settings.json"
 ln -sf "$SECRETS_DIR/GEMINI.md" "/home/$TARGET_USER/.gemini/GEMINI.md"
 ln -sf "$SECRETS_DIR/memory.json" "/home/$TARGET_USER/.gemini/memory.json"
+ln -sf "$SECRETS_DIR/trustedFolders.json" "/home/$TARGET_USER/.gemini/trustedFolders.json"
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     ln -sf "$SECRETS_DIR/Gemini-History/Desktop" "/home/$TARGET_USER/.gemini/tmp"
 elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
