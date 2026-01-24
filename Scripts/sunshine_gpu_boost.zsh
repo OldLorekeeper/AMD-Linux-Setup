@@ -4,31 +4,35 @@
 # Forces AMD RX 7900 XT into high performance mode during Sunshine streaming.
 # ------------------------------------------------------------------------------
 #
-# DEVELOPMENT RULES (Read before editing):
-# 1. Formatting: Keep layout compact. No vertical whitespace inside blocks.
-# 2. Separators: Use 'Sandwich' headers (# ------) with strict spacing (1 line before).
-# 3. Idempotency: Scripts must be safe to re-run. Check state before changes.
-# 4. Safety: Use 'setopt ERR_EXIT NO_UNSET PIPE_FAIL'.
-# 5. Context: No hardcoded secrets.
-# 6. Syntax: Use Zsh native modifiers and tooling.
-# 7. Documentation: Start section with 'Purpose' comment block (1 line before and after). No meta or inline comments within code.
-# 8. UI & Theming:
-#    - Headers: Blue (%K{blue}%F{black}) for sections, Yellow (%K{yellow}%F{black}) for sub-sections.
-#    - Spacing: One empty line before and after headers. Use embedded \n to save lines.
-#      * Exception: If a header follows another header immediately, omit the leading \n to avoid double gaps.
-#    - Inputs: Yellow description line (%F{yellow}) followed by minimal prompt (read "VAR?Prompt: ").
-#    - Context: Cyan (%F{cyan}) for info/metadata (prefixed with ℹ).
-#    - Status: Green (%F{green}) for success/loaded, Red (%F{red}) for errors/warnings.
-#    - Silence: Do not repeat/confirm manual user input. Only print confirmation (%F{green}) if the value was pre-loaded from secrets.
+# DEVELOPMENT RULES:
+#
+# 1. Safety: `setopt ERR_EXIT NO_UNSET PIPE_FAIL EXTENDED_GLOB`.
+# 2. Syntax: Native Zsh modifiers (e.g. ${VAR:t}).
+# 3. Heredocs: Use language ID (e.g. <<ZSH, <<INI), unique IDs for nesting, and quote 'ID' to disable expansion.
+# 4. Structure:
+#    - Sandwich numbered section separators (# ------) with 1 line padding before.
+#    - Purpose comment block (1 line padding) at start of every numbered section summarising code.
+#    - No inline/meta comments. Compact vertical layout (minimise blank lines)
+#    - Retain frequent context info markers (%F{cyan}) inside dense logic blocks to prevent 'frozen' UI state.
+#    - Code wrapped in '# BEGIN' and '# END' markers.
+#    - Kate modeline at EOF.
+# 5. Idempotency: Re-runnable scripts. Check state before changes.
+# 6. UI Hierarchy Print -P
+#    - Process marker:          Green Block (%K{green}%F{black}). Used at Start/End.
+#    - Section marker:          Blue Block  (%K{blue}%F{black}). Numbered.
+#    - Sub-section marker:      Yellow Block (%K{yellow}%F{black}).
+#    - Interaction:             Yellow description (%F{yellow}) + minimal `read` prompt.
+#    - Context/Status:          Cyan (Info ℹ), Green (Success), Red (Error/Warning).
+#    - Marker spacing:          Use `\n...%k%f\n`. Omit top `\n` on consecutive markers.
 #
 # ------------------------------------------------------------------------------
 
-setopt ERR_EXIT NO_UNSET PIPE_FAIL
-
+# BEGIN
+setopt ERR_EXIT NO_UNSET PIPE_FAIL EXTENDED_GLOB
 zmodload zsh/datetime
 SCRIPT_DIR=${0:a:h}
-
 print -P "\n%K{green}%F{black} STARTING GPU BOOST %k%f\n"
+# END
 
 # ------------------------------------------------------------------------------
 # 1. Configuration
@@ -36,10 +40,12 @@ print -P "\n%K{green}%F{black} STARTING GPU BOOST %k%f\n"
 
 # Purpose: Define sysfs path for GPU power control.
 
-print -P "\n%K{blue}%F{black} 1. CONFIGURATION %k%f\n"
+# BEGIN
+print -P "%K{blue}%F{black} 1. CONFIGURATION %k%f\n"
 GPU_SYSFS="/sys/class/drm/card1/device/power_dpm_force_performance_level"
 LOG_FILE="/tmp/sunshine_gpu_boost.log"
 print -P "Target: %F{cyan}$GPU_SYSFS%f"
+# END
 
 # ------------------------------------------------------------------------------
 # 2. Logic
@@ -47,6 +53,7 @@ print -P "Target: %F{cyan}$GPU_SYSFS%f"
 
 # Purpose: Toggle GPU performance level based on argument.
 
+# BEGIN
 print -P "\n%K{blue}%F{black} 2. LOGIC %k%f\n"
 strftime -s DATE_STR '%Y-%m-%d %H:%M:%S' $EPOCHSECONDS
 case "$1" in
@@ -65,9 +72,14 @@ case "$1" in
         exit 1
         ;;
 esac
+# END
 
 # ------------------------------------------------------------------------------
 # End
 # ------------------------------------------------------------------------------
 
+# BEGIN
 print -P "\n%K{green}%F{black} PROCESS COMPLETE %k%f\n"
+# END
+
+# kate: hl Zsh; folding-markers on;

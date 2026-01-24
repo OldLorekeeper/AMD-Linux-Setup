@@ -1,45 +1,49 @@
 #!/bin/zsh
 # ------------------------------------------------------------------------------
-# 5. System Maintenance & Backup
+# System Maintenance & Backup
 # Updates system, firmware, cleans cache, checks services, and backups Konsave profile.
 # ------------------------------------------------------------------------------
 #
-# DEVELOPMENT RULES (Read before editing):
-# 1. Formatting: Keep layout compact. No vertical whitespace inside blocks.
-# 2. Separators: Use 'Sandwich' headers (# ------) with strict spacing (1 line before).
-# 3. Idempotency: Scripts must be safe to re-run. Check state before changes.
-# 4. Safety: Use 'setopt ERR_EXIT NO_UNSET PIPE_FAIL'.
-# 5. Context: No hardcoded secrets.
-# 6. Syntax: Use Zsh native modifiers and tooling.
-# 7. Documentation: Start section with 'Purpose' comment block (1 line before and after). No meta or inline comments within code.
-# 8. UI & Theming:
-#    - Headers: Blue (%K{blue}%F{black}) for sections, Yellow (%K{yellow}%F{black}) for sub-sections.
-#    - Spacing: One empty line before and after headers. Use embedded \n to save lines.
-#      * Exception: If a header follows another header immediately, omit the leading \n to avoid double gaps.
-#    - Inputs: Yellow description line (%F{yellow}) followed by minimal prompt (read "VAR?Prompt: ").
-#    - Context: Cyan (%F{cyan}) for info/metadata (prefixed with ℹ).
-#    - Status: Green (%F{green}) for success/loaded, Red (%F{red}) for errors/warnings.
-#    - Silence: Do not repeat/confirm manual user input. Only print confirmation (%F{green}) if the value was pre-loaded from secrets.
+# DEVELOPMENT RULES:
+#
+# 1. Safety: `setopt ERR_EXIT NO_UNSET PIPE_FAIL EXTENDED_GLOB`.
+# 2. Syntax: Native Zsh modifiers (e.g. ${VAR:t}).
+# 3. Heredocs: Use language ID (e.g. <<ZSH, <<INI), unique IDs for nesting, and quote 'ID' to disable expansion.
+# 4. Structure:
+#    - Sandwich numbered section separators (# ------) with 1 line padding before.
+#    - Purpose comment block (1 line padding) at start of every numbered section summarising code.
+#    - No inline/meta comments. Compact vertical layout (minimise blank lines)
+#    - Retain frequent context info markers (%F{cyan}) inside dense logic blocks to prevent 'frozen' UI state.
+#    - Code wrapped in '# BEGIN' and '# END' markers.
+#    - Kate modeline at EOF.
+# 5. Idempotency: Re-runnable scripts. Check state before changes.
+# 6. UI Hierarchy Print -P
+#    - Process marker:          Green Block (%K{green}%F{black}). Used at Start/End.
+#    - Section marker:          Blue Block  (%K{blue}%F{black}). Numbered.
+#    - Sub-section marker:      Yellow Block (%K{yellow}%F{black}).
+#    - Interaction:             Yellow description (%F{yellow}) + minimal `read` prompt.
+#    - Context/Status:          Cyan (Info ℹ), Green (Success), Red (Error/Warning).
+#    - Marker spacing:          Use `\n...%k%f\n`. Omit top `\n` on consecutive markers.
 #
 # ------------------------------------------------------------------------------
 
-setopt ERR_EXIT NO_UNSET PIPE_FAIL
-
+# BEGIN
+setopt ERR_EXIT NO_UNSET PIPE_FAIL EXTENDED_GLOB
 SCRIPT_DIR=${0:a:h}
-
 sudo -v
 ( while true; do sudo -v; sleep 60; done; ) &
 SUDO_PID=$!
 trap 'kill $SUDO_PID' EXIT
-
 print -P "\n%K{green}%F{black} STARTING SYSTEM MAINTENANCE %k%f\n"
+# END
 
 # ------------------------------------------------------------------------------
 # 1. Environment & Profile
 # ------------------------------------------------------------------------------
 
-# Purpose: Detect or prompt for the device profile to ensure correct backup labeling.
+# Purpose: Loads user shell configuration to ensure environment variables are present and detects the device profile (Desktop/Laptop). Prompts user if profile is missing.
 
+# BEGIN
 print -P "%K{blue}%F{black} 1. ENVIRONMENT & PROFILE %k%f\n"
 if [[ -f "$HOME/.zshrc" ]]; then
     unsetopt ERR_EXIT
@@ -48,24 +52,26 @@ if [[ -f "$HOME/.zshrc" ]]; then
 fi
 if [[ -n "${SYS_PROFILE:-}" ]]; then
     PROFILE_TYPE="${(C)SYS_PROFILE}"
-    print -P "Profile: %F{green}Loaded ($PROFILE_TYPE)%f"
+    print -P "Profile:      %F{green}Loaded ($PROFILE_TYPE)%f"
 else
     print -P "%F{yellow}Select Device Type for Backup:%f"
-    print -P "%F{cyan}ℹ 1) Desktop, 2) Laptop%f"
-    read "kwin_choice?Choice [1-2]: "
+    print -P "%F{cyan}ℹ Context: Determines backup labeling and service checks.%f"
+    read "kwin_choice?Choice [1=Desktop, 2=Laptop]: "
     case $kwin_choice in
         1) PROFILE_TYPE="Desktop" ;;
         2) PROFILE_TYPE="Laptop" ;;
         *) print -P "%F{red}Invalid selection. Exiting.%f"; exit 1 ;;
     esac
 fi
+# END
 
 # ------------------------------------------------------------------------------
 # 2. Updates (System & Firmware)
 # ------------------------------------------------------------------------------
 
-# Purpose: Upgrade all software layers, plugins, and firmware.
+# Purpose: Performs a layered update: Zsh plugins, System packages (Yay), Gemini CLI, Firmware (fwupd), and Soularr application/dependencies.
 
+# BEGIN
 print -P "\n%K{blue}%F{black} 2. UPDATES (SYSTEM & FIRMWARE) %k%f\n"
 print -P "%K{yellow}%F{black} ZSH PLUGIN UPDATES %k%f\n"
 ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
@@ -73,7 +79,6 @@ for plugin in "$ZSH_CUSTOM"/plugins/*/.git(N:h); do
     print -P "Updating plugin: %F{cyan}${plugin:t}%f"
     git -C "$plugin" pull
 done
-
 print -P "\n%K{yellow}%F{black} SYSTEM UPDATES %k%f\n"
 yay -Syu --noconfirm
 print -P "\n%K{yellow}%F{black} UPDATE GEMINI %k%f\n"
@@ -81,7 +86,6 @@ if (( $+commands[npm] )); then
     print -P "%F{cyan}ℹ Updating Gemini CLI...%f"
     sudo npm update -g @google/gemini-cli
 fi
-
 print -P "\n%K{yellow}%F{black} FIRMWARE UPDATES %k%f\n"
 fwupdmgr refresh --force
 if fwupdmgr get-updates | grep -q "Devices with updates"; then
@@ -89,12 +93,10 @@ if fwupdmgr get-updates | grep -q "Devices with updates"; then
 else
     print -P "%F{yellow}No firmware updates available.%f"
 fi
-
 print -P "\n%K{yellow}%F{black} SOULARR UPDATES %k%f\n"
 SOULARR_DIR="/opt/soularr"
 if [[ -d "$SOULARR_DIR" ]]; then
     print -P "%F{cyan}ℹ Checking Soularr updates...%f"
-    # Note: Assumes current user has ownership (set in setup_install)
     if git -C "$SOULARR_DIR" pull | grep -q "Already up to date"; then
          print -P "%F{green}Soularr is up to date.%f"
     else
@@ -106,13 +108,15 @@ if [[ -d "$SOULARR_DIR" ]]; then
 else
     print -P "%F{yellow}Soularr directory not found. Skipping.%f"
 fi
+# END
 
 # ------------------------------------------------------------------------------
 # 3. Cleanup
 # ------------------------------------------------------------------------------
 
-# Purpose: Reclaim disk space and manage package cache.
+# Purpose: Removes orphan packages and trims the pacman package cache to the latest 3 versions. Displays current Btrfs usage.
 
+# BEGIN
 print -P "\n%K{blue}%F{black} 3. CLEANUP %k%f\n"
 if pacman -Qdtq >/dev/null 2>&1; then
     print "Removing orphans..."
@@ -126,20 +130,21 @@ if (( $+commands[paccache] )); then
 else
     print -P "%F{red}Error: paccache not found. Install pacman-contrib.%f"
 fi
-
 print -P "\n%F{cyan}ℹ Btrfs Filesystem Usage:%f"
 sudo btrfs filesystem usage / -h | grep -E "Device size:|Free \(estimated\):"
 if mountpoint -q /mnt/Media; then
     print -P "%F{cyan}ℹ Media Drive Usage:%f"
     sudo btrfs filesystem usage /mnt/Media -h | grep -E "Device size:|Free \(estimated\):"
 fi
+# END
 
 # ------------------------------------------------------------------------------
 # 4. Media Integrity Checks (Desktop Only)
 # ------------------------------------------------------------------------------
 
-# Purpose: Prevent permission drift on the shared media drive.
+# Purpose: Enforces group membership and ACLs on the Media drive to prevent permission drift. Skips if not on Desktop profile.
 
+# BEGIN
 print -P "\n%K{blue}%F{black} 4. MEDIA INTEGRITY CHECKS %k%f\n"
 if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
     SERVICES=("sonarr" "radarr" "lidarr" "prowlarr" "jellyfin" "transmission" "slskd")
@@ -165,20 +170,21 @@ if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
 else
     print -P "%F{yellow}Skipped (Not Desktop).%f"
 fi
+# END
 
 # ------------------------------------------------------------------------------
 # 5. Service Health Check
 # ------------------------------------------------------------------------------
 
-# Purpose: Ensure critical system services are enabled and running based on profile.
+# Purpose: Validates that critical services are enabled and active. Dynamically builds the service list based on the active Device Profile.
 
+# BEGIN
 print -P "\n%K{blue}%F{black} 5. SERVICE HEALTH CHECK %k%f\n"
 typeset -a TARGET_SERVICES
 TARGET_SERVICES=(
     "NetworkManager" "bluetooth" "sshd" "sddm" "fwupd"
     "reflector.timer" "btrfs-balance.timer" "btrfs-scrub@-.timer" "timeshift-hourly.timer"
 )
-
 if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
     TARGET_SERVICES+=(
         "jellyfin" "transmission" "sonarr" "radarr"
@@ -188,7 +194,6 @@ if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
 elif [[ "$PROFILE_TYPE" == "Laptop" ]]; then
     TARGET_SERVICES+=("power-profiles-daemon")
 fi
-
 for svc in "${TARGET_SERVICES[@]}"; do
     if ! systemctl is-enabled "$svc" &>/dev/null; then
         print -P "%F{yellow}Enabling service: $svc%f"
@@ -200,19 +205,20 @@ for svc in "${TARGET_SERVICES[@]}"; do
     fi
 done
 print -P "Service Status: %F{green}OK%f"
+# END
 
 # ------------------------------------------------------------------------------
 # 6. Visual Backup (Konsave)
 # ------------------------------------------------------------------------------
 
-# Purpose: Export and version control the current KDE Plasma configuration.
+# Purpose: Exports the current KDE Plasma configuration via Konsave to the local repo and prunes old backups to maintain a history of 3.
 
+# BEGIN
 print -P "\n%K{blue}%F{black} 6. VISUAL BACKUP (KONSAVE) %k%f\n"
 zmodload zsh/datetime; strftime -s DATE_STR '%Y-%m-%d' $EPOCHSECONDS
 PROFILE_NAME="$PROFILE_TYPE Dock $DATE_STR"
 REPO_ROOT=${SCRIPT_DIR:h}
 EXPORT_DIR="$REPO_ROOT/Resources/Konsave"
-
 if (( $+commands[konsave] )); then
     print -P "%F{cyan}ℹ Saving profile internally: $PROFILE_NAME%f"
     PYTHONWARNINGS="ignore" konsave -s "$PROFILE_NAME" -f
@@ -245,9 +251,14 @@ if (( $+commands[konsave] )); then
 else
     print -P "%F{red}Error: Konsave not installed. Skipping backup.%f"
 fi
+# END
 
 # ------------------------------------------------------------------------------
 # End
 # ------------------------------------------------------------------------------
 
+# BEGIN
 print -P "\n%K{green}%F{black} SYSTEM MAINTENANCE COMPLETE %k%f\n"
+# END
+
+# kate: hl Zsh; folding-markers on;

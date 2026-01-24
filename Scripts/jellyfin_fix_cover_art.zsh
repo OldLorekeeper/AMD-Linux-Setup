@@ -4,30 +4,34 @@
 # Recursively embeds cover art (cover.jpg/png) into audio files using kid3-cli.
 # ------------------------------------------------------------------------------
 #
-# DEVELOPMENT RULES (Read before editing):
-# 1. Formatting: Keep layout compact. No vertical whitespace inside blocks.
-# 2. Separators: Use 'Sandwich' headers (# ------) with strict spacing (1 line before).
-# 3. Idempotency: Scripts must be safe to re-run. Check state before changes.
-# 4. Safety: Use 'setopt ERR_EXIT NO_UNSET PIPE_FAIL'.
-# 5. Context: No hardcoded secrets.
-# 6. Syntax: Use Zsh native modifiers and tooling.
-# 7. Documentation: Start section with 'Purpose' comment block (1 line before and after). No meta or inline comments within code.
-# 8. UI & Theming:
-#    - Headers: Blue (%K{blue}%F{black}) for sections, Yellow (%K{yellow}%F{black}) for sub-sections.
-#    - Spacing: One empty line before and after headers. Use embedded \n to save lines.
-#      * Exception: If a header follows another header immediately, omit the leading \n to avoid double gaps.
-#    - Inputs: Yellow description line (%F{yellow}) followed by minimal prompt (read "VAR?Prompt: ").
-#    - Context: Cyan (%F{cyan}) for info/metadata (prefixed with ℹ).
-#    - Status: Green (%F{green}) for success/loaded, Red (%F{red}) for errors/warnings.
-#    - Silence: Do not repeat/confirm manual user input. Only print confirmation (%F{green}) if the value was pre-loaded from secrets.
+# DEVELOPMENT RULES:
+#
+# 1. Safety: `setopt ERR_EXIT NO_UNSET PIPE_FAIL EXTENDED_GLOB`.
+# 2. Syntax: Native Zsh modifiers (e.g. ${VAR:t}).
+# 3. Heredocs: Use language ID (e.g. <<ZSH, <<INI), unique IDs for nesting, and quote 'ID' to disable expansion.
+# 4. Structure:
+#    - Sandwich numbered section separators (# ------) with 1 line padding before.
+#    - Purpose comment block (1 line padding) at start of every numbered section summarising code.
+#    - No inline/meta comments. Compact vertical layout (minimise blank lines)
+#    - Retain frequent context info markers (%F{cyan}) inside dense logic blocks to prevent 'frozen' UI state.
+#    - Code wrapped in '# BEGIN' and '# END' markers.
+#    - Kate modeline at EOF.
+# 5. Idempotency: Re-runnable scripts. Check state before changes.
+# 6. UI Hierarchy Print -P
+#    - Process marker:          Green Block (%K{green}%F{black}). Used at Start/End.
+#    - Section marker:          Blue Block  (%K{blue}%F{black}). Numbered.
+#    - Sub-section marker:      Yellow Block (%K{yellow}%F{black}).
+#    - Interaction:             Yellow description (%F{yellow}) + minimal `read` prompt.
+#    - Context/Status:          Cyan (Info ℹ), Green (Success), Red (Error/Warning).
+#    - Marker spacing:          Use `\n...%k%f\n`. Omit top `\n` on consecutive markers.
 #
 # ------------------------------------------------------------------------------
 
-setopt ERR_EXIT NO_UNSET PIPE_FAIL globstarshort nullglob
-
+# BEGIN
+setopt ERR_EXIT NO_UNSET PIPE_FAIL EXTENDED_GLOB globstarshort nullglob
 SCRIPT_DIR=${0:a:h}
-
 print -P "\n%K{green}%F{black} STARTING COVER ART FIX %k%f\n"
+# END
 
 # ------------------------------------------------------------------------------
 # 1. Prerequisite Checks
@@ -35,26 +39,25 @@ print -P "\n%K{green}%F{black} STARTING COVER ART FIX %k%f\n"
 
 # Purpose: Validate dependencies and arguments.
 
-print -P "\n%K{blue}%F{black} 1. PREREQUISITE CHECKS %k%f\n"
+# BEGIN
+print -P "%K{blue}%F{black} 1. PREREQUISITE CHECKS %k%f\n"
 if ! (( $+commands[kid3-cli] )); then
     print -P "%F{red}Error: kid3-cli is not installed.%f"
     exit 1
 fi
-
 TARGET_DIR="${1:-$PWD}"
 if [[ ! -d "$TARGET_DIR" ]]; then
     print -P "%F{red}Error: Directory not found: $TARGET_DIR%f"
     exit 1
 fi
-
 local -a target_folders
 target_folders=("$TARGET_DIR" "$TARGET_DIR"/**/*(/e:"$match_code":))
-
 if (( ${#target_folders} == 0 )); then
     print -P "%F{yellow}No directories with valid cover art found.%f"
     exit 0
 fi
 print -P "Targets: %F{green}Found ${#target_folders} directories%f"
+# END
 
 # ------------------------------------------------------------------------------
 # 2. Processing
@@ -62,6 +65,7 @@ print -P "Targets: %F{green}Found ${#target_folders} directories%f"
 
 # Purpose: Embed images into audio files (Priority: cover.jpg > cover.png > folder.jpg > folder.png).
 
+# BEGIN
 print -P "\n%K{blue}%F{black} 2. PROCESSING %k%f\n"
 for folder in $target_folders; do
     local cover_img=""
@@ -88,9 +92,14 @@ for folder in $target_folders; do
         done
     fi
 done
+# END
 
 # ------------------------------------------------------------------------------
 # End
 # ------------------------------------------------------------------------------
 
+# BEGIN
 print -P "\n%K{green}%F{black} PROCESS COMPLETE %k%f\n"
+# END
+
+# kate: hl Zsh; folding-markers on;
