@@ -4,30 +4,28 @@
 # [Brief description of what this script does]
 # ------------------------------------------------------------------------------
 #
-# DEVELOPMENT RULES (Read before editing):
-# 1. Formatting: Keep layout compact. No vertical whitespace inside blocks.
-# 2. Separators: Use 'Sandwich' headers (# ------) with strict spacing (1 line before).
-# 3. Idempotency: Scripts must be safe to re-run. Check state before changes.
-# 4. Safety: Use 'setopt ERR_EXIT NO_UNSET PIPE_FAIL'.
-# 5. Context: No hardcoded secrets.
-# 6. Syntax: Use Zsh native modifiers and tooling.
-# 7. Documentation: Start section with 'Purpose' comment block (1 line before and after). No meta or inline comments within code.
-# 8. UI & Theming:
-#    - Headers: Blue (%K{blue}%F{black}) for sections, Yellow (%K{yellow}%F{black}) for sub-sections.
-#    - Spacing: One empty line before and after headers. Use embedded \n to save lines.
-#      * Exception: If a header follows another header immediately, omit the leading \n to avoid double gaps.
-#    - Inputs: Yellow description line (%F{yellow}) followed by minimal prompt (read "VAR?Prompt: ").
-#    - Context: Cyan (%F{cyan}) for info/metadata (prefixed with ℹ).
-#    - Status: Green (%F{green}) for success/loaded, Red (%F{red}) for errors/warnings.
-#    - Silence: Do not repeat/confirm manual user input. Only print confirmation (%F{green}) if the value was pre-loaded from secrets.
+# DEVELOPMENT RULES
+# 1. Structure:
+#    - Format: Compact (no inner gaps). 'Sandwich' headers (# ------) with 'Purpose' comment.
+#    - Editor: Wrap logic in `# BEGIN` / `# END`. Kate modeline at EOF. Uppercase heredocs.
+# 2. Safety & Logic:
+#    - Options: `setopt ERR_EXIT NO_UNSET PIPE_FAIL`.
+#    - Code: Idempotent (check-then-act). Native Zsh syntax. No hardcoded secrets.
+# 3. UI Standards:
+#    - Headers: Blue `%K{blue}%F{black}` (Main), Yellow `%K{yellow}%F{black}` (Sub).
+#    - Spacing: Embed `\n` to save lines. 1 line gap around headers (collapse adjacent).
+#    - Colors: Yellow `%F{yellow}` (Prompt), Cyan `%F{cyan}` (Info ℹ), Green (OK), Red (Err).
+#    - Interaction: `read "VAR?Prompt: "`. No input echo. Only confirm secret loads.
 #
 # ------------------------------------------------------------------------------
 
+# BEGIN
 setopt ERR_EXIT NO_UNSET PIPE_FAIL
 
 SCRIPT_DIR=${0:a:h}
 
 print -P "\n%K{green}%F{black} STARTING [PROCESS NAME] %k%f\n"
+# END
 
 # ------------------------------------------------------------------------------
 # 1. Section Header
@@ -35,11 +33,13 @@ print -P "\n%K{green}%F{black} STARTING [PROCESS NAME] %k%f\n"
 
 # Purpose: [Description of the main task/actions]
 
+# BEGIN
 print -P "\n%K{blue}%F{black} 1. SECTION TITLE %k%f\n"
 if ! (( $+commands[dependency] )); then
     print -P "%F{red}Error: dependency is not installed.%f"
     exit 1
 fi
+# END
 
 # ------------------------------------------------------------------------------
 # 2. Section Header
@@ -47,6 +47,7 @@ fi
 
 # Purpose: [Description of the main task/actions].
 
+# BEGIN
 print -P "\n%K{blue}%F{black} 2. USER INTERACTION %k%f\n"
 
 # CASE A: Sub-section follows Header (No Leading \n)
@@ -68,13 +69,22 @@ print -P "\n%K{yellow}%F{black} FILE OPERATIONS %k%f\n"
 TARGET_FILE="/path/to/config"
 if [[ ! -f "$TARGET_FILE" ]]; then
     print "Creating configuration..."
+    cat <<INI > "$TARGET_FILE"
+[Section]
+Key=Value
+INI
     print -P "%F{green}Configuration created.%f"
 else
     print -P "%F{yellow}Configuration exists at $TARGET_FILE. Skipping.%f"
 fi
+# END
 
 # ------------------------------------------------------------------------------
 # End
 # ------------------------------------------------------------------------------
 
+# BEGIN
 print -P "\n%K{green}%F{black} PROCESS COMPLETE %k%f\n"
+# END
+
+# kate: hl Zsh; folding-markers on;
