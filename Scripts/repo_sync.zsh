@@ -59,8 +59,6 @@ print -P "Root:         %F{cyan}$REPO_ROOT%f"
 # Purpose: Define the core git operations for Main and Secrets repositories.
 
 # BEGIN
-print -P "\n%K{blue}%F{black} 2. FUNCTIONS %k%f\n"
-
 do_pull() {
     print -P "%K{yellow}%F{black} PULL %k%f\n"
     print -P "%F{cyan}ℹ Updating Main Repo...%f"
@@ -105,7 +103,7 @@ do_push() {
 # Purpose: Execute the requested command.
 
 # BEGIN
-print -P "\n%K{blue}%F{black} 3. EXECUTION %k%f\n"
+print -P "\n%K{blue}%F{black} 2. EXECUTION %k%f\n"
 case "$COMMAND" in
     pull)
         do_pull
