@@ -71,7 +71,7 @@ Follow these logic chains for complex tasks:
 
 **`perform_repo_sync`**
 > 1. `git pull` (Main & Secrets)
-> 2. `git commit` (Secrets) -> Message: "System update" (default)
-> 3. `git commit` (Main) -> Message: "System update" (default)
+> 2. `git commit` (Secrets) -> Message: Contextual summary if files are edited; "System update" if only history/logs.
+> 3. `git commit` (Main) -> Message: Contextual summary (e.g. "feat: update SOPs"); "System update" if only submodule bump.
 > 4. `git push` (Secrets)
 > 5. `git push` (Main)
