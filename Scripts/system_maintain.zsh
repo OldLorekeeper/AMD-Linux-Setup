@@ -222,7 +222,7 @@ PROFILE_NAME="$PROFILE_TYPE Dock $DATE_STR"
 REPO_ROOT=${SCRIPT_DIR:h}
 EXPORT_DIR="$REPO_ROOT/Resources/Konsave"
 if (( $+commands[konsave] )); then
-    print -P "\n%F{cyan}ℹ Saving profile internally: $PROFILE_NAME%f\n"
+    print -P "%F{cyan}ℹ Saving profile internally: $PROFILE_NAME%f\n"
     PYTHONWARNINGS="ignore" konsave -s "$PROFILE_NAME" -f
     if [[ -d "$EXPORT_DIR" ]]; then
         print -P "\n%F{cyan}ℹ Exporting to repo: $EXPORT_DIR%f\n"
