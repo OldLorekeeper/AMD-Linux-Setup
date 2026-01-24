@@ -64,10 +64,10 @@ do_pull() {
     print -P "%F{cyan}ℹ Updating Main Repo...%f"
     git -C "$REPO_ROOT" pull
     if [[ -d "$REPO_ROOT/.secrets" ]]; then
-        print -P "%F{cyan}ℹ Updating Secrets Repo...%f"
+        print -P "\n%F{cyan}ℹ Updating Secrets Repo...%f"
         git -C "$REPO_ROOT/.secrets" pull
     fi
-    print -P "Status: %F{green}Pull Complete%f"
+    print -P "\nStatus: %F{green}Pull Complete%f"
 }
 
 do_commit() {
@@ -78,10 +78,10 @@ do_commit() {
         git -C "$REPO_ROOT/.secrets" add .
         git -C "$REPO_ROOT/.secrets" commit -m "$msg" || true
     fi
-    print -P "%F{cyan}ℹ Committing Main...%f"
+    print -P "\n%F{cyan}ℹ Committing Main...%f"
     git -C "$REPO_ROOT" add .
     git -C "$REPO_ROOT" commit -m "$msg" || true
-    print -P "Status: %F{green}Commit Complete%f"
+    print -P "\nStatus: %F{green}Commit Complete%f"
 }
 
 do_push() {
@@ -90,9 +90,9 @@ do_push() {
         print -P "%F{cyan}ℹ Pushing Secrets...%f"
         git -C "$REPO_ROOT/.secrets" push
     fi
-    print -P "%F{cyan}ℹ Pushing Main...%f"
+    print -P "\n%F{cyan}ℹ Pushing Main...%f"
     git -C "$REPO_ROOT" push
-    print -P "Status: %F{green}Push Complete%f"
+    print -P "\nStatus: %F{green}Push Complete%f"
 }
 # END
 
