@@ -49,8 +49,8 @@ The repository uses a **Lifecycle Model** separating public logic from private d
 ## Local Intelligence (Assistant Metadata)
 - **History Access:** `.secrets/Gemini-History/Desktop/` and `.secrets/Gemini-History/Laptop/` contain all Gemini chat history
     - `recall_history`: Access and review entire linked history for current system profile.
-    - `recall_recent`: Access and review last three chats for current system profile.
-    - `recall_last`: Access and review last chat for current system profile.
+    - `recall_recent`: Access and review last three sessions for current system profile.
+    - `recall_last`: Access and review last session for current system profile.
 
 ---
 # 5. Standard Operating Procedures (SOPs)
