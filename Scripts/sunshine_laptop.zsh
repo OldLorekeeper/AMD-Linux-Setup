@@ -24,8 +24,8 @@
 #    d) Interaction:             Yellow description (%F{yellow}) + minimal `read` prompt.
 #    e) Context/Status:          Cyan (Info ℹ), Green (Success), Red (Error/Warning).
 #    f) Marker spacing:          i)  Use `\n...%k%f\n`.
-#                                ii) Omit top `\n` on consecutive markers.
-#                                ii) Context (Cyan) markers MUST include a trailing `\n`.
+#                                ii) Context (Cyan) markers MUST start and end with `\n`.
+#                                iii) Omit top `\n` on consecutive markers.
 #
 # ------------------------------------------------------------------------------
 

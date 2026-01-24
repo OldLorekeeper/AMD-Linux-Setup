@@ -24,8 +24,8 @@
 #    d) Interaction:             Yellow description (%F{yellow}) + minimal `read` prompt.
 #    e) Context/Status:          Cyan (Info ℹ), Green (Success), Red (Error/Warning).
 #    f) Marker spacing:          i)  Use `\n...%k%f\n`.
-#                                ii) Omit top `\n` on consecutive markers.
-#                                ii) Context (Cyan) markers MUST include a trailing `\n`.
+#                                ii) Context (Cyan) markers MUST start and end with `\n`.
+#                                iii) Omit top `\n` on consecutive markers.
 #
 # ------------------------------------------------------------------------------
 
@@ -83,7 +83,7 @@ for folder in $target_folders; do
     local -a audio_files
     audio_files=("$folder"/*.{mp3,flac,m4a,ogg}(N))
     if (( ${#audio_files} > 0 )); then
-        print -P "%F{cyan}ℹ Processing: ${folder:t}%f\n"
+        print -P "\n%F{cyan}ℹ Processing: ${folder:t}%f\n"
         print "  Source: ${cover_img:t}"
         for file in $audio_files; do
             if output=$(kid3-cli -c "set picture:\"$cover_img\" \"\"" "$file" 2>&1); then

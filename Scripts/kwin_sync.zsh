@@ -24,8 +24,8 @@
 #    d) Interaction:             Yellow description (%F{yellow}) + minimal `read` prompt.
 #    e) Context/Status:          Cyan (Info ℹ), Green (Success), Red (Error/Warning).
 #    f) Marker spacing:          i)  Use `\n...%k%f\n`.
-#                                ii) Omit top `\n` on consecutive markers.
-#                                ii) Context (Cyan) markers MUST include a trailing `\n`.
+#                                ii) Context (Cyan) markers MUST start and end with `\n`.
+#                                iii) Omit top `\n` on consecutive markers.
 #
 # ------------------------------------------------------------------------------
 
@@ -137,9 +137,9 @@ if [[ ! -f "$GENERATED" ]]; then
 fi
 if [[ -f "$CONFIG_FILE" ]]; then
     cp "$CONFIG_FILE" "${CONFIG_FILE}.bak"
-    print -P "%F{cyan}ℹ Backed up existing config to ${CONFIG_FILE:t}.bak%f\n"
+    print -P "\n%F{cyan}ℹ Backed up existing config to ${CONFIG_FILE:t}.bak%f\n"
 fi
-print -P "%F{cyan}ℹ Writing new rules to ${CONFIG_FILE:t}...%f\n"
+print -P "\n%F{cyan}ℹ Writing new rules to ${CONFIG_FILE:t}...%f\n"
 awk ' 
     BEGIN { count = 0 }
     /^\[/ {

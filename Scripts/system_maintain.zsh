@@ -24,8 +24,8 @@
 #    d) Interaction:             Yellow description (%F{yellow}) + minimal `read` prompt.
 #    e) Context/Status:          Cyan (Info ℹ), Green (Success), Red (Error/Warning).
 #    f) Marker spacing:          i)  Use `\n...%k%f\n`.
-#                                ii) Omit top `\n` on consecutive markers.
-#                                ii) Context (Cyan) markers MUST include a trailing `\n`.
+#                                ii) Context (Cyan) markers MUST start and end with `\n`.
+#                                iii) Omit top `\n` on consecutive markers.
 #
 # ------------------------------------------------------------------------------
 
@@ -135,7 +135,7 @@ fi
 print -P "\n%F{cyan}ℹ Btrfs Filesystem Usage:%f\n"
 sudo btrfs filesystem usage / -h | grep -E "Device size:|Free \(estimated\):"
 if mountpoint -q /mnt/Media; then
-    print -P "%F{cyan}ℹ Media Drive Usage:%f\n"
+    print -P "\n%F{cyan}ℹ Media Drive Usage:%f\n"
     sudo btrfs filesystem usage /mnt/Media -h | grep -E "Device size:|Free \(estimated\):"
 fi
 # END
@@ -162,7 +162,7 @@ if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
     print -P "Service Memberships: %F{green}OK%f"
     TARGET="/mnt/Media"
     if grep -q "$TARGET" /proc/mounts; then
-        print -P "%F{cyan}ℹ Enforcing Access Control Lists (ACLs)...%f\n"
+        print -P "\n%F{cyan}ℹ Enforcing Access Control Lists (ACLs)...%f\n"
         sudo setfacl -R -m g:media:rwX "$TARGET"
         sudo setfacl -R -m d:g:media:rwX "$TARGET"
         print -P "ACLs Enforced: %F{green}OK%f"
@@ -222,10 +222,10 @@ PROFILE_NAME="$PROFILE_TYPE Dock $DATE_STR"
 REPO_ROOT=${SCRIPT_DIR:h}
 EXPORT_DIR="$REPO_ROOT/Resources/Konsave"
 if (( $+commands[konsave] )); then
-    print -P "%F{cyan}ℹ Saving profile internally: $PROFILE_NAME%f\n"
+    print -P "\n%F{cyan}ℹ Saving profile internally: $PROFILE_NAME%f\n"
     PYTHONWARNINGS="ignore" konsave -s "$PROFILE_NAME" -f
     if [[ -d "$EXPORT_DIR" ]]; then
-        print -P "%F{cyan}ℹ Exporting to repo: $EXPORT_DIR%f\n"
+        print -P "\n%F{cyan}ℹ Exporting to repo: $EXPORT_DIR%f\n"
         PYTHONWARNINGS="ignore" konsave -e "$PROFILE_NAME" -d "$EXPORT_DIR" -f
     else
         print -P "%F{yellow}Warning: Export directory not found at $EXPORT_DIR%f"

@@ -25,8 +25,8 @@
 #    d) Interaction:             Yellow description (%F{yellow}) + minimal `read` prompt.
 #    e) Context/Status:          Cyan (Info ℹ), Green (Success), Red (Error/Warning).
 #    f) Marker spacing:          i)  Use `\n...%k%f\n`.
-#                                ii) Omit top `\n` on consecutive markers.
-#                                ii) Context (Cyan) markers MUST include a trailing `\n`.
+#                                ii) Context (Cyan) markers MUST start and end with `\n`.
+#                                iii) Omit top `\n` on consecutive markers.
 #
 # ------------------------------------------------------------------------------
 
@@ -55,7 +55,7 @@ fi
 SECRETS_FILE="setup_secrets.enc"
 RAW_URL="https://raw.githubusercontent.com/OldLorekeeper/AMD-Linux-Setup/main/Scripts/$SECRETS_FILE"
 if [[ ! -f "$SECRETS_FILE" ]]; then
-    print -P "%F{cyan}ℹ Secrets file not found locally. Attempting remote fetch...%f\n"
+    print -P "\n%F{cyan}ℹ Secrets file not found locally. Attempting remote fetch...%f\n"
     if curl -fsSL "$RAW_URL" -o "$SECRETS_FILE"; then
         print -P "%F{green}Successfully downloaded $SECRETS_FILE%f"
     else
@@ -186,7 +186,7 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
         read -s "SLSKD_PASS?Password: "; print ""
     fi
     if [[ -z "$SLSKD_API_KEY" ]]; then
-        print -P "%F{cyan}ℹ Generating random Slskd API key...%f\n"
+        print -P "\n%F{cyan}ℹ Generating random Slskd API key...%f\n"
         SLSKD_API_KEY=$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 32)
     else
         print -P "Slskd API Key: %F{green}Loaded from secrets%f"
@@ -204,7 +204,7 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     print -P "%F{yellow}Configure Custom Display EDID?%f"
     read "EDID_ENABLE?Enable 2560x1600 EDID? [y/N]: "
     if [[ "$EDID_ENABLE" == (#i)y* ]]; then
-        print -P "%F{cyan}ℹ Detecting connected ports...%f\n"
+        print -P "\n%F{cyan}ℹ Detecting connected ports...%f\n"
         typeset -a CONNECTED_PORTS
         for status_file in /sys/class/drm/*/status(N); do
             grep -q "connected" "$status_file" && CONNECTED_PORTS+=("${${status_file:h}:t#*-}")
@@ -285,7 +285,7 @@ sgdisk -n 1:0:+1G -t 1:ef00 -c 1:"EFI" "$DISK"
 sgdisk -n 2:0:0 -t 2:8300 -c 2:"Root" "$DISK"
 sleep 2
 [[ "$DISK" == *[0-9] ]] && { PART1="${DISK}p1"; PART2="${DISK}p2"; } || { PART1="${DISK}1"; PART2="${DISK}2"; }
-print -P "%F{cyan}ℹ Partition Map: EFI=${PART1} | Root=${PART2}%f\n"
+print -P "\n%F{cyan}ℹ Partition Map: EFI=${PART1} | Root=${PART2}%f\n"
 mkfs.vfat -F32 -n "EFI" "$PART1"
 mkfs.btrfs -L "Arch" -f "$PART2"
 mount "$PART2" /mnt
@@ -346,7 +346,7 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
 elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
     CORE_PKGS+=("${LAPTOP_PKGS[@]}")
 fi
-print -P "%F{cyan}ℹ Installing packages via pacstrap...%f\n"
+print -P "\n%F{cyan}ℹ Installing packages via pacstrap...%f\n"
 pacstrap -K /mnt --noconfirm "${CORE_PKGS[@]}"
 genfstab -U /mnt >> /mnt/etc/fstab
 ROOT_UUID=$(blkid -s UUID -o value "$PART2")
@@ -421,7 +421,7 @@ sed -i 's/^#*\(Experimental = \).*/\1true/' /etc/bluetooth/main.conf
 systemctl enable NetworkManager bluetooth sshd sddm fwupd.service reflector.timer
 mkdir -p /etc/xdg/reflector
 print -l -- "--country GB,IE,NL,DE,FR,EU" "--latest 20" "--sort rate" "--save /etc/pacman.d/mirrorlist" > /etc/xdg/reflector/reflector.conf
-print -P "%F{cyan}ℹ Installing Network Dispatcher Scripts...%f\n"
+print -P "\n%F{cyan}ℹ Installing Network Dispatcher Scripts...%f\n"
 mkdir -p /etc/NetworkManager/dispatcher.d
 print -l '#!/bin/zsh' '[[ "$2" == "up" ]] && /usr/bin/ethtool -K "$1" rx-udp-gro-forwarding on rx-gro-list off 2>/dev/null || true' > /etc/NetworkManager/dispatcher.d/99-tailscale-gro
 print -l '#!/bin/bash' 'if [[ "$1" == wl* ]] && [[ "$2" == "up" ]]; then /usr/bin/iw dev "$1" set power_save off; fi' > /etc/NetworkManager/dispatcher.d/disable-wifi-powersave
@@ -479,30 +479,30 @@ if [[ -n "$GIT_NAME" ]]; then
     fi
 fi
 REPO_DIR="/home/$TARGET_USER/Obsidian/AMD-Linux-Setup"
-print -P "%F{cyan}ℹ Cloning Main Repository...%f\n"
+print -P "\n%F{cyan}ℹ Cloning Main Repository...%f\n"
 sudo -u "$TARGET_USER" git clone https://github.com/OldLorekeeper/AMD-Linux-Setup "$REPO_DIR"
 SECRETS_DIR="$REPO_DIR/.secrets"
 if [[ -n "$GIT_PAT" ]]; then
-    print -P "%F{cyan}ℹ Cloning Private Secrets Repository...%f\n"
+    print -P "\n%F{cyan}ℹ Cloning Private Secrets Repository...%f\n"
     sudo -u "$TARGET_USER" git clone "https://$GIT_NAME:$GIT_PAT@github.com/OldLorekeeper/AMD-Linux-Secrets.git" "$SECRETS_DIR" || mkdir -p "$SECRETS_DIR"
 else
     mkdir -p "$SECRETS_DIR"
 fi
 chmod +x "$REPO_DIR/Scripts/"*.zsh
 if [[ ! -d "/home/$TARGET_USER/.oh-my-zsh" ]]; then
-    print -P "%F{cyan}ℹ Installing Oh My Zsh...%f\n"
+    print -P "\n%F{cyan}ℹ Installing Oh My Zsh...%f\n"
     sudo -u "$TARGET_USER" sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 fi
 ZSH_CUSTOM="/home/$TARGET_USER/.oh-my-zsh/custom"
-print -P "%F{cyan}ℹ Installing Zsh plugins...%f\n"
+print -P "\n%F{cyan}ℹ Installing Zsh plugins...%f\n"
 sudo -u "$TARGET_USER" git clone https://github.com/zsh-users/zsh-autosuggestions "$ZSH_CUSTOM/plugins/zsh-autosuggestions" 2>/dev/null || true
 sudo -u "$TARGET_USER" git clone https://github.com/zsh-users/zsh-syntax-highlighting "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" 2>/dev/null || true
 ln -sf "/home/$TARGET_USER/.oh-my-zsh" /root/.oh-my-zsh
 ln -sf "/home/$TARGET_USER/.zshrc" /root/.zshrc
-print -P "%F{cyan}ℹ Linking Zsh Configuration ($DEVICE_PROFILE)...%f\n"
+print -P "\n%F{cyan}ℹ Linking Zsh Configuration ($DEVICE_PROFILE)...%f\n"
 rm -f "/home/$TARGET_USER/.zshrc"
 ln -sf "$REPO_DIR/Resources/zshrc/zshrc_$DEVICE_PROFILE" "/home/$TARGET_USER/.zshrc"
-print -P "%F{cyan}ℹ Installing Gemini CLI...%f\n"
+print -P "\n%F{cyan}ℹ Installing Gemini CLI...%f\n"
 npm install -g @google/gemini-cli 1>/dev/null 2>&1
 mkdir -p "/home/$TARGET_USER/.gemini" "$REPO_DIR/.gemini"
 ln -sf "$SECRETS_DIR/settings.json" "/home/$TARGET_USER/.gemini/settings.json"
@@ -525,7 +525,7 @@ if [[ -f "$TRANS_ARCHIVE" ]]; then
     mkdir -p "$TRANS_DIR"; tar -xf "$TRANS_ARCHIVE" -C "${TRANS_DIR:h}"
 fi
 papirus-folders -C breeze --theme Papirus-Dark || true
-print -P "%F{cyan}ℹ Overwriting Kate Icons in Papirus...%f\n"
+print -P "\n%F{cyan}ℹ Overwriting Kate Icons in Papirus...%f\n"
 find /usr/share/icons/Papirus -type f \( -name "kate.svg" -o -name "kate-symbolic.svg" -o -name "kate2.svg" -o -name "org.kde.kate.svg" \) | while read -r icon; do
     [[ -f "$REPO_DIR/Resources/Icons/Kate/${icon:t}" ]] && cp -f "$REPO_DIR/Resources/Icons/Kate/${icon:t}" "$icon"
 done
@@ -538,7 +538,7 @@ if [[ "$APPLY_KONSAVE" == "true" ]]; then
     PROFILE_DIR="$REPO_DIR/Resources/Konsave"
     [[ "$DEVICE_PROFILE" == "desktop" ]] && LATEST_KNSV=$(ls -t "$PROFILE_DIR"/Desktop*.knsv 2>/dev/null | head -n1) || LATEST_KNSV=$(ls -t "$PROFILE_DIR"/Laptop*.knsv 2>/dev/null | head -n1)
     if [[ -f "$LATEST_KNSV" ]]; then
-        print -P "%F{cyan}ℹ Found latest Konsave profile: ${LATEST_KNSV:t}%f\n"
+        print -P "\n%F{cyan}ℹ Found latest Konsave profile: ${LATEST_KNSV:t}%f\n"
         sudo -u "$TARGET_USER" konsave -i "$LATEST_KNSV" --force
         sudo -u "$TARGET_USER" konsave -a "${LATEST_KNSV:t:r}"
     fi
@@ -606,14 +606,14 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     mkdir -p "/home/$TARGET_USER/.config/systemd/user/default.target.wants"
     ln -sf /usr/lib/systemd/user/sunshine.service "/home/$TARGET_USER/.config/systemd/user/default.target.wants/sunshine.service"
     BYPARR_DIR="/home/$TARGET_USER/Make/Byparr"
-    print -P "%F{cyan}ℹ Installing Byparr...%f\n"
+    print -P "\n%F{cyan}ℹ Installing Byparr...%f\n"
     sudo -u "$TARGET_USER" git clone https://github.com/ThePhaseless/Byparr "$BYPARR_DIR"
     (cd "$BYPARR_DIR" && sudo -u "$TARGET_USER" uv sync)
     print -l "[Unit]" "Description=Byparr" "After=network.target" "[Service]" "Type=simple" "WorkingDirectory=%h/Make/Byparr" "ExecStart=/usr/bin/uv run main.py" "Restart=always" "[Install]" "WantedBy=default.target" > "/home/$TARGET_USER/.config/systemd/user/byparr.service"
     chown "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/.config/systemd/user/byparr.service"
     ln -sf "/home/$TARGET_USER/.config/systemd/user/byparr.service" "/home/$TARGET_USER/.config/systemd/user/default.target.wants/byparr.service"
 elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
-    print -P "%F{cyan}ℹ Applying Laptop Configuration...%f\n"
+    print -P "\n%F{cyan}ℹ Applying Laptop Configuration...%f\n"
     print "options rtw89_pci disable_aspm_l1=y disable_aspm_l1ss=y" > /etc/modprobe.d/rtw89.conf
     GRUB_CMDLINE="loglevel=3 quiet amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=2560x1600@60 amd_pstate=active"
     sed -i "s|^GRUB_CMDLINE_LINUX_DEFAULT=.*|GRUB_CMDLINE_LINUX_DEFAULT=\"$GRUB_CMDLINE\"|" /etc/default/grub
@@ -643,7 +643,7 @@ print -l "[Trigger]" "Operation = Install" "Operation = Upgrade" "Type = Package
 print -l "[Trigger]" "Operation = Install" "Operation = Upgrade" "Operation = Remove" "Type = Package" "Target = linux-cachyos" "[Action]" "Description = Updating GRUB..." "When = PostTransaction" "Exec = /usr/bin/grub-mkconfig -o /boot/grub/grub.cfg" > /etc/pacman.d/hooks/99-update-grub.hook
 sed -i 's|^MODULES=.*|MODULES=(amdgpu nvme)|' /etc/mkinitcpio.conf
 sed -i 's/^#COMPRESSION="zstd"/COMPRESSION="lz4"/' /etc/mkinitcpio.conf
-print -P "%F{cyan}ℹ Regenerating initramfs and GRUB...%f\n"
+print -P "\n%F{cyan}ℹ Regenerating initramfs and GRUB...%f\n"
 mkinitcpio -P; grub-mkconfig -o /boot/grub/grub.cfg
 
 print -P "\n%K{yellow}%F{black} FIRST BOOT SETUP %k%f\n"
@@ -655,11 +655,11 @@ source "/home/$TARGET_USER/.zshrc"; sleep 5
 print -P "\n%K{green}%F{black} RUNNING FIRST BOOT SETUP %k%f\n"
 REPO_DIR="/home/$TARGET_USER/Obsidian/AMD-Linux-Setup"
     if [[ "\$DEVICE_PROFILE" == "desktop" ]]; then
-        print -P "%F{cyan}ℹ Connecting to Tailscale...%f\n"
+        print -P "\n%F{cyan}ℹ Connecting to Tailscale...%f\n"
         sudo tailscale up --advertise-exit-node
     TRANS_CONF="/var/lib/transmission/.config/transmission-daemon/settings.json"
     if [[ -f "\$TRANS_CONF" ]]; then
-        print -P "%F{cyan}ℹ Enforcing Transmission Umask...%f\n"
+        print -P "\n%F{cyan}ℹ Enforcing Transmission Umask...%f\n"
         sudo systemctl stop transmission
         sudo jq '.umask = 2' "\$TRANS_CONF" > "\${TRANS_CONF}.tmp" && sudo mv "\${TRANS_CONF}.tmp" "\$TRANS_CONF"
         sudo chown transmission:transmission "\$TRANS_CONF"
@@ -687,7 +687,7 @@ FIRSTBOOT
 chmod +x "/home/$TARGET_USER/.local/bin/first_boot.zsh"
 chown "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/.local/bin/first_boot.zsh"
 print -l "[Desktop Entry]" "Type=Application" "Exec=konsole --separate --hide-tabbar -e /home/$TARGET_USER/.local/bin/first_boot.zsh" "Hidden=false" "NoDisplay=false" "Name=First Boot Setup" "X-GNOME-Autostart-enabled=true" > "/home/$TARGET_USER/.config/autostart/first_boot.desktop"
-print -P "%F{cyan}ℹ Finalizing permissions...%f\n"
+print -P "\n%F{cyan}ℹ Finalizing permissions...%f\n"
 chown -R "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER"
 ZSH_INTERNAL
 chmod +x /mnt/setup_internal.zsh
@@ -706,6 +706,6 @@ umount -R /mnt
 print -P "\n%K{green}%F{black} PROCESS COMPLETE %k%f\n"
 # END
 print -P "%F{yellow}Please reboot system and remove installation media%f\n"
-print -P "%F{cyan}i Use 'reboot' command...%f\n"
+print -P "\n%F{cyan}ℹ Use 'reboot' command...%f\n"
 
 # kate: hl Zsh; folding-markers on;
