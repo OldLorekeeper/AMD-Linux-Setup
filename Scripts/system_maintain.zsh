@@ -10,20 +10,22 @@
 # 2. Syntax: Native Zsh modifiers (e.g. ${VAR:t}).
 # 3. Heredocs: Use language ID (e.g. <<ZSH, <<INI), unique IDs for nesting, and quote 'ID' to disable expansion.
 # 4. Structure:
-#    - Sandwich numbered section separators (# ------) with 1 line padding before.
-#    - Purpose comment block (1 line padding) at start of every numbered section summarising code.
-#    - No inline/meta comments. Compact vertical layout (minimise blank lines)
-#    - Retain frequent context info markers (%F{cyan}) inside dense logic blocks to prevent 'frozen' UI state.
-#    - Code wrapped in '# BEGIN' and '# END' markers.
-#    - Kate modeline at EOF.
+#    a) Sandwich numbered section separators (# ------) with 1 line padding before.
+#    b) Purpose comment block (1 line padding) at start of every numbered section summarising code.
+#    c) No inline/meta comments. Compact vertical layout (minimise blank lines)
+#    d) Retain frequent context info markers (%F{cyan}) inside dense logic blocks to prevent 'frozen' UI state.
+#    e) Code wrapped in '# BEGIN' and '# END' markers.
+#    f) Kate modeline at EOF.
 # 5. Idempotency: Re-runnable scripts. Check state before changes.
 # 6. UI Hierarchy Print -P
-#    - Process marker:          Green Block (%K{green}%F{black}). Used at Start/End.
-#    - Section marker:          Blue Block  (%K{blue}%F{black}). Numbered.
-#    - Sub-section marker:      Yellow Block (%K{yellow}%F{black}).
-#    - Interaction:             Yellow description (%F{yellow}) + minimal `read` prompt.
-#    - Context/Status:          Cyan (Info ℹ), Green (Success), Red (Error/Warning).
-#    - Marker spacing:          Use `\n...%k%f\n`. Omit top `\n` on consecutive markers.
+#    a) Process marker:          Green Block (%K{green}%F{black}). Used at Start/End.
+#    b) Section marker:          Blue Block  (%K{blue}%F{black}). Numbered.
+#    c) Sub-section marker:      Yellow Block (%K{yellow}%F{black}).
+#    d) Interaction:             Yellow description (%F{yellow}) + minimal `read` prompt.
+#    e) Context/Status:          Cyan (Info ℹ), Green (Success), Red (Error/Warning).
+#    f) Marker spacing:          i)  Use `\n...%k%f\n`.
+#                                ii) Omit top `\n` on consecutive markers.
+#                                ii) Context (Cyan) markers MUST include a trailing `\n`.
 #
 # ------------------------------------------------------------------------------
 
@@ -55,7 +57,7 @@ if [[ -n "${SYS_PROFILE:-}" ]]; then
     print -P "Profile:      %F{green}Loaded ($PROFILE_TYPE)%f"
 else
     print -P "%F{yellow}Select Device Type for Backup:%f"
-    print -P "%F{cyan}ℹ Context: Determines backup labeling and service checks.%f"
+    print -P "%F{cyan}ℹ Context: Determines backup labeling and service checks.%f\n"
     read "kwin_choice?Choice [1=Desktop, 2=Laptop]: "
     case $kwin_choice in
         1) PROFILE_TYPE="Desktop" ;;
@@ -83,7 +85,7 @@ print -P "\n%K{yellow}%F{black} SYSTEM UPDATES %k%f\n"
 yay -Syu --noconfirm
 print -P "\n%K{yellow}%F{black} UPDATE GEMINI %k%f\n"
 if (( $+commands[npm] )); then
-    print -P "%F{cyan}ℹ Updating Gemini CLI...%f"
+    print -P "%F{cyan}ℹ Updating Gemini CLI...%f\n"
     sudo npm update -g @google/gemini-cli
 fi
 print -P "\n%K{yellow}%F{black} FIRMWARE UPDATES %k%f\n"
@@ -96,7 +98,7 @@ fi
 print -P "\n%K{yellow}%F{black} SOULARR UPDATES %k%f\n"
 SOULARR_DIR="/opt/soularr"
 if [[ -d "$SOULARR_DIR" ]]; then
-    print -P "%F{cyan}ℹ Checking Soularr updates...%f"
+    print -P "%F{cyan}ℹ Checking Soularr updates...%f\n"
     if git -C "$SOULARR_DIR" pull | grep -q "Already up to date"; then
          print -P "%F{green}Soularr is up to date.%f"
     else
@@ -130,10 +132,10 @@ if (( $+commands[paccache] )); then
 else
     print -P "%F{red}Error: paccache not found. Install pacman-contrib.%f"
 fi
-print -P "\n%F{cyan}ℹ Btrfs Filesystem Usage:%f"
+print -P "\n%F{cyan}ℹ Btrfs Filesystem Usage:%f\n"
 sudo btrfs filesystem usage / -h | grep -E "Device size:|Free \(estimated\):"
 if mountpoint -q /mnt/Media; then
-    print -P "%F{cyan}ℹ Media Drive Usage:%f"
+    print -P "%F{cyan}ℹ Media Drive Usage:%f\n"
     sudo btrfs filesystem usage /mnt/Media -h | grep -E "Device size:|Free \(estimated\):"
 fi
 # END
@@ -148,7 +150,7 @@ fi
 print -P "\n%K{blue}%F{black} 4. MEDIA INTEGRITY CHECKS %k%f\n"
 if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
     SERVICES=("sonarr" "radarr" "lidarr" "prowlarr" "jellyfin" "transmission" "slskd")
-    print -P "%F{cyan}ℹ Verifying service group memberships...%f"
+    print -P "%F{cyan}ℹ Verifying service group memberships...%f\n"
     for svc in $SERVICES; do
         if id "$svc" &>/dev/null; then
             if ! id -nG "$svc" | grep -qw "media"; then
@@ -160,7 +162,7 @@ if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
     print -P "Service Memberships: %F{green}OK%f"
     TARGET="/mnt/Media"
     if grep -q "$TARGET" /proc/mounts; then
-        print -P "%F{cyan}ℹ Enforcing Access Control Lists (ACLs)...%f"
+        print -P "%F{cyan}ℹ Enforcing Access Control Lists (ACLs)...%f\n"
         sudo setfacl -R -m g:media:rwX "$TARGET"
         sudo setfacl -R -m d:g:media:rwX "$TARGET"
         print -P "ACLs Enforced: %F{green}OK%f"
@@ -220,10 +222,10 @@ PROFILE_NAME="$PROFILE_TYPE Dock $DATE_STR"
 REPO_ROOT=${SCRIPT_DIR:h}
 EXPORT_DIR="$REPO_ROOT/Resources/Konsave"
 if (( $+commands[konsave] )); then
-    print -P "%F{cyan}ℹ Saving profile internally: $PROFILE_NAME%f"
+    print -P "%F{cyan}ℹ Saving profile internally: $PROFILE_NAME%f\n"
     PYTHONWARNINGS="ignore" konsave -s "$PROFILE_NAME" -f
     if [[ -d "$EXPORT_DIR" ]]; then
-        print -P "%F{cyan}ℹ Exporting to repo: $EXPORT_DIR%f"
+        print -P "%F{cyan}ℹ Exporting to repo: $EXPORT_DIR%f\n"
         PYTHONWARNINGS="ignore" konsave -e "$PROFILE_NAME" -d "$EXPORT_DIR" -f
     else
         print -P "%F{yellow}Warning: Export directory not found at $EXPORT_DIR%f"

@@ -172,7 +172,7 @@ kwin-edit() {
     local target="${1:-$SYS_PROFILE}"
     local repo_dir="$ARCH_REPO/Resources/Kwin"
     local file_path=""
-    print -P "\n%K{blue}%F{black} EDIT KWIN TEMPLATE %k%f\n"
+    print -P "\n%K{green}%F{black} EDIT KWIN TEMPLATE %k%f\n"
     case "$target" in
         "desktop") file_path="$repo_dir/desktop.rule.template" ;;
         "laptop")  file_path="$repo_dir/laptop.rule.template" ;;
@@ -182,7 +182,7 @@ kwin-edit() {
     if [[ -f "$file_path" ]]; then
         print -P "%F{cyan}ℹ Opening: $file_path%f"
         kate "$file_path" &!
-        print -P "%F{green}Editor launched.%f"
+        print -P "\n%F{green}Editor launched.%f\n"
     else
         print -P "%F{red}Error: File not found: $file_path%f"
         return 1

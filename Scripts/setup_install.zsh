@@ -11,20 +11,22 @@
 # 2. Syntax: Native Zsh modifiers (e.g. ${VAR:t}).
 # 3. Heredocs: Use language ID (e.g. <<ZSH, <<INI), unique IDs for nesting, and quote 'ID' to disable expansion.
 # 4. Structure:
-#    - Sandwich numbered section separators (# ------) with 1 line padding before.
-#    - Purpose comment block (1 line padding) at start of every numbered section summarising code.
-#    - No inline/meta comments. Compact vertical layout (minimise blank lines)
-#    - Retain frequent context info markers (%F{cyan}) inside dense logic blocks to prevent 'frozen' UI state.
-#    - Code wrapped in '# BEGIN' and '# END' markers.
-#    - Kate modeline at EOF.
+#    a) Sandwich numbered section separators (# ------) with 1 line padding before.
+#    b) Purpose comment block (1 line padding) at start of every numbered section summarising code.
+#    c) No inline/meta comments. Compact vertical layout (minimise blank lines)
+#    d) Retain frequent context info markers (%F{cyan}) inside dense logic blocks to prevent 'frozen' UI state.
+#    e) Code wrapped in '# BEGIN' and '# END' markers.
+#    f) Kate modeline at EOF.
 # 5. Idempotency: Re-runnable scripts. Check state before changes.
 # 6. UI Hierarchy Print -P
-#    - Process marker:          Green Block (%K{green}%F{black}). Used at Start/End.
-#    - Section marker:          Blue Block  (%K{blue}%F{black}). Numbered.
-#    - Sub-section marker:      Yellow Block (%K{yellow}%F{black}).
-#    - Interaction:             Yellow description (%F{yellow}) + minimal `read` prompt.
-#    - Context/Status:          Cyan (Info ℹ), Green (Success), Red (Error/Warning).
-#    - Marker spacing:          Use `\n...%k%f\n`. Omit top `\n` on consecutive markers.
+#    a) Process marker:          Green Block (%K{green}%F{black}). Used at Start/End.
+#    b) Section marker:          Blue Block  (%K{blue}%F{black}). Numbered.
+#    c) Sub-section marker:      Yellow Block (%K{yellow}%F{black}).
+#    d) Interaction:             Yellow description (%F{yellow}) + minimal `read` prompt.
+#    e) Context/Status:          Cyan (Info ℹ), Green (Success), Red (Error/Warning).
+#    f) Marker spacing:          i)  Use `\n...%k%f\n`.
+#                                ii) Omit top `\n` on consecutive markers.
+#                                ii) Context (Cyan) markers MUST include a trailing `\n`.
 #
 # ------------------------------------------------------------------------------
 
@@ -53,7 +55,7 @@ fi
 SECRETS_FILE="setup_secrets.enc"
 RAW_URL="https://raw.githubusercontent.com/OldLorekeeper/AMD-Linux-Setup/main/Scripts/$SECRETS_FILE"
 if [[ ! -f "$SECRETS_FILE" ]]; then
-    print -P "%F{cyan}ℹ Secrets file not found locally. Attempting remote fetch...%f"
+    print -P "%F{cyan}ℹ Secrets file not found locally. Attempting remote fetch...%f\n"
     if curl -fsSL "$RAW_URL" -o "$SECRETS_FILE"; then
         print -P "%F{green}Successfully downloaded $SECRETS_FILE%f"
     else
@@ -170,7 +172,7 @@ EDID_ENABLE=""
 MONITOR_PORT=""
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     print -P "\n%K{yellow}%F{black} DESKTOP STORAGE & AUTOMATION %k%f\n"
-    print -P "%F{cyan}ℹ Scanning block devices...%f"
+    print -P "%F{cyan}ℹ Scanning block devices...%f\n"
     lsblk -o NAME,SIZE,FSTYPE,LABEL,UUID | grep -v loop || true
     print -P "%F{yellow}Enter Media Drive UUID:%f"
     read "MEDIA_UUID?UUID (Leave empty to skip): "
@@ -184,7 +186,7 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
         read -s "SLSKD_PASS?Password: "; print ""
     fi
     if [[ -z "$SLSKD_API_KEY" ]]; then
-        print -P "%F{cyan}ℹ Generating random Slskd API key...%f"
+        print -P "%F{cyan}ℹ Generating random Slskd API key...%f\n"
         SLSKD_API_KEY=$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 32)
     else
         print -P "Slskd API Key: %F{green}Loaded from secrets%f"
@@ -202,7 +204,7 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     print -P "%F{yellow}Configure Custom Display EDID?%f"
     read "EDID_ENABLE?Enable 2560x1600 EDID? [y/N]: "
     if [[ "$EDID_ENABLE" == (#i)y* ]]; then
-        print -P "%F{cyan}ℹ Detecting connected ports...%f"
+        print -P "%F{cyan}ℹ Detecting connected ports...%f\n"
         typeset -a CONNECTED_PORTS
         for status_file in /sys/class/drm/*/status(N); do
             grep -q "connected" "$status_file" && CONNECTED_PORTS+=("${${status_file:h}:t#*-}")
@@ -239,17 +241,17 @@ read "CONFIRM?Type 'yes' to confirm: "
 [[ "$CONFIRM" != "yes" ]] && { print "Aborted."; exit 1; }
 print -P "\n%K{yellow}%F{black} LIVE OPTIMISATION %k%f\n"
 timedatectl set-ntp true
-print -P "%F{cyan}ℹ Optimising pacman.conf and mirrors...%f"
+print -P "%F{cyan}ℹ Optimising pacman.conf and mirrors...%f\n"
 sed -i 's/^Architecture = auto$/Architecture = auto x86_64_v4/' /etc/pacman.conf
 sed -i 's/^#Color/Color/' /etc/pacman.conf
 sed -i 's/^#*ParallelDownloads\s*=.*/ParallelDownloads = 20/' /etc/pacman.conf
 reflector --country GB,IE,NL,DE,FR,EU --latest 20 --sort rate --save /etc/pacman.d/mirrorlist
-print -P "%F{cyan}ℹ Adding CachyOS repositories...%f"
+print -P "%F{cyan}ℹ Adding CachyOS repositories...%f\n"
 pacman-key --recv-keys F3B607488DB35A47 --keyserver keyserver.ubuntu.com
 pacman-key --lsign-key F3B607488DB35A47
 CACHY_URL="https://mirror.cachyos.org/repo/x86_64/cachyos"
 get_latest_pkg() { curl -s "$CACHY_URL/" | grep -oP "${1}-[0-9][^>]*?pkg\.tar\.zst(?=\")" | sort -V | tail -n1; }
-print -P "%F{cyan}ℹ Resolving latest package versions...%f"
+print -P "%F{cyan}ℹ Resolving latest package versions...%f\n"
 PKG_KEYRING=$(get_latest_pkg "cachyos-keyring")
 PKG_MIRROR=$(get_latest_pkg "cachyos-mirrorlist")
 PKG_V4=$(get_latest_pkg "cachyos-v4-mirrorlist")
@@ -283,7 +285,7 @@ sgdisk -n 1:0:+1G -t 1:ef00 -c 1:"EFI" "$DISK"
 sgdisk -n 2:0:0 -t 2:8300 -c 2:"Root" "$DISK"
 sleep 2
 [[ "$DISK" == *[0-9] ]] && { PART1="${DISK}p1"; PART2="${DISK}p2"; } || { PART1="${DISK}1"; PART2="${DISK}2"; }
-print -P "%F{cyan}ℹ Partition Map: EFI=${PART1} | Root=${PART2}%f"
+print -P "%F{cyan}ℹ Partition Map: EFI=${PART1} | Root=${PART2}%f\n"
 mkfs.vfat -F32 -n "EFI" "$PART1"
 mkfs.btrfs -L "Arch" -f "$PART2"
 mount "$PART2" /mnt
@@ -344,7 +346,7 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
 elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
     CORE_PKGS+=("${LAPTOP_PKGS[@]}")
 fi
-print -P "%F{cyan}ℹ Installing packages via pacstrap...%f"
+print -P "%F{cyan}ℹ Installing packages via pacstrap...%f\n"
 pacstrap -K /mnt --noconfirm "${CORE_PKGS[@]}"
 genfstab -U /mnt >> /mnt/etc/fstab
 ROOT_UUID=$(blkid -s UUID -o value "$PART2")
@@ -389,7 +391,7 @@ source /install_vars.zsh; rm /install_vars.zsh
 trap 'rm -f /etc/sudoers.d/99_setup_temp' EXIT
 
 print -P "%K{yellow}%F{black} IDENTITY & LOCALE %k%f\n"
-print -P "%F{cyan}ℹ Configuring Timezone and Locale...%f"
+print -P "%F{cyan}ℹ Configuring Timezone and Locale...%f\n"
 ln -sf /usr/share/zoneinfo/Europe/London /etc/localtime
 hwclock --systohc
 print -l "en_GB.UTF-8 UTF-8" "en_US.UTF-8 UTF-8" > /etc/locale.gen
@@ -400,7 +402,7 @@ print "$HOSTNAME" > /etc/hostname
 print -l "127.0.1.1   $HOSTNAME.localdomain $HOSTNAME" "127.0.0.1   localhost" "::1         localhost" >> /etc/hosts
 
 print -P "\n%K{yellow}%F{black} USERS & PERMISSIONS %k%f\n"
-print -P "%F{cyan}ℹ Creating user: $TARGET_USER...%f"
+print -P "%F{cyan}ℹ Creating user: $TARGET_USER...%f\n"
 groupadd --gid 102 polkit 2>/dev/null || true
 useradd -m -G wheel,input,render,video,storage,gamemode,libvirt,realtime -s /bin/zsh "$TARGET_USER"
 print "root:$ROOT_PASS" | chpasswd
@@ -412,25 +414,25 @@ groupadd -f media; usermod -aG media "$TARGET_USER"
 mkdir -p "/home/$TARGET_USER/Games"; chown "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/Games"
 
 print -P "\n%K{yellow}%F{black} NETWORK & SERVICES %k%f\n"
-print -P "%F{cyan}ℹ Configuring NetworkManager, iwd, and Bluetooth...%f"
+print -P "%F{cyan}ℹ Configuring NetworkManager, iwd, and Bluetooth...%f\n"
 mkdir -p /etc/NetworkManager/conf.d; print -l "[device]" "wifi.backend=iwd" > /etc/NetworkManager/conf.d/wifi_backend.conf
 mkdir -p /etc/iwd; print -l "[General]" "Country=GB" > /etc/iwd/main.conf
 sed -i 's/^#*\(Experimental = \).*/\1true/' /etc/bluetooth/main.conf
 systemctl enable NetworkManager bluetooth sshd sddm fwupd.service reflector.timer
 mkdir -p /etc/xdg/reflector
 print -l -- "--country GB,IE,NL,DE,FR,EU" "--latest 20" "--sort rate" "--save /etc/pacman.d/mirrorlist" > /etc/xdg/reflector/reflector.conf
-print -P "%F{cyan}ℹ Installing Network Dispatcher Scripts...%f"
+print -P "%F{cyan}ℹ Installing Network Dispatcher Scripts...%f\n"
 mkdir -p /etc/NetworkManager/dispatcher.d
 print -l '#!/bin/zsh' '[[ "$2" == "up" ]] && /usr/bin/ethtool -K "$1" rx-udp-gro-forwarding on rx-gro-list off 2>/dev/null || true' > /etc/NetworkManager/dispatcher.d/99-tailscale-gro
 print -l '#!/bin/bash' 'if [[ "$1" == wl* ]] && [[ "$2" == "up" ]]; then /usr/bin/iw dev "$1" set power_save off; fi' > /etc/NetworkManager/dispatcher.d/disable-wifi-powersave
 chmod +x /etc/NetworkManager/dispatcher.d/{99-tailscale-gro,disable-wifi-powersave}
 
 print -P "\n%K{yellow}%F{black} BOOTLOADER %k%f\n"
-print -P "%F{cyan}ℹ Installing GRUB...%f"
+print -P "%F{cyan}ℹ Installing GRUB...%f\n"
 grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB
 
 print -P "\n%K{yellow}%F{black} BUILD ENV & REPOS %k%f\n"
-print -P "%F{cyan}ℹ Tuning makepkg and pacman keys...%f"
+print -P "%F{cyan}ℹ Tuning makepkg and pacman keys...%f\n"
 sed -i 's/-march=x86-64 -mtune=generic/-march=native/' /etc/makepkg.conf
 sed -i "s/^#*MAKEFLAGS=.*/MAKEFLAGS=\"-j\$(nproc)\"/" /etc/makepkg.conf
 [[ "$(findmnt -n -o FSTYPE /tmp)" == "tmpfs" ]] && sed -i 's/^#*\(BUILDDIR=\/tmp\/makepkg\)/\1/' /etc/makepkg.conf
@@ -444,7 +446,7 @@ fi
 pacman -Sy
 
 print -P "\n%K{yellow}%F{black} AUR HELPER %k%f\n"
-print -P "%F{cyan}ℹ Cloning and building yay...%f"
+print -P "%F{cyan}ℹ Cloning and building yay...%f\n"
 chown -R "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER"
 cd "/home/$TARGET_USER"
 sudo -u "$TARGET_USER" git clone https://aur.archlinux.org/yay.git
@@ -457,11 +459,11 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
 elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
     TARGET_AUR+=("mkinitcpio-numlock")
 fi
-print -P "%F{cyan}ℹ Installing Extended Packages via Yay...%f"
+print -P "%F{cyan}ℹ Installing Extended Packages via Yay...%f\n"
 sudo -u "$TARGET_USER" yay -S --needed --noconfirm "${TARGET_AUR[@]}"
 
 print -P "\n%K{yellow}%F{black} DOTFILES & HOME %k%f\n"
-print -P "%F{cyan}ℹ Setting up Git identity and repositories...%f"
+print -P "%F{cyan}ℹ Setting up Git identity and repositories...%f\n"
 mkdir -p "/home/$TARGET_USER"{Make,Obsidian} "/home/$TARGET_USER/.local/bin"
 chown -R "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER"
 if [[ -n "$GIT_NAME" ]]; then
@@ -477,30 +479,30 @@ if [[ -n "$GIT_NAME" ]]; then
     fi
 fi
 REPO_DIR="/home/$TARGET_USER/Obsidian/AMD-Linux-Setup"
-print -P "%F{cyan}ℹ Cloning Main Repository...%f"
+print -P "%F{cyan}ℹ Cloning Main Repository...%f\n"
 sudo -u "$TARGET_USER" git clone https://github.com/OldLorekeeper/AMD-Linux-Setup "$REPO_DIR"
 SECRETS_DIR="$REPO_DIR/.secrets"
 if [[ -n "$GIT_PAT" ]]; then
-    print -P "%F{cyan}ℹ Cloning Private Secrets Repository...%f"
+    print -P "%F{cyan}ℹ Cloning Private Secrets Repository...%f\n"
     sudo -u "$TARGET_USER" git clone "https://$GIT_NAME:$GIT_PAT@github.com/OldLorekeeper/AMD-Linux-Secrets.git" "$SECRETS_DIR" || mkdir -p "$SECRETS_DIR"
 else
     mkdir -p "$SECRETS_DIR"
 fi
 chmod +x "$REPO_DIR/Scripts/"*.zsh
 if [[ ! -d "/home/$TARGET_USER/.oh-my-zsh" ]]; then
-    print -P "%F{cyan}ℹ Installing Oh My Zsh...%f"
+    print -P "%F{cyan}ℹ Installing Oh My Zsh...%f\n"
     sudo -u "$TARGET_USER" sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 fi
 ZSH_CUSTOM="/home/$TARGET_USER/.oh-my-zsh/custom"
-print -P "%F{cyan}ℹ Installing Zsh plugins...%f"
+print -P "%F{cyan}ℹ Installing Zsh plugins...%f\n"
 sudo -u "$TARGET_USER" git clone https://github.com/zsh-users/zsh-autosuggestions "$ZSH_CUSTOM/plugins/zsh-autosuggestions" 2>/dev/null || true
 sudo -u "$TARGET_USER" git clone https://github.com/zsh-users/zsh-syntax-highlighting "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" 2>/dev/null || true
 ln -sf "/home/$TARGET_USER/.oh-my-zsh" /root/.oh-my-zsh
 ln -sf "/home/$TARGET_USER/.zshrc" /root/.zshrc
-print -P "%F{cyan}ℹ Linking Zsh Configuration ($DEVICE_PROFILE)...%f"
+print -P "%F{cyan}ℹ Linking Zsh Configuration ($DEVICE_PROFILE)...%f\n"
 rm -f "/home/$TARGET_USER/.zshrc"
 ln -sf "$REPO_DIR/Resources/zshrc/zshrc_$DEVICE_PROFILE" "/home/$TARGET_USER/.zshrc"
-print -P "%F{cyan}ℹ Installing Gemini CLI...%f"
+print -P "%F{cyan}ℹ Installing Gemini CLI...%f\n"
 npm install -g @google/gemini-cli 1>/dev/null 2>&1
 mkdir -p "/home/$TARGET_USER/.gemini" "$REPO_DIR/.gemini"
 ln -sf "$SECRETS_DIR/settings.json" "/home/$TARGET_USER/.gemini/settings.json"
@@ -514,7 +516,7 @@ fi
 ln -sf "/home/$TARGET_USER/.gemini/history" "$REPO_DIR/.gemini/history_link"
 
 print -P "\n%K{yellow}%F{black} FINAL THEMING %k%f\n"
-print -P "%F{cyan}ℹ Applying Konsole and icon themes...%f"
+print -P "%F{cyan}ℹ Applying Konsole and icon themes...%f\n"
 mkdir -p "/home/$TARGET_USER/.local/share/konsole"
 cp -f "$REPO_DIR/Resources/Konsole"/* "/home/$TARGET_USER/.local/share/konsole/" 2>/dev/null || true
 TRANS_ARCHIVE="$REPO_DIR/Resources/Plasmoids/transmission-plasmoid.tar.gz"
@@ -523,30 +525,30 @@ if [[ -f "$TRANS_ARCHIVE" ]]; then
     mkdir -p "$TRANS_DIR"; tar -xf "$TRANS_ARCHIVE" -C "${TRANS_DIR:h}"
 fi
 papirus-folders -C breeze --theme Papirus-Dark || true
-print -P "%F{cyan}ℹ Overwriting Kate Icons in Papirus...%f"
+print -P "%F{cyan}ℹ Overwriting Kate Icons in Papirus...%f\n"
 find /usr/share/icons/Papirus -type f \( -name "kate.svg" -o -name "kate-symbolic.svg" -o -name "kate2.svg" -o -name "org.kde.kate.svg" \) | while read -r icon; do
     [[ -f "$REPO_DIR/Resources/Icons/Kate/${icon:t}" ]] && cp -f "$REPO_DIR/Resources/Icons/Kate/${icon:t}" "$icon"
 done
 mkdir -p "/home/$TARGET_USER/.local/share/"{icons,kxmlgui5,plasma,color-schemes,aurorae,fonts,wallpapers}
 
 print -P "\n%K{yellow}%F{black} DEVICE LOGIC & THEME %k%f\n"
-print -P "%F{cyan}ℹ Fixing permissions...%f"
+print -P "%F{cyan}ℹ Fixing permissions...%f\n"
 chown -R "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER"
 if [[ "$APPLY_KONSAVE" == "true" ]]; then
     PROFILE_DIR="$REPO_DIR/Resources/Konsave"
     [[ "$DEVICE_PROFILE" == "desktop" ]] && LATEST_KNSV=$(ls -t "$PROFILE_DIR"/Desktop*.knsv 2>/dev/null | head -n1) || LATEST_KNSV=$(ls -t "$PROFILE_DIR"/Laptop*.knsv 2>/dev/null | head -n1)
     if [[ -f "$LATEST_KNSV" ]]; then
-        print -P "%F{cyan}ℹ Found latest Konsave profile: ${LATEST_KNSV:t}%f"
+        print -P "%F{cyan}ℹ Found latest Konsave profile: ${LATEST_KNSV:t}%f\n"
         sudo -u "$TARGET_USER" konsave -i "$LATEST_KNSV" --force
         sudo -u "$TARGET_USER" konsave -a "${LATEST_KNSV:t:r}"
     fi
 fi
-print -P "%F{cyan}ℹ Applying KWin Rules...%f"
-sudo -u "$TARGET_USER" "$REPO_DIR/Scripts/kwin_apply_rules.zsh" "$DEVICE_PROFILE"
+print -P "%F{cyan}ℹ Applying KWin Rules...%f\n"
+sudo -u "$TARGET_USER" "$REPO_DIR/Scripts/kwin_sync.zsh" "$DEVICE_PROFILE"
 print -l "LIBVA_DRIVER_NAME=radeonsi" "VDPAU_DRIVER=radeonsi" "WINEFSYNC=1" "RADV_PERFTEST=gpl" >> /etc/environment
 print 'ACTION=="add|change", KERNEL=="nvme[0-9]n[0-9]", ATTR{queue/scheduler}="kyber"' > /etc/udev/rules.d/60-iosched.rules
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
-    print -P "%F{cyan}ℹ Applying Desktop Configuration...%f"
+    print -P "%F{cyan}ℹ Applying Desktop Configuration...%f\n"
     print 'SUBSYSTEM=="pci", ATTR{vendor}=="0x1022", ATTR{device}=="0x43f7", ATTR{power/control}="on"' > /etc/udev/rules.d/99-xhci-fix.rules
     GRUB_CMDLINE="split_lock_detect=off loglevel=3 quiet amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=3440x1440@60 amd_pstate=active"
     EDID_SRC="$REPO_DIR/Resources/Sunshine/custom_2560x1600.bin"
@@ -604,14 +606,14 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     mkdir -p "/home/$TARGET_USER/.config/systemd/user/default.target.wants"
     ln -sf /usr/lib/systemd/user/sunshine.service "/home/$TARGET_USER/.config/systemd/user/default.target.wants/sunshine.service"
     BYPARR_DIR="/home/$TARGET_USER/Make/Byparr"
-    print -P "%F{cyan}ℹ Installing Byparr...%f"
+    print -P "%F{cyan}ℹ Installing Byparr...%f\n"
     sudo -u "$TARGET_USER" git clone https://github.com/ThePhaseless/Byparr "$BYPARR_DIR"
     (cd "$BYPARR_DIR" && sudo -u "$TARGET_USER" uv sync)
     print -l "[Unit]" "Description=Byparr" "After=network.target" "[Service]" "Type=simple" "WorkingDirectory=%h/Make/Byparr" "ExecStart=/usr/bin/uv run main.py" "Restart=always" "[Install]" "WantedBy=default.target" > "/home/$TARGET_USER/.config/systemd/user/byparr.service"
     chown "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/.config/systemd/user/byparr.service"
     ln -sf "/home/$TARGET_USER/.config/systemd/user/byparr.service" "/home/$TARGET_USER/.config/systemd/user/default.target.wants/byparr.service"
 elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
-    print -P "%F{cyan}ℹ Applying Laptop Configuration...%f"
+    print -P "%F{cyan}ℹ Applying Laptop Configuration...%f\n"
     print "options rtw89_pci disable_aspm_l1=y disable_aspm_l1ss=y" > /etc/modprobe.d/rtw89.conf
     GRUB_CMDLINE="loglevel=3 quiet amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=2560x1600@60 amd_pstate=active"
     sed -i "s|^GRUB_CMDLINE_LINUX_DEFAULT=.*|GRUB_CMDLINE_LINUX_DEFAULT=\"$GRUB_CMDLINE\"|" /etc/default/grub
@@ -621,7 +623,7 @@ elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
 fi
 
 print -P "\n%K{yellow}%F{black} FINAL TUNING %k%f\n"
-print -P "%F{cyan}ℹ Removing Discover and Plasma Meta...%f"
+print -P "%F{cyan}ℹ Removing Discover and Plasma Meta...%f\n"
 pacman -Qi plasma-meta &>/dev/null && { pacman -R --noconfirm plasma-meta; pacman -D --asexplicit plasma-desktop; }
 pacman -Rns --noconfirm discover || true
 print -l "[zram0]" "zram-size = ram / 2" "compression-algorithm = lz4" "swap-priority = 100" > /etc/systemd/zram-generator.conf
@@ -641,32 +643,32 @@ print -l "[Trigger]" "Operation = Install" "Operation = Upgrade" "Type = Package
 print -l "[Trigger]" "Operation = Install" "Operation = Upgrade" "Operation = Remove" "Type = Package" "Target = linux-cachyos" "[Action]" "Description = Updating GRUB..." "When = PostTransaction" "Exec = /usr/bin/grub-mkconfig -o /boot/grub/grub.cfg" > /etc/pacman.d/hooks/99-update-grub.hook
 sed -i 's|^MODULES=.*|MODULES=(amdgpu nvme)|' /etc/mkinitcpio.conf
 sed -i 's/^#COMPRESSION="zstd"/COMPRESSION="lz4"/' /etc/mkinitcpio.conf
-print -P "%F{cyan}ℹ Regenerating initramfs and GRUB...%f"
+print -P "%F{cyan}ℹ Regenerating initramfs and GRUB...%f\n"
 mkinitcpio -P; grub-mkconfig -o /boot/grub/grub.cfg
 
 print -P "\n%K{yellow}%F{black} FIRST BOOT SETUP %k%f\n"
-print -P "%F{cyan}ℹ Scheduling First Boot Setup...%f"
+print -P "%F{cyan}ℹ Scheduling First Boot Setup...%f\n"
 mkdir -p "/home/$TARGET_USER/.config/autostart"
 cat <<FIRSTBOOT > "/home/$TARGET_USER/.local/bin/first_boot.zsh"
 #!/bin/zsh
 source "/home/$TARGET_USER/.zshrc"; sleep 5
 print -P "\n%K{green}%F{black} RUNNING FIRST BOOT SETUP %k%f\n"
 REPO_DIR="/home/$TARGET_USER/Obsidian/AMD-Linux-Setup"
-if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
-    print -P "%F{cyan}ℹ Connecting to Tailscale...%f"
-    sudo tailscale up --advertise-exit-node
+    if [[ "\$DEVICE_PROFILE" == "desktop" ]]; then
+        print -P "%F{cyan}ℹ Connecting to Tailscale...%f\n"
+        sudo tailscale up --advertise-exit-node
     TRANS_CONF="/var/lib/transmission/.config/transmission-daemon/settings.json"
     if [[ -f "\$TRANS_CONF" ]]; then
-        print -P "%F{cyan}ℹ Enforcing Transmission Umask...%f"
+        print -P "%F{cyan}ℹ Enforcing Transmission Umask...%f\n"
         sudo systemctl stop transmission
         sudo jq '.umask = 2' "\$TRANS_CONF" > "\${TRANS_CONF}.tmp" && sudo mv "\${TRANS_CONF}.tmp" "\$TRANS_CONF"
         sudo chown transmission:transmission "\$TRANS_CONF"
         sudo systemctl start transmission
     fi
 fi
-if [[ "$DEVICE_PROFILE" == "desktop" ]] && (( $+commands[kscreen-doctor] )); then
+if [[ "\$DEVICE_PROFILE" == "desktop" ]] && (( \$+commands[kscreen-doctor] )); then
     print -P "\n%K{yellow}%F{black} SUNSHINE CONFIGURATION %k%f\n"
-    print -P "%F{cyan}ℹ Current Output Configuration:%f"
+    print -P "%F{cyan}ℹ Current Output Configuration:%f\n"
     kscreen-doctor -o; print ""
     if read -q "CONFIRM?Configure Sunshine Monitor/Mode Indexes? [y/N] "; then
         read "MON_ID?Monitor ID (e.g. DP-1): "
@@ -685,7 +687,7 @@ FIRSTBOOT
 chmod +x "/home/$TARGET_USER/.local/bin/first_boot.zsh"
 chown "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/.local/bin/first_boot.zsh"
 print -l "[Desktop Entry]" "Type=Application" "Exec=konsole --separate --hide-tabbar -e /home/$TARGET_USER/.local/bin/first_boot.zsh" "Hidden=false" "NoDisplay=false" "Name=First Boot Setup" "X-GNOME-Autostart-enabled=true" > "/home/$TARGET_USER/.config/autostart/first_boot.desktop"
-print -P "%F{cyan}ℹ Finalizing permissions...%f"
+print -P "%F{cyan}ℹ Finalizing permissions...%f\n"
 chown -R "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER"
 ZSH_INTERNAL
 chmod +x /mnt/setup_internal.zsh

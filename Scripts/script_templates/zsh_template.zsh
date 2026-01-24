@@ -10,20 +10,22 @@
 # 2. Syntax: Native Zsh modifiers (e.g. ${VAR:t}).
 # 3. Heredocs: Use language ID (e.g. <<ZSH, <<INI), unique IDs for nesting, and quote 'ID' to disable expansion.
 # 4. Structure:
-#    - Sandwich numbered section separators (# ------) with 1 line padding before.
-#    - Purpose comment block (1 line padding) at start of every numbered section summarising code.
-#    - No inline/meta comments. Compact vertical layout (minimise blank lines)
-#    - Retain frequent context info markers (%F{cyan}) inside dense logic blocks to prevent 'frozen' UI state.
-#    - Code wrapped in '# BEGIN' and '# END' markers.
-#    - Kate modeline at EOF.
+#    a) Sandwich numbered section separators (# ------) with 1 line padding before.
+#    b) Purpose comment block (1 line padding) at start of every numbered section summarising code.
+#    c) No inline/meta comments. Compact vertical layout (minimise blank lines)
+#    d) Retain frequent context info markers (%F{cyan}) inside dense logic blocks to prevent 'frozen' UI state.
+#    e) Code wrapped in '# BEGIN' and '# END' markers.
+#    f) Kate modeline at EOF.
 # 5. Idempotency: Re-runnable scripts. Check state before changes.
 # 6. UI Hierarchy Print -P
-#    - Process marker:          Green Block (%K{green}%F{black}). Used at Start/End.
-#    - Section marker:          Blue Block  (%K{blue}%F{black}). Numbered.
-#    - Sub-section marker:      Yellow Block (%K{yellow}%F{black}).
-#    - Interaction:             Yellow description (%F{yellow}) + minimal `read` prompt.
-#    - Context/Status:          Cyan (Info ℹ), Green (Success), Red (Error/Warning).
-#    - Marker spacing:          Use `\n...%k%f\n`. Omit top `\n` on consecutive markers.
+#    a) Process marker:          Green Block (%K{green}%F{black}). Used at Start/End.
+#    b) Section marker:          Blue Block  (%K{blue}%F{black}). Numbered.
+#    c) Sub-section marker:      Yellow Block (%K{yellow}%F{black}).
+#    d) Interaction:             Yellow description (%F{yellow}) + minimal `read` prompt.
+#    e) Context/Status:          Cyan (Info ℹ), Green (Success), Red (Error/Warning).
+#    f) Marker spacing:          i)  Use `\n...%k%f\n`.
+#                                ii) Omit top `\n` on consecutive markers.
+#                                ii) Context (Cyan) markers MUST include a trailing `\n`.
 #
 # ------------------------------------------------------------------------------
 
@@ -51,7 +53,7 @@ done
 print -P "%F{green}Toolchain validated.%f"
 if [[ -z "${DEV_USER:-}" ]]; then
     print -P "\n%F{yellow}Enter Developer Name:%f"
-    print -P "%F{cyan}ℹ Context: Used for report metadata.%f"
+    print -P "%F{cyan}ℹ Context: Used for report metadata.%f\n"
     read "DEV_USER?Name [host]: "
     DEV_USER=${DEV_USER:-host}
 else
@@ -60,7 +62,7 @@ fi
 print -P "\n%K{yellow}%F{black} WORKSPACE SETUP %k%f\n"
 REPORT_DIR="/tmp/dev_audit_${DEV_USER}"
 if [[ ! -d "$REPORT_DIR" ]]; then
-    print -P "%F{cyan}ℹ Creating temporary workspace at $REPORT_DIR...%f"
+    print -P "%F{cyan}ℹ Creating temporary workspace at $REPORT_DIR...%f\n"
     mkdir -p "$REPORT_DIR"
 fi
 # END
@@ -74,7 +76,7 @@ fi
 # BEGIN
 print -P "\n%K{blue}%F{black} 2. CONFIG MOCKUP (JSON) %k%f\n"
 CONFIG_FILE="$REPORT_DIR/config.json"
-print -P "%F{cyan}ℹ Generating audit configuration...%f"
+print -P "%F{cyan}ℹ Generating audit configuration...%f\n"
 cat <<JSON > "$CONFIG_FILE"
 {
     "user": "$DEV_USER",
@@ -105,7 +107,7 @@ print -P "%K{yellow}%F{black} PORT SCANNING %k%f\n"
 for svc in "${SERVICES[@]}"; do
     name=${svc%%:*}
     port=${svc##*:}
-    print -P "%F{cyan}ℹ Checking $name on port $port...%f"
+    print -P "%F{cyan}ℹ Checking $name on port $port...%f\n"
     # Simulate work with a small sleep
     sleep 0.2
     # Logic: Randomly succeed or fail for demonstration (replace with actual nc/ztcp)
@@ -126,7 +128,7 @@ done
 # BEGIN
 print -P "\n%K{blue}%F{black} 4. DATA ANALYSIS (PYTHON) %k%f\n"
 ANALYSIS_FILE="$REPORT_DIR/analysis.txt"
-print -P "%F{cyan}ℹ calculating environment health score...%f"
+print -P "%F{cyan}ℹ calculating environment health score...%f\n"
 python3 - "$CONFIG_FILE" "$ANALYSIS_FILE" <<'PYTHON'
 import sys
 import json
@@ -155,7 +157,7 @@ except Exception as e:
 PYTHON
 if [[ -f "$ANALYSIS_FILE" ]]; then
     print -P "%F{green}Analysis complete.%f"
-    print -P "%F{cyan}ℹ Preview:%f"
+    print -P "%F{cyan}ℹ Preview:%f\n"
     head -n 2 "$ANALYSIS_FILE"
 else
     print -P "%F{red}Analysis failed.%f"
@@ -171,7 +173,7 @@ fi
 # BEGIN
 print -P "\n%K{blue}%F{black} 5. CLEANUP %k%f\n"
 if [[ -d "$REPORT_DIR" ]]; then
-    print -P "%F{cyan}ℹ Removing workspace $REPORT_DIR...%f"
+    print -P "%F{cyan}ℹ Removing workspace $REPORT_DIR...%f\n"
     rm -rf "$REPORT_DIR"
     print -P "%F{green}Cleanup successful.%f"
 else

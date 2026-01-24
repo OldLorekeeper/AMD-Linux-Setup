@@ -10,20 +10,22 @@
 # 2. Syntax: Native Bash parameter expansion (e.g. ${VAR##*/}).
 # 3. Heredocs: Use language ID (e.g. <<BASH, <<INI), unique IDs for nesting, and quote 'ID' to disable expansion.
 # 4. Structure:
-#    - Sandwich numbered section separators (# ------) with 1 line padding before.
-#    - Purpose comment block (1 line padding) at start of every numbered section summarising code.
-#    - No inline/meta comments. Compact vertical layout (minimise blank lines)
-#    - Retain frequent context info markers (FG_CYAN) inside dense logic blocks to prevent 'frozen' UI state.
-#    - Code wrapped in '# BEGIN' and '# END' markers.
-#    - Kate modeline at EOF.
+#    a) Sandwich numbered section separators (# ------) with 1 line padding before.
+#    b) Purpose comment block (1 line padding) at start of every numbered section summarising code.
+#    c) No inline/meta comments. Compact vertical layout (minimise blank lines)
+#    d) Retain frequent context info markers (FG_CYAN) inside dense logic blocks to prevent 'frozen' UI state.
+#    e) Code wrapped in '# BEGIN' and '# END' markers.
+#    f) Kate modeline at EOF.
 # 5. Idempotency: Re-runnable scripts. Check state before changes.
 # 6. UI Hierarchy (printf):
-#    - Process marker:          Green Block (${BG_GREEN}${FG_BLACK}). Used at Start/End.
-#    - Section marker:          Blue Block  (${BG_BLUE}${FG_BLACK}). Numbered.
-#    - Sub-section marker:      Yellow Block (${BG_YELLOW}${FG_BLACK}).
-#    - Interaction:             Yellow description (${FG_YELLOW}) + minimal `read -p` prompt.
-#    - Context/Status:          Cyan (Info ℹ), Green (Success), Red (Error/Warning).
-#    - Marker spacing:          Use `\n...${NC}\n`. Omit top `\n` on consecutive markers.
+#    a) Process marker:          Green Block (${BG_GREEN}${FG_BLACK}). Used at Start/End.
+#    b) Section marker:          Blue Block  (${BG_BLUE}${FG_BLACK}). Numbered.
+#    c) Sub-section marker:      Yellow Block (${BG_YELLOW}${FG_BLACK}).
+#    d) Interaction:             Yellow description (${FG_YELLOW}) + minimal `read -p` prompt.
+#    e) Context/Status:          Cyan (Info ℹ), Green (Success), Red (Error/Warning).
+#    f) Marker spacing:          i)  Use `\n...${NC}\n`.
+#                                ii) Omit top `\n` on consecutive markers.
+#                                iii) Context (Cyan) markers MUST include a trailing `\n`.
 #
 # ------------------------------------------------------------------------------
 
@@ -63,7 +65,7 @@ done
 printf "${FG_GREEN}Toolchain validated.${NC}\n"
 if [[ -z "${DEV_USER:-}" ]]; then
     printf "\n${FG_YELLOW}Enter Developer Name:${NC}\n"
-    printf "${FG_CYAN}ℹ Context: Used for report metadata.${NC}\n"
+    printf "${FG_CYAN}ℹ Context: Used for report metadata.${NC}\n\n"
     read -r -p "Name [host]: " DEV_USER
     DEV_USER=${DEV_USER:-host}
 else
@@ -72,7 +74,7 @@ fi
 printf "\n${BG_YELLOW}${FG_BLACK} WORKSPACE SETUP ${NC}\n\n"
 REPORT_DIR="/tmp/dev_audit_${DEV_USER}"
 if [[ ! -d "$REPORT_DIR" ]]; then
-    printf "${FG_CYAN}ℹ Creating temporary workspace at $REPORT_DIR...${NC}\n"
+    printf "${FG_CYAN}ℹ Creating temporary workspace at $REPORT_DIR...${NC}\n\n"
     mkdir -p "$REPORT_DIR"
 fi
 # END
@@ -86,7 +88,7 @@ fi
 # BEGIN
 printf "\n${BG_BLUE}${FG_BLACK} 2. CONFIG MOCKUP (JSON) ${NC}\n\n"
 CONFIG_FILE="$REPORT_DIR/config.json"
-printf "${FG_CYAN}ℹ Generating audit configuration...${NC}\n"
+printf "${FG_CYAN}ℹ Generating audit configuration...${NC}\n\n"
 cat <<JSON > "$CONFIG_FILE"
 {
     "user": "$DEV_USER",
@@ -117,7 +119,7 @@ printf "${BG_YELLOW}${FG_BLACK} PORT SCANNING ${NC}\n\n"
 for svc in "${SERVICES[@]}"; do
     name=${svc%%:*}
     port=${svc##*:}
-    printf "${FG_CYAN}ℹ Checking $name on port $port...${NC}\n"
+    printf "${FG_CYAN}ℹ Checking $name on port $port...${NC}\n\n"
     # Simulate work with a small sleep
     sleep 0.2
     # Logic: Randomly succeed or fail for demonstration
@@ -138,7 +140,7 @@ done
 # BEGIN
 printf "\n${BG_BLUE}${FG_BLACK} 4. DATA ANALYSIS (PYTHON) ${NC}\n\n"
 ANALYSIS_FILE="$REPORT_DIR/analysis.txt"
-printf "${FG_CYAN}ℹ Calculating environment health score...${NC}\n"
+printf "${FG_CYAN}ℹ Calculating environment health score...${NC}\n\n"
 python3 - "$CONFIG_FILE" "$ANALYSIS_FILE" <<'PYTHON'
 import sys
 import json
@@ -167,7 +169,7 @@ except Exception as e:
 PYTHON
 if [[ -f "$ANALYSIS_FILE" ]]; then
     printf "${FG_GREEN}Analysis complete.${NC}\n"
-    printf "${FG_CYAN}ℹ Preview:${NC}\n"
+    printf "${FG_CYAN}ℹ Preview:${NC}\n\n"
     head -n 2 "$ANALYSIS_FILE"
 else
     printf "${FG_RED}Analysis failed.${NC}\n"
@@ -183,7 +185,7 @@ fi
 # BEGIN
 printf "\n${BG_BLUE}${FG_BLACK} 5. CLEANUP ${NC}\n\n"
 if [[ -d "$REPORT_DIR" ]]; then
-    printf "${FG_CYAN}ℹ Removing workspace $REPORT_DIR...${NC}\n"
+    printf "${FG_CYAN}ℹ Removing workspace $REPORT_DIR...${NC}\n\n"
     rm -rf "$REPORT_DIR"
     printf "${FG_GREEN}Cleanup successful.${NC}\n"
 else

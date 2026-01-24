@@ -10,20 +10,22 @@
 # 2. Syntax: Native Zsh modifiers (e.g. ${VAR:t}).
 # 3. Heredocs: Use language ID (e.g. <<ZSH, <<INI), unique IDs for nesting, and quote 'ID' to disable expansion.
 # 4. Structure:
-#    - Sandwich numbered section separators (# ------) with 1 line padding before.
-#    - Purpose comment block (1 line padding) at start of every numbered section summarising code.
-#    - No inline/meta comments. Compact vertical layout (minimise blank lines)
-#    - Retain frequent context info markers (%F{cyan}) inside dense logic blocks to prevent 'frozen' UI state.
-#    - Code wrapped in '# BEGIN' and '# END' markers.
-#    - Kate modeline at EOF.
+#    a) Sandwich numbered section separators (# ------) with 1 line padding before.
+#    b) Purpose comment block (1 line padding) at start of every numbered section summarising code.
+#    c) No inline/meta comments. Compact vertical layout (minimise blank lines)
+#    d) Retain frequent context info markers (%F{cyan}) inside dense logic blocks to prevent 'frozen' UI state.
+#    e) Code wrapped in '# BEGIN' and '# END' markers.
+#    f) Kate modeline at EOF.
 # 5. Idempotency: Re-runnable scripts. Check state before changes.
 # 6. UI Hierarchy Print -P
-#    - Process marker:          Green Block (%K{green}%F{black}). Used at Start/End.
-#    - Section marker:          Blue Block  (%K{blue}%F{black}). Numbered.
-#    - Sub-section marker:      Yellow Block (%K{yellow}%F{black}).
-#    - Interaction:             Yellow description (%F{yellow}) + minimal `read` prompt.
-#    - Context/Status:          Cyan (Info ℹ), Green (Success), Red (Error/Warning).
-#    - Marker spacing:          Use `\n...%k%f\n`. Omit top `\n` on consecutive markers.
+#    a) Process marker:          Green Block (%K{green}%F{black}). Used at Start/End.
+#    b) Section marker:          Blue Block  (%K{blue}%F{black}). Numbered.
+#    c) Sub-section marker:      Yellow Block (%K{yellow}%F{black}).
+#    d) Interaction:             Yellow description (%F{yellow}) + minimal `read` prompt.
+#    e) Context/Status:          Cyan (Info ℹ), Green (Success), Red (Error/Warning).
+#    f) Marker spacing:          i)  Use `\n...%k%f\n`.
+#                                ii) Omit top `\n` on consecutive markers.
+#                                ii) Context (Cyan) markers MUST include a trailing `\n`.
 #
 # ------------------------------------------------------------------------------
 
@@ -81,7 +83,7 @@ for folder in $target_folders; do
     local -a audio_files
     audio_files=("$folder"/*.{mp3,flac,m4a,ogg}(N))
     if (( ${#audio_files} > 0 )); then
-        print -P "%F{cyan}ℹ Processing: ${folder:t}%f"
+        print -P "%F{cyan}ℹ Processing: ${folder:t}%f\n"
         print "  Source: ${cover_img:t}"
         for file in $audio_files; do
             if output=$(kid3-cli -c "set picture:\"$cover_img\" \"\"" "$file" 2>&1); then
