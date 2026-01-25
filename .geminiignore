@@ -1,2 +1,1 @@
-.secrets/GEMINI.md
-.secrets/settings.json
+.secrets/.geminiignore

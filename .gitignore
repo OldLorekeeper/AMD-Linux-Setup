@@ -1,4 +1,6 @@
-.obsidian/workspace.json
+.obsidian/
 .trash/
 .gemini/
 .secrets/
+.directory/
+.geminiignore
