@@ -65,9 +65,9 @@ do_pull() {
     print -P "%K{yellow}%F{black} PULL %k%f\n"
     print -P "%F{cyan}ℹ Updating Main Repo...%f\n"
     git -C "$REPO_ROOT" pull
-    if [[ -d "$REPO_ROOT/.secrets" ]]; then
+    if [[ -d "$REPO_ROOT/Secrets" ]]; then
         print -P "\n%F{cyan}ℹ Updating Secrets Repo...%f\n"
-        git -C "$REPO_ROOT/.secrets" pull
+        git -C "$REPO_ROOT/Secrets" pull
     fi
     print -P "\nStatus: %F{green}Pull Complete%f"
 }
@@ -75,10 +75,10 @@ do_pull() {
 do_commit() {
     local msg="$1"
     print -P "\n%K{yellow}%F{black} COMMIT %k%f\n"
-    if [[ -d "$REPO_ROOT/.secrets" ]]; then
-        print -P "%F{cyan}ℹ Committing Secrets...%f\n"
-        git -C "$REPO_ROOT/.secrets" add .
-        git -C "$REPO_ROOT/.secrets" commit -m "$msg" || true
+    if [[ -d "$REPO_ROOT/Secrets" ]]; then
+        print -P "%K{blue}%F{black} 4. Committing Secrets %k%f"
+        git -C "$REPO_ROOT/Secrets" add .
+        git -C "$REPO_ROOT/Secrets" commit -m "$msg" || true
     fi
     print -P "\n%F{cyan}ℹ Committing Main...%f\n"
     git -C "$REPO_ROOT" add .
@@ -88,9 +88,9 @@ do_commit() {
 
 do_push() {
     print -P "\n%K{yellow}%F{black} PUSH %k%f\n"
-    if [[ -d "$REPO_ROOT/.secrets" ]]; then
-        print -P "%F{cyan}ℹ Pushing Secrets...%f\n"
-        git -C "$REPO_ROOT/.secrets" push
+    if [[ -d "$REPO_ROOT/Secrets" ]]; then
+        print -P "%K{blue}%F{black} 6. Pushing Secrets %k%f"
+        git -C "$REPO_ROOT/Secrets" push
     fi
     print -P "\n%F{cyan}ℹ Pushing Main...%f\n"
     git -C "$REPO_ROOT" push

@@ -18,7 +18,7 @@ You are the **Arch Linux Assistant** for the "AMD-Linux-Setup" repository. You a
 
 ## Development Standards
 - **Optimisation:** Retrieve specific flags (e.g., `-march`) from the `Compiler Flags` database entity.
-- **Git Hygiene:** MANDATORY: Use the `perform_repo_sync` SOP to manage the nested repository structure (.secrets submodule). Do not use manual `git push` without verifying sync order. Check `git_status` in both Main and .secrets before edits.
+- **Git Hygiene:** MANDATORY: Use the `perform_repo_sync` SOP to manage the nested repository structure (Secrets submodule). Do not use manual `git push` without verifying sync order. Check `git_status` in both Main and Secrets before edits.
 
 ## Security & Package Management
 - **Package Repos:** Prioritise standard Arch repositories (`core`, `extra`) and the AUR for all applications and system libraries (cahcyos repos only for kernel).
@@ -32,8 +32,8 @@ You are the **Arch Linux Assistant** for the "AMD-Linux-Setup" repository. You a
         - `entities` (name TEXT PK, entityType TEXT, observations TEXT)
         - `relations` (from_entity TEXT, to_entity TEXT, relationType TEXT)
     - **Retrieval:** Use `read_query` to validate assumptions before asking the user.
-- **History Access:** `.secrets/Gemini-History/Desktop/` and `.secrets/Gemini-History/Laptop/` contain all Gemini chat history.
-    - **Protocol:** Use `glob` to locate sessions in the profile-specific directory (e.g. `.secrets/Gemini-History/Desktop/**/*.json`). This native tool automatically sorts by modification time (newest first), ensuring read-only history access is auto-accepted.
+- **History Access:** `Secrets/Gemini-History/Desktop/` and `Secrets/Gemini-History/Laptop/` contain all Gemini chat history.
+    - **Protocol:** Use `glob` to locate sessions in the profile-specific directory (e.g. `Secrets/Gemini-History/Desktop/**/*.json`). This native tool automatically sorts by modification time (newest first), ensuring read-only history access is auto-accepted.
     - `recall_recent`: `glob` profile path → `read_file` the first 3 results.
     - `recall_last`: `glob` profile path → `read_file` the first result.
     - `recall_history`: `glob` profile path → summarize or read all results.

@@ -481,7 +481,7 @@ fi
 REPO_DIR="/home/$TARGET_USER/Obsidian/AMD-Linux-Setup"
 print -P "\n%F{cyan}ℹ Cloning Main Repository...%f\n"
 sudo -u "$TARGET_USER" git clone https://github.com/OldLorekeeper/AMD-Linux-Setup "$REPO_DIR"
-SECRETS_DIR="$REPO_DIR/.secrets"
+SECRETS_DIR="$REPO_DIR/Secrets"
 if [[ -n "$GIT_PAT" ]]; then
     print -P "\n%F{cyan}ℹ Cloning Private Secrets Repository...%f\n"
     sudo -u "$TARGET_USER" git clone "https://$GIT_NAME:$GIT_PAT@github.com/OldLorekeeper/AMD-Linux-Secrets.git" "$SECRETS_DIR" || mkdir -p "$SECRETS_DIR"
