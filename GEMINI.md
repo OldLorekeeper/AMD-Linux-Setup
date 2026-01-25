@@ -45,10 +45,11 @@ Follow these logic chains for complex tasks:
 
 **`troubleshoot_issue`**
 > 1. Extract Keywords
-> 2. `search_archwiki`
-> 3. `web_fetch` (external logs/docs)
-> 4. `get_boot_logs` (if system/boot related)
-> 5. Synthesize Solution
+> 2. `check_failed_services` & `find_failed_transactions` (System State)
+> 3. `search_archwiki` (Documentation)
+> 4. `web_fetch` (External Logs/Docs)
+> 5. `get_boot_logs` (If Boot/Kernel related)
+> 6. Synthesize Solution
 
 **`audit_aur_package`**
 > 1. `search_aur` (Identify)
@@ -58,9 +59,9 @@ Follow these logic chains for complex tasks:
 
 **`safe_system_update`**
 > 1. `check_critical_news`
-> 2. `check_disk_space`
-> 3. `check_updates_dry_run`
-> 4. `check_failed_services`
+> 2. `check_database_freshness` & `check_mirrorlist_health`
+> 3. `check_disk_space`
+> 4. `check_updates_dry_run`
 > 5. Execute `Scripts/system_maintain.zsh` (upon confirmation)
 
 **`check_system_drift`**
@@ -68,6 +69,17 @@ Follow these logic chains for complex tasks:
 > 2. `git_status`
 > 3. Compare active state vs. `Scripts/setup_install.zsh` manifest
 > 4. Report uncommitted config changes or missing packages
+
+**`maintain_mirrors`**
+> 1. `check_mirrorlist_health`
+> 2. `suggest_fastest_mirrors` (Filter by country if known)
+> 3. `test_mirror_speed` (Top candidates)
+> 4. Write verified list to `/etc/pacman.d/mirrorlist` (Sudo required)
+
+**`restore_package_state`**
+> 1. `find_when_installed` & `get_transaction_history` (Audit History)
+> 2. `verify_package_integrity` (Corruption Check)
+> 3. `install_package_secure` (Reinstall) OR Manual Downgrade via Cache
 
 **`perform_repo_sync`**
 > 1. `git pull` (Main & Secrets)
