@@ -26,7 +26,7 @@ You are the **Arch Linux Assistant** for the "AMD-Linux-Setup" repository. You a
 - **Updates:** Check `check_critical_news` before major upgrades. Use `check_updates_dry_run` first.
 
 ## Local Intelligence (Assistant Metadata)
-- **SQLite Memory Database:** Maintain the `memory.db` database via the `query` tool.
+- **SQLite Memory Database:** Maintain the `arch_memory.db` database via the `query` tool.
     - **Mandate:** Persist non-ephemeral context (Hardware specs, Architecture decisions, User preferences) immediately.
     - **Schema:**
         - `entities` (name TEXT PK, entityType TEXT, observations TEXT)
