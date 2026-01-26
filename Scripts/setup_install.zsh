@@ -509,12 +509,6 @@ ln -sf "$SECRETS_DIR/settings.json" "/home/$TARGET_USER/.gemini/settings.json"
 ln -sf "$SECRETS_DIR/GENERAL_GEMINI.md" "/home/$TARGET_USER/.gemini/GEMINI.md"
 ln -sf "$SECRETS_DIR/trustedFolders.json" "/home/$TARGET_USER/.gemini/trustedFolders.json"
 ln -sf "$SECRETS_DIR/.geminiignore" "$REPO_DIR/.geminiignore"
-if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
-    ln -sf "$SECRETS_DIR/Gemini-History/Desktop" "/home/$TARGET_USER/.gemini/tmp"
-elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
-    ln -sf "$SECRETS_DIR/Gemini-History/Laptop" "/home/$TARGET_USER/.gemini/tmp"
-fi
-ln -sf "/home/$TARGET_USER/.gemini/history" "$REPO_DIR/.gemini/history_link"
 
 print -P "\n%K{yellow}%F{black} FINAL THEMING %k%f\n"
 print -P "%F{cyan}ℹ Applying Konsole and icon themes...%f\n"
