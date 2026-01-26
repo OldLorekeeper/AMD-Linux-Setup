@@ -4,3 +4,4 @@
 .geminiignore
 Secrets/
 GEMINI.md
+gemini.config.json

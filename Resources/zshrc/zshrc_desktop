@@ -115,17 +115,33 @@ export SYS_PROFILE="desktop"
 export PATH="$HOME/.local/bin:$PATH"
 export NVM_DIR="$HOME/.nvm"
 [ -s "/usr/share/nvm/init-nvm.sh" ] && source "/usr/share/nvm/init-nvm.sh"
+export ARCH_REPO="$HOME/Obsidian/AMD-Linux-Setup"
+export PRIVACY_REPO="$HOME/Obsidian/Privacy"
 
 # Core Aliases
 alias mkinit="sudo mkinitcpio -P"
 alias mkgrub="sudo grub-mkconfig -o /boot/grub/grub.cfg"
 
-# Repo Variables
-export ARCH_REPO="$HOME/Obsidian/AMD-Linux-Setup"
+# ------------------------------------------------------------------------------
+# 2. GEMINI DYNAMIC CONFIGURATION
+# ------------------------------------------------------------------------------
+
+gemini() {
+    local servers=(arch-ops general-memory playwright gitArch)
+    if [[ "$PWD" == "$ARCH_REPO"* ]]; then
+        servers+=(arch-memory)
+    elif [[ "$PWD" == "$PRIVACY_REPO"* ]]; then
+        servers+=(privacy-memory)
+    fi
+    local server_list="${(j:,:)servers}"
+    exec /usr/bin/env gemini --allowed-mcp-server-names "$server_list" "$@"
+}
+
 alias gemini-arch="cd $ARCH_REPO && gemini"
+alias gemini-privacy="cd $PRIVACY_REPO && gemini"
 
 # ------------------------------------------------------------------------------
-# 2. GIT AUTO-ORGANISATION
+# 3. GIT AUTO-ORGANISATION
 # ------------------------------------------------------------------------------
 
 git() {
@@ -148,7 +164,7 @@ git() {
 }
 
 # ------------------------------------------------------------------------------
-# 3. ARCH REPO MANAGEMENT
+# 4. ARCH REPO MANAGEMENT
 # ------------------------------------------------------------------------------
 
 alias repo-sync="$ARCH_REPO/Scripts/repo_sync.zsh sync"
@@ -157,13 +173,13 @@ alias repo-push="$ARCH_REPO/Scripts/repo_sync.zsh push"
 alias repo-commit="$ARCH_REPO/Scripts/repo_sync.zsh commit"
 
 # ------------------------------------------------------------------------------
-# 4. SYSTEM MAINTENANCE
+# 5. SYSTEM MAINTENANCE
 # ------------------------------------------------------------------------------
 
 alias maintain="$ARCH_REPO/Scripts/system_maintain.zsh"
 
 # ------------------------------------------------------------------------------
-# 5. KWIN MANAGEMENT
+# 6. KWIN MANAGEMENT
 # ------------------------------------------------------------------------------
 
 alias kwin-sync="$ARCH_REPO/Scripts/kwin_sync.zsh"
