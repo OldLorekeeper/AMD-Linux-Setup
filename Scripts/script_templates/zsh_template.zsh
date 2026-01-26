@@ -9,14 +9,14 @@
 # 1. Safety: `setopt ERR_EXIT NO_UNSET PIPE_FAIL EXTENDED_GLOB`.
 # 2. Syntax: Native Zsh modifiers (e.g. ${VAR:t}).
 # 3. Heredocs: Use language ID (e.g. <<ZSH, <<INI), unique IDs for nesting, and quote 'ID' to disable expansion.
-# 4. Structure:
+# 4. Idempotency: Re-runnable scripts. Check state before changes.
+# 5. Structure:
 #    a) Sandwich numbered section separators (# ------) with 1 line padding before.
 #    b) Purpose comment block (1 line padding) at start of every numbered section summarising code.
 #    c) No inline/meta comments. Compact vertical layout (minimise blank lines)
 #    d) Retain frequent context info markers (%F{cyan}) inside dense logic blocks to prevent 'frozen' UI state.
 #    e) Code wrapped in '# BEGIN' and '# END' markers.
 #    f) Kate modeline at EOF.
-# 5. Idempotency: Re-runnable scripts. Check state before changes.
 # 6. UI Hierarchy Print -P
 #    a) Process marker:          Green Block (%K{green}%F{black}). Used at Start/End.
 #    b) Section marker:          Blue Block  (%K{blue}%F{black}). Numbered.

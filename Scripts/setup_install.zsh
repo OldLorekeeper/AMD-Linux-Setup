@@ -506,7 +506,7 @@ print -P "\n%F{cyan}ℹ Installing Gemini CLI...%f\n"
 npm install -g @google/gemini-cli 1>/dev/null 2>&1
 mkdir -p "/home/$TARGET_USER/.gemini" "$REPO_DIR/.gemini"
 ln -sf "$SECRETS_DIR/settings.json" "/home/$TARGET_USER/.gemini/settings.json"
-ln -sf "$SECRETS_DIR/GEMINI.md" "/home/$TARGET_USER/.gemini/GEMINI.md"
+ln -sf "$SECRETS_DIR/GENERAL_GEMINI.md" "/home/$TARGET_USER/.gemini/GEMINI.md"
 ln -sf "$SECRETS_DIR/trustedFolders.json" "/home/$TARGET_USER/.gemini/trustedFolders.json"
 ln -sf "$SECRETS_DIR/.geminiignore" "$REPO_DIR/.geminiignore"
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
