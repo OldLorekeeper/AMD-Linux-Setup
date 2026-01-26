@@ -383,6 +383,7 @@ SOULSEEK_USER=${(q)SOULSEEK_USER}
 SOULSEEK_PASS=${(q)SOULSEEK_PASS}
 MEDIA_UUID=${(q)MEDIA_UUID}
 MONITOR_PORT=${(q)MONITOR_PORT}
+SECRETS_LOADED=${(q)SECRETS_LOADED:-false}
 ZSH
 cat << 'ZSH_INTERNAL' > /mnt/setup_internal.zsh
 #!/bin/zsh
@@ -502,13 +503,16 @@ ln -sf "/home/$TARGET_USER/.zshrc" /root/.zshrc
 print -P "\n%F{cyan}ℹ Linking Zsh Configuration ($DEVICE_PROFILE)...%f\n"
 rm -f "/home/$TARGET_USER/.zshrc"
 ln -sf "$REPO_DIR/Resources/zshrc/zshrc_$DEVICE_PROFILE" "/home/$TARGET_USER/.zshrc"
-print -P "\n%F{cyan}ℹ Installing Gemini CLI...%f\n"
-npm install -g @google/gemini-cli 1>/dev/null 2>&1
-mkdir -p "/home/$TARGET_USER/.gemini" "$REPO_DIR/.gemini"
-ln -sf "$SECRETS_DIR/settings.json" "/home/$TARGET_USER/.gemini/settings.json"
-ln -sf "$SECRETS_DIR/GENERAL_GEMINI.md" "/home/$TARGET_USER/.gemini/GEMINI.md"
-ln -sf "$SECRETS_DIR/trustedFolders.json" "/home/$TARGET_USER/.gemini/trustedFolders.json"
-ln -sf "$SECRETS_DIR/.geminiignore" "$REPO_DIR/.geminiignore"
+if [[ "$SECRETS_LOADED" == "true" ]]; then
+    print -P "\n%F{cyan}ℹ Installing Gemini CLI...%f\n"
+    npm install -g @google/gemini-cli 1>/dev/null 2>&1
+    mkdir -p "/home/$TARGET_USER/.gemini" "$REPO_DIR/.gemini"
+    ln -sf "$SECRETS_DIR/settings.json" "/home/$TARGET_USER/.gemini/settings.json"
+    ln -sf "$SECRETS_DIR/GENERAL_GEMINI.md" "/home/$TARGET_USER/.gemini/GEMINI.md"
+    ln -sf "$SECRETS_DIR/trustedFolders.json" "/home/$TARGET_USER/.gemini/trustedFolders.json"
+    ln -sf "$SECRETS_DIR/.geminiignore" "$REPO_DIR/.geminiignore"
+    ln -sf "$SECRETS_DIR/AMD_GEMINI.md" "$REPO_DIR/GEMINI.md"
+fi
 
 print -P "\n%K{yellow}%F{black} FINAL THEMING %k%f\n"
 print -P "%F{cyan}ℹ Applying Konsole and icon themes...%f\n"
