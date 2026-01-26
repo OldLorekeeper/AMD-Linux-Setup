@@ -1,1 +1,0 @@
-Secrets/AMD_GEMINI.md
