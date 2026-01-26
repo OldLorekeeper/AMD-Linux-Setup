@@ -62,7 +62,7 @@ print -P "Root:         %F{cyan}$REPO_ROOT%f"
 
 # BEGIN
 do_pull() {
-    print -P "%K{blue}%F{black} 2. PULL %k%f\n"
+    print -P "\n%K{blue}%F{black} 2. PULL %k%f\n"
     print -P "%K{yellow}%F{black} MAIN %k%f\n"
     print -P "%F{cyan}ℹ Updating Main Repo...%f\n"
     git -C "$REPO_ROOT" pull
@@ -76,7 +76,7 @@ do_pull() {
 
 do_commit() {
     local msg="$1"
-    print -P "%K{blue}%F{black} 3. COMMIT %k%f\n"
+    print -P "\n%K{blue}%F{black} 3. COMMIT %k%f\n"
     print -P "%K{yellow}%F{black} SECRETS %k%f\n"
     if [[ -d "$REPO_ROOT/Secrets" ]]; then
         git -C "$REPO_ROOT/Secrets" add .
