@@ -127,7 +127,7 @@ alias mkgrub="sudo grub-mkconfig -o /boot/grub/grub.cfg"
 # ------------------------------------------------------------------------------
 
 gemini() {
-    local servers=(arch-ops general-memory playwright gitArch)
+    local servers=(arch-ops playwright gitArch)
     if [[ "$PWD" == "$ARCH_REPO"* ]]; then
         servers+=(arch-memory)
     elif [[ "$PWD" == "$PRIVACY_REPO"* ]]; then
@@ -141,7 +141,7 @@ alias gemini-arch="cd $ARCH_REPO && gemini"
 alias gemini-privacy="cd $PRIVACY_REPO && gemini"
 
 # God Mode: Runs ALL servers (Arch + Privacy + Base) from anywhere
-alias gemini-all="exec /usr/bin/env gemini --allowed-mcp-server-names arch-ops,general-memory,playwright,gitArch,arch-memory,privacy-memory"
+alias gemini-all="exec /usr/bin/env gemini --allowed-mcp-server-names arch-ops,playwright,gitArch,arch-memory,privacy-memory"
 
 # ------------------------------------------------------------------------------
 # 3. GIT AUTO-ORGANISATION
