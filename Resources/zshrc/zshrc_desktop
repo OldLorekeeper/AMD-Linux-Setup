@@ -122,7 +122,7 @@ export PRIVACY_REPO="$HOME/Obsidian/Privacy"
 alias mkinit="sudo mkinitcpio -P"
 alias mkgrub="sudo grub-mkconfig -o /boot/grub/grub.cfg"
 
-#gemini
+# Gemini
 alias gemini-arch="cd $ARCH_REPO && gemini"
 alias gemini-privacy="cd $PRIVACY_REPO && gemini"
 
