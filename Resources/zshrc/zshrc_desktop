@@ -122,26 +122,9 @@ export PRIVACY_REPO="$HOME/Obsidian/Privacy"
 alias mkinit="sudo mkinitcpio -P"
 alias mkgrub="sudo grub-mkconfig -o /boot/grub/grub.cfg"
 
-# ------------------------------------------------------------------------------
-# 2. GEMINI DYNAMIC CONFIGURATION
-# ------------------------------------------------------------------------------
-
-gemini() {
-    local servers=(arch-ops playwright gitArch)
-    if [[ "$PWD" == "$ARCH_REPO"* ]]; then
-        servers+=(arch-memory)
-    elif [[ "$PWD" == "$PRIVACY_REPO"* ]]; then
-        servers+=(privacy-memory)
-    fi
-    local server_list="${(j:,:)servers}"
-    exec /usr/bin/env gemini --allowed-mcp-server-names "$server_list" "$@"
-}
-
+#gemini
 alias gemini-arch="cd $ARCH_REPO && gemini"
 alias gemini-privacy="cd $PRIVACY_REPO && gemini"
-
-# God Mode: Runs ALL servers (Arch + Privacy + Base) from anywhere
-alias gemini-all="exec /usr/bin/env gemini --allowed-mcp-server-names arch-ops,playwright,gitArch,arch-memory,privacy-memory"
 
 # ------------------------------------------------------------------------------
 # 3. GIT AUTO-ORGANISATION

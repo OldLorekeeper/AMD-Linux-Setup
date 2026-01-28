@@ -58,9 +58,27 @@ print -P "Root:         %F{cyan}$REPO_ROOT%f"
 # 2. Functions
 # ------------------------------------------------------------------------------
 
-# Purpose: Define the core git operations for Main and Secrets repositories.
+# Purpose: Define the core git operations and Gemini helper.
 
 # BEGIN
+get_contextual_msg() {
+    local repo_path="$1"
+    local input_msg="$2"
+    if [[ "$input_msg" == "System update" ]] && (( $+commands[gemini] )); then
+        if ! git -C "$repo_path" diff --cached --quiet; then
+            print -P "\n%F{cyan}ℹ Gemini: Analyzing changes in ${repo_path:t}...%f\n" >&2
+            local diff_ctx=$(git -C "$repo_path" diff --cached | head -n 50)
+            local gen_msg=$(gemini "Generate a concise git commit message (max 72 chars) for this diff. Output ONLY the raw message text: $diff_ctx" 2>/dev/null)
+            if [[ -n "$gen_msg" ]]; then
+                print -P "  > Generated: %F{green}$gen_msg%f" >&2
+                echo "$gen_msg"
+                return
+            fi
+        fi
+    fi
+    echo "$input_msg"
+}
+
 do_pull() {
     print -P "\n%K{blue}%F{black} 2. PULL %k%f\n"
     print -P "%K{yellow}%F{black} MAIN %k%f\n"
@@ -77,24 +95,7 @@ do_pull() {
 do_commit() {
     local msg="$1"
     print -P "\n%K{blue}%F{black} 3. COMMIT %k%f\n"
-    local get_contextual_msg() {
-        local repo_path="$1"
-        local input_msg="$2"
-        if [[ "$input_msg" == "System update" ]] && (( $+commands[gemini] )); then
-            if ! git -C "$repo_path" diff --cached --quiet; then
-                print -P "\n%F{cyan}ℹ Gemini: Analyzing changes in ${repo_path:t}...%f\n" >&2
-                local diff_ctx=$(git -C "$repo_path" diff --cached | head -n 50)
-                local gen_msg=$(gemini "Generate a concise git commit message (max 72 chars) for this diff. Output ONLY the raw message text: $diff_ctx" 2>/dev/null)
-                if [[ -n "$gen_msg" ]]; then
-                    print -P "  > Generated: %F{green}$gen_msg%f" >&2
-                    echo "$gen_msg"
-                    return
-                fi
-            fi
-        fi
-        echo "$input_msg"
-    }
-    print -P "\n%K{yellow}%F{black} SECRETS %k%f\n"
+    print -P "%K{yellow}%F{black} SECRETS %k%f\n"
     if [[ -d "$REPO_ROOT/Secrets" ]]; then
         git -C "$REPO_ROOT/Secrets" add .
         local s_msg=$(get_contextual_msg "$REPO_ROOT/Secrets" "$msg")
@@ -111,8 +112,8 @@ do_commit() {
 do_push() {
     print -P "\n%K{blue}%F{black} 4. PUSH %k%f\n"
     if [[ -d "$REPO_ROOT/Secrets" ]]; then
-    print -P "%K{yellow}%F{black} SECRETS %k%f\n"
-    print -P "%F{cyan}ℹ Pushing Secrets...%f\n"
+        print -P "%K{yellow}%F{black} SECRETS %k%f\n"
+        print -P "%F{cyan}ℹ Pushing Secrets...%f\n"
         git -C "$REPO_ROOT/Secrets" push
     fi
     print -P "\n%K{yellow}%F{black} MAIN %k%f\n"
