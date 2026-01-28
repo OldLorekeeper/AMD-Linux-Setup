@@ -151,7 +151,7 @@ do_commit() {
 
     for repo in Secrets Privacy Main; do
         if [[ -n "$repo_paths[$repo]" ]]; then
-            print -P "%K{yellow}%F{black} ${repo:u} %k%f"
+            print -P "%K{yellow}%F{black} ${repo:u} %k%f\n"
             local final_msg="$commit_msgs[$repo]"
             [[ "$final_msg" != "$msg" ]] && print -P "  > Generated: %F{green}$final_msg%f"
             git -C "$repo_paths[$repo]" commit -m "$final_msg" || true
