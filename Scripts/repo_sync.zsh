@@ -77,15 +77,34 @@ do_pull() {
 do_commit() {
     local msg="$1"
     print -P "\n%K{blue}%F{black} 3. COMMIT %k%f\n"
-    print -P "%K{yellow}%F{black} SECRETS %k%f\n"
+    local get_contextual_msg() {
+        local repo_path="$1"
+        local input_msg="$2"
+        if [[ "$input_msg" == "System update" ]] && (( $+commands[gemini] )); then
+            if ! git -C "$repo_path" diff --cached --quiet; then
+                print -P "\n%F{cyan}ℹ Gemini: Analyzing changes in ${repo_path:t}...%f\n" >&2
+                local diff_ctx=$(git -C "$repo_path" diff --cached | head -n 50)
+                local gen_msg=$(gemini "Generate a concise git commit message (max 72 chars) for this diff. Output ONLY the raw message text: $diff_ctx" 2>/dev/null)
+                if [[ -n "$gen_msg" ]]; then
+                    print -P "  > Generated: %F{green}$gen_msg%f" >&2
+                    echo "$gen_msg"
+                    return
+                fi
+            fi
+        fi
+        echo "$input_msg"
+    }
+    print -P "\n%K{yellow}%F{black} SECRETS %k%f\n"
     if [[ -d "$REPO_ROOT/Secrets" ]]; then
         git -C "$REPO_ROOT/Secrets" add .
-        git -C "$REPO_ROOT/Secrets" commit -m "$msg" || true
+        local s_msg=$(get_contextual_msg "$REPO_ROOT/Secrets" "$msg")
+        git -C "$REPO_ROOT/Secrets" commit -m "$s_msg" || true
     fi
     print -P "\n%K{yellow}%F{black} MAIN %k%f\n"
     print -P "%F{cyan}ℹ Committing Main...%f\n"
     git -C "$REPO_ROOT" add .
-    git -C "$REPO_ROOT" commit -m "$msg" || true
+    local m_msg=$(get_contextual_msg "$REPO_ROOT" "$msg")
+    git -C "$REPO_ROOT" commit -m "$m_msg" || true
     print -P "\nStatus: %F{green}Commit Complete%f"
 }
 
