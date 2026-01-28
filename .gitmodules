@@ -1,0 +1,3 @@
+[submodule "Secrets"]
+	path = Secrets
+	url = https://github.com/OldLorekeeper/AMD-Linux-Secrets

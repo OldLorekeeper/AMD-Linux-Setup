@@ -89,11 +89,12 @@ $diff_ctx" 2>/dev/null)
 }
 
 do_pull() {
-# ... (rest of do_pull remains same)
     print -P "\n%K{blue}%F{black} 2. PULL %k%f\n"
     print -P "%K{yellow}%F{black} MAIN %k%f\n"
     print -P "%F{cyan}ℹ Updating Main Repo...%f\n"
     git -C "$REPO_ROOT" pull
+    print -P "%F{cyan}ℹ Synchronising Submodules...%f\n"
+    git -C "$REPO_ROOT" submodule update --init --recursive
     if [[ -d "$REPO_ROOT/Secrets" ]]; then
         print -P "\n%K{yellow}%F{black} SECRETS %k%f\n"
         print -P "%F{cyan}ℹ Updating Secrets Repo...%f\n"
@@ -152,6 +153,7 @@ do_commit() {
     for repo in Secrets Privacy Main; do
         if [[ -n "$repo_paths[$repo]" ]]; then
             print -P "%K{yellow}%F{black} ${repo:u} %k%f\n"
+            [[ "$repo" == "Main" && -d "$REPO_ROOT/Secrets" ]] && git -C "$REPO_ROOT" add Secrets
             local final_msg="$commit_msgs[$repo]"
             [[ "$final_msg" != "$msg" ]] && print -P "  > Generated: %F{green}$final_msg%f"
             git -C "$repo_paths[$repo]" commit -m "$final_msg" || true
