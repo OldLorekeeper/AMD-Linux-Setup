@@ -46,12 +46,14 @@ print -P "\n%K{green}%F{black} REPO MANAGEMENT %k%f\n"
 print -P "%K{blue}%F{black} 1. CONFIGURATION %k%f\n"
 COMMAND="${1:-}"
 MESSAGE="${2:-System update}"
+PRIVACY_ROOT="${REPO_ROOT:h}/Privacy"
 if [[ -z "$COMMAND" ]]; then
     print -P "%F{red}Error: No command specified. Use pull, commit, push, or sync.%f"
     exit 1
 fi
 print -P "Action:       %F{green}${(C)COMMAND}%f"
 print -P "Root:         %F{cyan}$REPO_ROOT%f"
+print -P "Privacy:      %F{cyan}$PRIVACY_ROOT%f"
 # END
 
 # ------------------------------------------------------------------------------
@@ -65,13 +67,20 @@ get_contextual_msg() {
     local repo_path="$1"
     local input_msg="$2"
     if [[ "$input_msg" == "System update" ]] && (( $+commands[gemini] )); then
-        if ! git -C "$repo_path" diff --cached --quiet; then
-            print -P "\n%F{cyan}ℹ Gemini: Analyzing changes in ${repo_path:t}...%f\n" >&2
+        local diff_stat=$(git -C "$repo_path" diff --cached --stat 2>/dev/null)
+        if [[ -n "$diff_stat" ]]; then
+            # Use stat for overview and truncated diff for detail
             local diff_ctx=$(git -C "$repo_path" diff --cached | head -n 50)
-            local gen_msg=$(gemini "Generate a concise git commit message (max 72 chars) for this diff. Output ONLY the raw message text: $diff_ctx" 2>/dev/null)
+            local gen_msg=$(gemini "Generate a concise git commit message (max 72 chars). 
+Return ONLY the raw message text.
+
+Overview:
+$diff_stat
+
+Details:
+$diff_ctx" 2>/dev/null)
             if [[ -n "$gen_msg" ]]; then
-                print -P "  > Generated: %F{green}$gen_msg%f" >&2
-                echo "$gen_msg"
+                echo "${${gen_msg#[\"\']}%[\"\']}"
                 return
             fi
         fi
@@ -80,6 +89,7 @@ get_contextual_msg() {
 }
 
 do_pull() {
+# ... (rest of do_pull remains same)
     print -P "\n%K{blue}%F{black} 2. PULL %k%f\n"
     print -P "%K{yellow}%F{black} MAIN %k%f\n"
     print -P "%F{cyan}ℹ Updating Main Repo...%f\n"
@@ -89,24 +99,66 @@ do_pull() {
         print -P "%F{cyan}ℹ Updating Secrets Repo...%f\n"
         git -C "$REPO_ROOT/Secrets" pull
     fi
+    if [[ -d "$PRIVACY_ROOT" ]]; then
+        print -P "\n%K{yellow}%F{black} PRIVACY %k%f\n"
+        print -P "%F{cyan}ℹ Updating Privacy Repo...%f\n"
+        git -C "$PRIVACY_ROOT" pull
+    fi
     print -P "\nStatus: %F{green}Pull Complete%f"
 }
 
 do_commit() {
     local msg="$1"
     print -P "\n%K{blue}%F{black} 3. COMMIT %k%f\n"
-    print -P "%K{yellow}%F{black} SECRETS %k%f\n"
+    
+    local -a active_repos
+    local -A repo_paths
+    
+    active_repos=(Main)
+    repo_paths[Main]="$REPO_ROOT"
+    
     if [[ -d "$REPO_ROOT/Secrets" ]]; then
-        git -C "$REPO_ROOT/Secrets" add .
-        local s_msg=$(get_contextual_msg "$REPO_ROOT/Secrets" "$msg")
-        git -C "$REPO_ROOT/Secrets" commit -m "$s_msg" || true
+        active_repos+=(Secrets)
+        repo_paths[Secrets]="$REPO_ROOT/Secrets"
     fi
-    print -P "\n%K{yellow}%F{black} MAIN %k%f\n"
-    print -P "%F{cyan}ℹ Committing Main...%f\n"
-    git -C "$REPO_ROOT" add .
-    local m_msg=$(get_contextual_msg "$REPO_ROOT" "$msg")
-    git -C "$REPO_ROOT" commit -m "$m_msg" || true
-    print -P "\nStatus: %F{green}Commit Complete%f"
+    
+    if [[ -d "$PRIVACY_ROOT" ]]; then
+        active_repos+=(Privacy)
+        repo_paths[Privacy]="$PRIVACY_ROOT"
+    fi
+
+    for repo in $active_repos; do
+        git -C "$repo_paths[$repo]" add .
+    done
+
+    local -A commit_msgs
+    if [[ "$msg" == "System update" ]] && (( $+commands[gemini] )); then
+        print -P "%F{cyan}ℹ Gemini: Analyzing changes in parallel...%f\n"
+        local tmp_dir=$(mktemp -d)
+        for repo in $active_repos; do
+            ( get_contextual_msg "$repo_paths[$repo]" "$msg" > "$tmp_dir/$repo" ) &
+        done
+        wait
+        for repo in $active_repos; do
+            commit_msgs[$repo]=$(cat "$tmp_dir/$repo")
+        done
+        rm -rf "$tmp_dir"
+    else
+        for repo in $active_repos; do
+            commit_msgs[$repo]="$msg"
+        done
+    fi
+
+    for repo in Secrets Privacy Main; do
+        if [[ -n "$repo_paths[$repo]" ]]; then
+            print -P "%K{yellow}%F{black} ${repo:u} %k%f"
+            local final_msg="$commit_msgs[$repo]"
+            [[ "$final_msg" != "$msg" ]] && print -P "  > Generated: %F{green}$final_msg%f"
+            git -C "$repo_paths[$repo]" commit -m "$final_msg" || true
+            print ""
+        fi
+    done
+    print -P "Status: %F{green}Commit Complete%f"
 }
 
 do_push() {
@@ -115,6 +167,11 @@ do_push() {
         print -P "%K{yellow}%F{black} SECRETS %k%f\n"
         print -P "%F{cyan}ℹ Pushing Secrets...%f\n"
         git -C "$REPO_ROOT/Secrets" push
+    fi
+    if [[ -d "$PRIVACY_ROOT" ]]; then
+        print -P "\n%K{yellow}%F{black} PRIVACY %k%f\n"
+        print -P "%F{cyan}ℹ Pushing Privacy...%f\n"
+        git -C "$PRIVACY_ROOT" push
     fi
     print -P "\n%K{yellow}%F{black} MAIN %k%f\n"
     print -P "%F{cyan}ℹ Pushing Main...%f\n"
