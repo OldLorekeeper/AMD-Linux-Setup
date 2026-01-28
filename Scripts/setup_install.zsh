@@ -506,12 +506,23 @@ ln -sf "$REPO_DIR/Resources/zshrc/zshrc_$DEVICE_PROFILE" "/home/$TARGET_USER/.zs
 if [[ "$SECRETS_LOADED" == "true" ]]; then
     print -P "\n%F{cyan}ℹ Installing Gemini CLI...%f\n"
     npm install -g @google/gemini-cli 1>/dev/null 2>&1
-    mkdir -p "/home/$TARGET_USER/.gemini" "$REPO_DIR/.gemini"
+    mkdir -p "/home/$TARGET_USER/.gemini/skills" "$REPO_DIR/.gemini/skills"
     ln -sf "$SECRETS_DIR/Gemini/global_settings.json" "/home/$TARGET_USER/.gemini/settings.json"
     ln -sf "$SECRETS_DIR/Gemini/global_GEMINI.md" "/home/$TARGET_USER/.gemini/GEMINI.md"
     ln -sf "$SECRETS_DIR/Gemini/global_trustedFolders.json" "/home/$TARGET_USER/.gemini/trustedFolders.json"
     ln -sf "$SECRETS_DIR/Gemini/arch_geminiignore" "$REPO_DIR/.geminiignore"
     ln -sf "$SECRETS_DIR/Gemini/arch_GEMINI.md" "$REPO_DIR/GEMINI.md"
+
+    # Dynamic Skill Linking
+    print -P "%F{cyan}ℹ Linking Gemini Skills...%f"
+    for skill in "$SECRETS_DIR/Gemini/arch_skills/"*(N); do
+        ln -sf "$skill" "$REPO_DIR/.gemini/skills/${skill:t}"
+        print -P "  Linked Arch Skill: %F{green}${skill:t}%f"
+    done
+    for skill in "$SECRETS_DIR/Gemini/global_skills/"*(N); do
+        ln -sf "$skill" "/home/$TARGET_USER/.gemini/skills/${skill:t}"
+        print -P "  Linked Global Skill: %F{green}${skill:t}%f"
+    done
 fi
 
 print -P "\n%K{yellow}%F{black} FINAL THEMING %k%f\n"
