@@ -93,7 +93,7 @@ do_pull() {
     print -P "%K{yellow}%F{black} MAIN %k%f\n"
     print -P "%F{cyan}ℹ Updating Main Repo...%f\n"
     git -C "$REPO_ROOT" pull
-    print -P "\n%F{cyan}ℹ Synchronising Submodules...%f\n"
+    print -P "\n%F{cyan}ℹ Synchronising Submodules...%f"
     git -C "$REPO_ROOT" submodule update --init --recursive
     if [[ -d "$REPO_ROOT/Secrets" ]]; then
         print -P "\n%K{yellow}%F{black} SECRETS %k%f\n"
