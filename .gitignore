@@ -1,7 +1,7 @@
 .obsidian/
 .trash/
 .directory/
-.geminiignore
+.gemini/
 Secrets/
+.geminiignore
 GEMINI.md
-gemini.config.json
