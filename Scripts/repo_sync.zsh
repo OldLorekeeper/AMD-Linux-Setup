@@ -53,7 +53,7 @@ if [[ -z "$COMMAND" ]]; then
 fi
 print -P "Action:       %F{green}${(C)COMMAND}%f"
 print -P "Root:         %F{cyan}$REPO_ROOT%f"
-print -P "Privacy:      %F{cyan}$PRIVACY_ROOT%f"
+[[ -d "$PRIVACY_ROOT" ]] && print -P "Privacy:      %F{cyan}$PRIVACY_ROOT%f"
 # END
 
 # ------------------------------------------------------------------------------
