@@ -123,8 +123,8 @@ alias mkinit="sudo mkinitcpio -P"
 alias mkgrub="sudo grub-mkconfig -o /boot/grub/grub.cfg"
 
 # Gemini
-alias gemini-arch="cd $ARCH_REPO && gemini"
-alias gemini-privacy="cd $PRIVACY_REPO && gemini"
+alias gemini-arch="cd $ARCH_REPO && NODE_NO_WARNINGS=1 gemini"
+alias gemini-privacy="cd $PRIVACY_REPO && NODE_NO_WARNINGS=1 gemini"
 
 # ------------------------------------------------------------------------------
 # 3. GIT AUTO-ORGANISATION
