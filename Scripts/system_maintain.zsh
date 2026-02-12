@@ -138,6 +138,13 @@ if mountpoint -q /mnt/Media; then
     print -P "\n%F{cyan}ℹ Media Drive Usage:%f\n"
     sudo btrfs filesystem usage /mnt/Media -h | grep -E "Device size:|Free \(estimated\):"
 fi
+print -P "\n%F{cyan}ℹ Checking for Bit Rot (Btrfs Checksum Errors):%f\n"
+if journalctl -k --since "30 days ago" | grep -i "btrfs: checksum error" >/dev/null 2>&1; then
+    print -P "%F{red}⚠ WARNING: Checksum errors detected in the last 30 days!%f"
+    journalctl -k --since "30 days ago" | grep -i "btrfs: checksum error" | tail -n 5
+else
+    print -P "%F{green}No checksum errors detected in system journal (30d).%f"
+fi
 # END
 
 # ------------------------------------------------------------------------------
@@ -191,6 +198,7 @@ if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
     TARGET_SERVICES+=(
         "jellyfin" "transmission" "sonarr" "radarr"
         "lidarr" "prowlarr" "slskd" "soularr.timer" "lactd"
+        "btrfs-scrub@mnt-Media.timer"
     )
     [[ -f /usr/lib/systemd/system/grub-btrfsd.service ]] && TARGET_SERVICES+=("grub-btrfsd")
 elif [[ "$PROFILE_TYPE" == "Laptop" ]]; then
