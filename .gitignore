@@ -5,3 +5,5 @@
 Secrets/
 .geminiignore
 GEMINI.md
+.agent/
+.vscode/

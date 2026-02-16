@@ -317,7 +317,7 @@ mount "$PART1" /mnt/efi
 # BEGIN
 print -P "\n%K{blue}%F{black} 6. BASE INSTALLATION %k%f\n"
 CORE_PKGS=(
-    "amd-ucode" "base" "base-devel" "bluez" "bluez-utils" "btrfs-progs"
+    "amd-ucode" "antigravity" "base" "base-devel" "bluez" "bluez-utils" "btrfs-progs"
     "cachyos-keyring" "cachyos-mirrorlist" "cachyos-settings" "cachyos-v4-mirrorlist"
     "efibootmgr" "git" "grub" "grub-btrfs" "inetutils" "linux-cachyos"
     "linux-cachyos-headers" "linux-firmware" "networkmanager" "networkmanager-qt"
@@ -504,20 +504,26 @@ print -P "\n%F{cyan}ℹ Linking Zsh Configuration ($DEVICE_PROFILE)...%f\n"
 rm -f "/home/$TARGET_USER/.zshrc"
 ln -sf "$REPO_DIR/Resources/zshrc/zshrc_$DEVICE_PROFILE" "/home/$TARGET_USER/.zshrc"
 if [[ "$SECRETS_LOADED" == "true" ]]; then
-    print -P "\n%F{cyan}ℹ Installing Gemini CLI...%f\n"
+    print -P "%F{cyan}ℹ Installing Gemini CLI...%f\n"
     npm install -g @google/gemini-cli 1>/dev/null 2>&1
-    mkdir -p "/home/$TARGET_USER/.gemini/skills" "$REPO_DIR/.gemini/skills"
-    ln -sf "$SECRETS_DIR/Gemini/global_settings.json" "/home/$TARGET_USER/.gemini/settings.json"
-    ln -sf "$SECRETS_DIR/Gemini/global_GEMINI.md" "/home/$TARGET_USER/.gemini/GEMINI.md"
-    ln -sf "$SECRETS_DIR/Gemini/global_trustedFolders.json" "/home/$TARGET_USER/.gemini/trustedFolders.json"
-    ln -sf "$SECRETS_DIR/Gemini/arch_settings.json" "$REPO_DIR/.gemini/settings.json"
-    ln -sf "$SECRETS_DIR/Gemini/arch_geminiignore" "$REPO_DIR/.geminiignore"
-    ln -sf "$SECRETS_DIR/Gemini/arch_GEMINI.md" "$REPO_DIR/GEMINI.md"
-    print -P "%F{cyan}ℹ Linking Gemini Skills...%f"
-    for skill in "$SECRETS_DIR/Gemini/arch_skills/"*(N); do
-        ln -sf "$skill" "$REPO_DIR/.gemini/skills/${skill:t}"
-        print -P "Linked Arch Skill: %F{green}${skill:t}%f"
-    done
+    mkdir -p "/home/$TARGET_USER/.gemini"
+    
+    print -P "%F{cyan}ℹ Linking Global Gemini Config...%f"
+    ln -sf "$SECRETS_DIR/Gemini/CLI/Global/settings.json" "/home/$TARGET_USER/.gemini/settings.json"
+    ln -sf "$SECRETS_DIR/Gemini/CLI/Global/GEMINI.md" "/home/$TARGET_USER/.gemini/GEMINI.md"
+    ln -sf "$SECRETS_DIR/Gemini/CLI/Global/trustedFolders.json" "/home/$TARGET_USER/.gemini/trustedFolders.json"
+
+    print -P "%F{cyan}ℹ Linking Antigravity Config...%f"
+    mkdir -p "/home/$TARGET_USER/.gemini/antigravity" # Ensure local target exists
+    
+    ln -sf "$SECRETS_DIR/Gemini/Antigravity/Global/mcp_config.json" "/home/$TARGET_USER/.gemini/antigravity/mcp_config.json"
+    ln -sf "$SECRETS_DIR/Gemini/CLI/Arch/.geminiignore" "$REPO_DIR/.geminiignore"
+    ln -sf "$SECRETS_DIR/Gemini/CLI/Arch/GEMINI.md" "$REPO_DIR/GEMINI.md"
+    ln -sf "$SECRETS_DIR/Gemini/Antigravity/Arch/vscode" "$REPO_DIR/.vscode"
+    ln -sf "$SECRETS_DIR/Gemini/Antigravity/Arch/agent" "$REPO_DIR/.agent"
+    
+    print -P "%F{cyan}ℹ Linking Gemini CLI Config...%f"
+    ln -sf "$SECRETS_DIR/Gemini/CLI/Arch" "$REPO_DIR/.gemini"
 fi
 
 print -P "\n%K{yellow}%F{black} FINAL THEMING %k%f\n"
