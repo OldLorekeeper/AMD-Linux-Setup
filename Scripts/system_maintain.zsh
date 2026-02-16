@@ -264,6 +264,43 @@ fi
 # END
 
 # ------------------------------------------------------------------------------
+# 7. Antigravity Integrity
+# ------------------------------------------------------------------------------
+
+# Purpose: Ensures that the local copy of agent rules and skills matches the Secrets repository source of truth, as Google Antigravity requires physical files rather than symlinks.
+
+# BEGIN
+print -P "\n%K{blue}%F{black} 7. ANTIGRAVITY INTEGRITY %k%f\n"
+SECRETS_RULES="$REPO_ROOT/Secrets/Gemini/Arch/Rules"
+SECRETS_SKILLS="$REPO_ROOT/Secrets/Gemini/Arch/Skills"
+LOCAL_RULES="$REPO_ROOT/.agent/rules"
+LOCAL_SKILLS="$REPO_ROOT/.agent/skills"
+CLI_SKILLS="$REPO_ROOT/.gemini/skills"
+check_alignment() {
+    local src=$1 dst=$2 name=$3
+    if [[ ! -d "$src" ]]; then
+        print -P "%F{red}Error: Source not found: $src%f"
+        return
+    fi
+    if [[ -L "$dst" ]]; then
+        print -P "%F{yellow}ℹ $name is a symlink. Replacing with physical copy...%f"
+        rm -f "$dst" && cp -r "$src" "$dst"
+    elif [[ ! -d "$dst" ]]; then
+        print -P "%F{yellow}ℹ $name missing. Copying from Secrets...%f"
+        cp -r "$src" "$dst"
+    elif ! diff -r "$src" "$dst" >/dev/null 2>&1; then
+        print -P "%F{yellow}ℹ $name out of sync. Updating from Secrets...%f"
+        rm -rf "$dst" && cp -r "$src" "$dst"
+    else
+        print -P "$name:       %F{green}Aligned%f"
+    fi
+}
+check_alignment "$SECRETS_RULES" "$LOCAL_RULES" "Agent Rules"
+check_alignment "$SECRETS_SKILLS" "$LOCAL_SKILLS" "Agent Skills"
+check_alignment "$SECRETS_SKILLS" "$CLI_SKILLS" "CLI Skills"
+# END
+
+# ------------------------------------------------------------------------------
 # End
 # ------------------------------------------------------------------------------
 

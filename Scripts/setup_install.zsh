@@ -525,13 +525,14 @@ if [[ "$SECRETS_LOADED" == "true" ]]; then
     # ARGV: VSCode Args
     [[ -f "$SECRETS_DIR/Gemini/Global/argv.json" ]] && ln -sf "$SECRETS_DIR/Gemini/Global/argv.json" "/home/$TARGET_USER/.antigravity/argv.json"
 
-    # AGENT STRUCTURE: Link directly to Arch context
-    ln -sf "$SECRETS_DIR/Gemini/Arch/Rules" "$REPO_DIR/.agent/rules"
-    ln -sf "$SECRETS_DIR/Gemini/Arch/Skills" "$REPO_DIR/.agent/skills"
-    ln -sf "$SECRETS_DIR/Gemini/Arch/Workflows" "$REPO_DIR/.agent/workflows"
+    # AGENT STRUCTURE: Copy from Arch context (Antigravity compatibility)
+    rm -rf "$REPO_DIR/.agent/rules" "$REPO_DIR/.agent/skills"
+    cp -r "$SECRETS_DIR/Gemini/Arch/Rules" "$REPO_DIR/.agent/rules"
+    cp -r "$SECRETS_DIR/Gemini/Arch/Skills" "$REPO_DIR/.agent/skills"
 
     # CLI SKILLS:
-    ln -sf "$SECRETS_DIR/Gemini/Arch/Skills" "$REPO_DIR/.gemini/skills"
+    rm -rf "$REPO_DIR/.gemini/skills"
+    cp -r "$SECRETS_DIR/Gemini/Arch/Skills" "$REPO_DIR/.gemini/skills"
 
     # VSCODE: Arch Specific
     ln -sf "$SECRETS_DIR/Gemini/Arch/VSCode" "$REPO_DIR/.vscode"
