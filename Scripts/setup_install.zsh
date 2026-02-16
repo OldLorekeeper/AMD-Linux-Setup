@@ -508,22 +508,39 @@ if [[ "$SECRETS_LOADED" == "true" ]]; then
     npm install -g @google/gemini-cli 1>/dev/null 2>&1
     mkdir -p "/home/$TARGET_USER/.gemini"
     
-    print -P "%F{cyan}ℹ Linking Global Gemini Config...%f"
-    ln -sf "$SECRETS_DIR/Gemini/CLI/Global/settings.json" "/home/$TARGET_USER/.gemini/settings.json"
-    ln -sf "$SECRETS_DIR/Gemini/CLI/Global/GEMINI.md" "/home/$TARGET_USER/.gemini/GEMINI.md"
-    ln -sf "$SECRETS_DIR/Gemini/CLI/Global/trustedFolders.json" "/home/$TARGET_USER/.gemini/trustedFolders.json"
-
     print -P "%F{cyan}ℹ Linking Antigravity Config...%f"
-    mkdir -p "/home/$TARGET_USER/.gemini/antigravity" # Ensure local target exists
+    mkdir -p "/home/$TARGET_USER/.gemini/antigravity"
+    mkdir -p "/home/$TARGET_USER/.antigravity"
     
-    ln -sf "$SECRETS_DIR/Gemini/Antigravity/Global/mcp_config.json" "/home/$TARGET_USER/.gemini/antigravity/mcp_config.json"
-    ln -sf "$SECRETS_DIR/Gemini/CLI/Arch/.geminiignore" "$REPO_DIR/.geminiignore"
-    ln -sf "$SECRETS_DIR/Gemini/CLI/Arch/GEMINI.md" "$REPO_DIR/GEMINI.md"
-    ln -sf "$SECRETS_DIR/Gemini/Antigravity/Arch/vscode" "$REPO_DIR/.vscode"
-    ln -sf "$SECRETS_DIR/Gemini/Antigravity/Arch/agent" "$REPO_DIR/.agent"
+    # UNIFIED CONFIG: Link both tools to the same source
+    ln -sf "$SECRETS_DIR/Gemini/Arch/config.json" "/home/$TARGET_USER/.gemini/antigravity/mcp_config.json"
+    ln -sf "$SECRETS_DIR/Gemini/Arch/config.json" "$REPO_DIR/.gemini/settings.json"
+
+    # GLOBAL CLI SETTINGS:
+    [[ -f "$SECRETS_DIR/Gemini/Global/settings.json" ]] && ln -sf "$SECRETS_DIR/Gemini/Global/settings.json" "/home/$TARGET_USER/.gemini/settings.json"
+
+    # GLOBAL PERSONA/RULES:
+    [[ -f "$SECRETS_DIR/Gemini/Global/persona.md" ]] && ln -sf "$SECRETS_DIR/Gemini/Global/persona.md" "/home/$TARGET_USER/.gemini/GEMINI.md"
     
-    print -P "%F{cyan}ℹ Linking Gemini CLI Config...%f"
-    ln -sf "$SECRETS_DIR/Gemini/CLI/Arch" "$REPO_DIR/.gemini"
+    # ARGV: VSCode Args
+    [[ -f "$SECRETS_DIR/Gemini/Global/argv.json" ]] && ln -sf "$SECRETS_DIR/Gemini/Global/argv.json" "/home/$TARGET_USER/.antigravity/argv.json"
+
+    # AGENT STRUCTURE: Link directly to Arch context
+    ln -sf "$SECRETS_DIR/Gemini/Arch/Rules" "$REPO_DIR/.agent/rules"
+    ln -sf "$SECRETS_DIR/Gemini/Arch/Skills" "$REPO_DIR/.agent/skills"
+    ln -sf "$SECRETS_DIR/Gemini/Arch/Workflows" "$REPO_DIR/.agent/workflows"
+
+    # CLI SKILLS:
+    ln -sf "$SECRETS_DIR/Gemini/Arch/Skills" "$REPO_DIR/.gemini/skills"
+
+    # VSCODE: Arch Specific
+    ln -sf "$SECRETS_DIR/Gemini/Arch/VSCode" "$REPO_DIR/.vscode"
+
+    # CONTEXT: Generate GEMINI.md from Global Persona + Arch Context
+    cat "$SECRETS_DIR/Gemini/Global/persona.md" "$SECRETS_DIR/Gemini/Arch/context.md" > "$REPO_DIR/GEMINI.md"
+    
+    # IGNORE
+    ln -sf "$SECRETS_DIR/Gemini/Arch/GeminiIgnore" "$REPO_DIR/.geminiignore"
 fi
 
 print -P "\n%K{yellow}%F{black} FINAL THEMING %k%f\n"
