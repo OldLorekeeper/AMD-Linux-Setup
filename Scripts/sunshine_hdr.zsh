@@ -36,11 +36,13 @@ print -P "Default Mode: %F{cyan}$DEFAULT_MODE%f"
 print -P "\n%K{blue}%F{black} 2. LOGIC %k%f\n"
 case "$1" in
     enable)
-        kscreen-doctor output.$MONITOR.mode.$STREAM_MODE output.$MONITOR.hdr.enable output.$MONITOR.scale.1.2
+        # Ideally, enable WCG explicitly here too for consistency
+        kscreen-doctor output.$MONITOR.mode.$STREAM_MODE output.$MONITOR.hdr.enable output.$MONITOR.wcg.enable output.$MONITOR.scale.1.2
         print -P "Status: %F{green}HDR Enabled (Scale 1.2)%f"
         ;;
     disable)
-        kscreen-doctor output.$MONITOR.hdr.disable output.$MONITOR.mode.$DEFAULT_MODE output.$MONITOR.scale.1.0
+        # ADDED: output.$MONITOR.wcg.disable
+        kscreen-doctor output.$MONITOR.hdr.disable output.$MONITOR.wcg.disable output.$MONITOR.mode.$DEFAULT_MODE output.$MONITOR.scale.1.0
         print -P "Status: %F{green}HDR Disabled (Scale 1.0)%f"
         ;;
     *)
