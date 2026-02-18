@@ -191,7 +191,7 @@ fi
 print -P "\n%K{blue}%F{black} 5. SERVICE HEALTH CHECK %k%f\n"
 typeset -a TARGET_SERVICES
 TARGET_SERVICES=(
-    "NetworkManager" "bluetooth" "sshd" "sddm" "fwupd"
+    "NetworkManager" "bluetooth" "sshd" "plasmalogin" "fwupd"
     "reflector.timer" "btrfs-balance.timer" "btrfs-scrub@-.timer" "timeshift-hourly.timer"
 )
 if [[ "$PROFILE_TYPE" == "Desktop" ]]; then

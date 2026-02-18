@@ -325,8 +325,8 @@ CORE_PKGS=(
     "wireless-regdb" "zram-generator" "zsh"
     "ark" "bluedevil" "dolphin" "kate" "kinfocenter" "konsole" "kscreen"
     "kwallet-pam" "mesa" "partitionmanager" "pipewire" "pipewire-alsa"
-    "pipewire-pulse" "plasma-meta" "plasma-nm" "plasma-pa" "plasma-systemmonitor"
-    "powerdevil" "sddm" "sddm-kcm" "spectacle" "vulkan-radeon" "wireplumber"
+    "pipewire-pulse" "plasma-login-manager" "plasma-meta" "plasma-nm" "plasma-pa" "plasma-systemmonitor"
+    "powerdevil" "spectacle" "vulkan-radeon" "wireplumber"
     "7zip" "bash-language-server" "chromium" "cmake" "cmake-extras" "cpupower"
     "cups" "dkms" "dnsmasq" "dosfstools" "edk2-ovmf" "ethtool" "extra-cmake-modules"
     "fastfetch" "fwupd" "gamemode" "gamescope" "gwenview" "hunspell-en_gb"
@@ -419,7 +419,7 @@ print -P "%F{cyan}ℹ Configuring NetworkManager, iwd, and Bluetooth...%f\n"
 mkdir -p /etc/NetworkManager/conf.d; print -l "[device]" "wifi.backend=iwd" > /etc/NetworkManager/conf.d/wifi_backend.conf
 mkdir -p /etc/iwd; print -l "[General]" "Country=GB" > /etc/iwd/main.conf
 sed -i 's/^#*\(Experimental = \).*/\1true/' /etc/bluetooth/main.conf
-systemctl enable NetworkManager bluetooth sshd sddm fwupd.service reflector.timer
+systemctl enable NetworkManager bluetooth sshd plasmalogin fwupd.service reflector.timer
 mkdir -p /etc/xdg/reflector
 print -l -- "--country GB,IE,NL,DE,FR,EU" "--latest 20" "--sort rate" "--save /etc/pacman.d/mirrorlist" > /etc/xdg/reflector/reflector.conf
 print -P "\n%F{cyan}ℹ Installing Network Dispatcher Scripts...%f\n"
