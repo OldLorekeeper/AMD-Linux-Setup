@@ -3,38 +3,13 @@
 # 8. Utility. Repository Sync Manager
 # Manages git operations (pull, commit, push) for the nested repository structure.
 # ------------------------------------------------------------------------------
-#
-# DEVELOPMENT RULES:
-#
-# 1. Safety: `setopt ERR_EXIT NO_UNSET PIPE_FAIL EXTENDED_GLOB`.
-# 2. Syntax: Native Zsh modifiers (e.g. ${VAR:t}).
-# 3. Heredocs: Use language ID (e.g. <<ZSH, <<INI), unique IDs for nesting, and quote 'ID' to disable expansion.
-# 4. Structure:
-#    a) Sandwich numbered section separators (# ------) with 1 line padding before.
-#    b) Purpose comment block (1 line padding) at start of every numbered section summarising code.
-#    c) No inline/meta comments. Compact vertical layout (minimise blank lines)
-#    d) Retain frequent context info markers (%F{cyan}) inside dense logic blocks to prevent 'frozen' UI state.
-#    e) Code wrapped in '# BEGIN' and '# END' markers.
-#    f) Kate modeline at EOF.
-# 5. Idempotency: Re-runnable scripts. Check state before changes.
-# 6. UI Hierarchy Print -P
-#    a) Process marker:          Green Block (%K{green}%F{black}). Used at Start/End.
-#    b) Section marker:          Blue Block  (%K{blue}%F{black}). Numbered.
-#    c) Sub-section marker:      Yellow Block (%K{yellow}%F{black}).
-#    d) Interaction:             Yellow description (%F{yellow}) + minimal `read` prompt.
-#    e) Context/Status:          Cyan (Info ℹ), Green (Success), Red (Error/Warning).
-#    f) Marker spacing:          i)  Use `\n...%k%f\n`.
-#                                ii) Context (Cyan) markers MUST start and end with `\n`.
-#                                iii) Omit top `\n` on consecutive markers.
-#
-# ------------------------------------------------------------------------------
 
-# BEGIN
+# region Init
 setopt ERR_EXIT NO_UNSET PIPE_FAIL EXTENDED_GLOB
 SCRIPT_DIR=${0:a:h}
 REPO_ROOT=${SCRIPT_DIR:h}
 print -P "\n%K{green}%F{black} REPO MANAGEMENT %k%f\n"
-# END
+# endregion
 
 # ------------------------------------------------------------------------------
 # 1. Configuration
@@ -42,19 +17,21 @@ print -P "\n%K{green}%F{black} REPO MANAGEMENT %k%f\n"
 
 # Purpose: Validate input arguments and establish paths.
 
-# BEGIN
+# region 1. Configuration
 print -P "%K{blue}%F{black} 1. CONFIGURATION %k%f\n"
 COMMAND="${1:-}"
 MESSAGE="${2:-System update}"
 PRIVACY_ROOT="${REPO_ROOT:h}/Privacy"
+
 if [[ -z "$COMMAND" ]]; then
     print -P "%F{red}Error: No command specified. Use pull, commit, push, or sync.%f"
     exit 1
 fi
+
 print -P "Action:       %F{green}${(C)COMMAND}%f"
 print -P "Root:         %F{cyan}$REPO_ROOT%f"
 [[ -d "$PRIVACY_ROOT" ]] && print -P "Privacy:      %F{cyan}$PRIVACY_ROOT%f"
-# END
+# endregion
 
 # ------------------------------------------------------------------------------
 # 2. Functions
@@ -62,7 +39,7 @@ print -P "Root:         %F{cyan}$REPO_ROOT%f"
 
 # Purpose: Define the core git operations and Gemini helper.
 
-# BEGIN
+# region 2. Functions
 get_contextual_msg() {
     local repo_path="$1"
     local input_msg="$2"
@@ -93,13 +70,16 @@ do_pull() {
     print -P "%K{yellow}%F{black} MAIN %k%f\n"
     print -P "%F{cyan}ℹ Updating Main Repo...%f\n"
     git -C "$REPO_ROOT" pull
+    
     print -P "\n%F{cyan}ℹ Synchronising Submodules...%f"
     git -C "$REPO_ROOT" submodule update --init --recursive
+    
     if [[ -d "$REPO_ROOT/Secrets" ]]; then
         print -P "\n%K{yellow}%F{black} SECRETS %k%f\n"
         print -P "%F{cyan}ℹ Updating Secrets Repo...%f\n"
         git -C "$REPO_ROOT/Secrets" pull
     fi
+    
     if [[ -d "$PRIVACY_ROOT" ]]; then
         print -P "\n%K{yellow}%F{black} PRIVACY %k%f\n"
         print -P "%F{cyan}ℹ Updating Privacy Repo...%f\n"
@@ -180,7 +160,7 @@ do_push() {
     git -C "$REPO_ROOT" push
     print -P "\nStatus: %F{green}Push Complete%f"
 }
-# END
+# endregion
 
 # ------------------------------------------------------------------------------
 # 3. Execution
@@ -188,7 +168,7 @@ do_push() {
 
 # Purpose: Execute the requested command.
 
-# BEGIN
+# region 3. Execution
 case "$COMMAND" in
     pull)
         do_pull
@@ -209,14 +189,12 @@ case "$COMMAND" in
         exit 1
         ;;
 esac
-# END
+# endregion
 
 # ------------------------------------------------------------------------------
 # End
 # ------------------------------------------------------------------------------
 
-# BEGIN
+# region End
 print -P "\n%K{green}%F{black} PROCESS COMPLETE %k%f\n"
-# END
-
-# kate: hl Zsh; folding-markers on;
+# endregion

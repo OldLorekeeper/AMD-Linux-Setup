@@ -3,37 +3,12 @@
 # 3. Utility. Sunshine HDR/Resolution Configurator
 # Updates monitor and mode settings in local Sunshine helper scripts.
 # ------------------------------------------------------------------------------
-#
-# DEVELOPMENT RULES:
-#
-# 1. Safety: `setopt ERR_EXIT NO_UNSET PIPE_FAIL EXTENDED_GLOB`.
-# 2. Syntax: Native Zsh modifiers (e.g. ${VAR:t}).
-# 3. Heredocs: Use language ID (e.g. <<ZSH, <<INI), unique IDs for nesting, and quote 'ID' to disable expansion.
-# 4. Structure:
-#    a) Sandwich numbered section separators (# ------) with 1 line padding before.
-#    b) Purpose comment block (1 line padding) at start of every numbered section summarising code.
-#    c) No inline/meta comments. Compact vertical layout (minimise blank lines)
-#    d) Retain frequent context info markers (%F{cyan}) inside dense logic blocks to prevent 'frozen' UI state.
-#    e) Code wrapped in '# BEGIN' and '# END' markers.
-#    f) Kate modeline at EOF.
-# 5. Idempotency: Re-runnable scripts. Check state before changes.
-# 6. UI Hierarchy Print -P
-#    a) Process marker:          Green Block (%K{green}%F{black}). Used at Start/End.
-#    b) Section marker:          Blue Block  (%K{blue}%F{black}). Numbered.
-#    c) Sub-section marker:      Yellow Block (%K{yellow}%F{black}).
-#    d) Interaction:             Yellow description (%F{yellow}) + minimal `read` prompt.
-#    e) Context/Status:          Cyan (Info ℹ), Green (Success), Red (Error/Warning).
-#    f) Marker spacing:          i)  Use `\n...%k%f\n`.
-#                                ii) Context (Cyan) markers MUST start and end with `\n`.
-#                                iii) Omit top `\n` on consecutive markers.
-#
-# ------------------------------------------------------------------------------
 
-# BEGIN
+# region Init
 setopt ERR_EXIT NO_UNSET PIPE_FAIL EXTENDED_GLOB
 SCRIPT_DIR=${0:a:h}
 print -P "\n%K{green}%F{black} STARTING SUNSHINE CONFIGURATION %k%f\n"
-# END
+# endregion
 
 # ------------------------------------------------------------------------------
 # 1. Paths
@@ -41,17 +16,18 @@ print -P "\n%K{green}%F{black} STARTING SUNSHINE CONFIGURATION %k%f\n"
 
 # Purpose: Locate target scripts relative to this script.
 
-# BEGIN
+# region 1. Paths
 print -P "%K{blue}%F{black} 1. PATHS %k%f\n"
 HDR_SCRIPT="$SCRIPT_DIR/sunshine_hdr.zsh"
 RES_SCRIPT="$SCRIPT_DIR/sunshine_res.zsh"
 LAPTOP_SCRIPT="$SCRIPT_DIR/sunshine_laptop.zsh"
+
 if [[ ! -f "$HDR_SCRIPT" || ! -f "$RES_SCRIPT" || ! -f "$LAPTOP_SCRIPT" ]]; then
     print -P "%F{red}Error: Target Sunshine scripts not found in $SCRIPT_DIR%f"
     exit 1
 fi
 print -P "Scripts: %F{green}Found all target scripts%f"
-# END
+# endregion
 
 # ------------------------------------------------------------------------------
 # 2. Input
@@ -59,22 +35,25 @@ print -P "Scripts: %F{green}Found all target scripts%f"
 
 # Purpose: Gather monitor configuration from user.
 
-# BEGIN
+# region 2. Input
 print -P "\n%K{blue}%F{black} 2. INPUT %k%f\n"
 print -P "%K{yellow}%F{black} CURRENT CONFIGURATION %k%f\n"
 kscreen-doctor -o
 print ""
+
 print -P "%K{yellow}%F{black} USER ENTRY %k%f\n"
 print -P "%F{yellow}Enter Monitor ID:%f"
 print -P "%F{cyan}ℹ e.g. DP-1, HDMI-A-1%f\n"
 read "MON_ID?Value: "
+
 print -P "%F{yellow}Enter Target Streaming Mode Index:%f"
 print -P "%F{cyan}ℹ e.g. 9%f\n"
 read "STREAM_IDX?Value: "
+
 print -P "%F{yellow}Enter Default Desktop Mode Index:%f"
 print -P "%F{cyan}ℹ e.g. 1%f\n"
 read "DEFAULT_IDX?Value: "
-# END
+# endregion
 
 # ------------------------------------------------------------------------------
 # 3. Configuration
@@ -82,7 +61,7 @@ read "DEFAULT_IDX?Value: "
 
 # Purpose: Apply variables to target scripts using sed.
 
-# BEGIN
+# region 3. Configuration
 print -P "\n%K{blue}%F{black} 3. CONFIGURATION %k%f\n"
 if [[ -n "$MON_ID" && -n "$STREAM_IDX" && -n "$DEFAULT_IDX" ]]; then
     for file in "$HDR_SCRIPT" "$RES_SCRIPT" "$LAPTOP_SCRIPT"; do
@@ -96,14 +75,12 @@ else
     print -P "%F{red}Error: Missing input.%f"
     exit 1
 fi
-# END
+# endregion
 
 # ------------------------------------------------------------------------------
 # End
 # ------------------------------------------------------------------------------
 
-# BEGIN
+# region End
 print -P "\n%K{green}%F{black} PROCESS COMPLETE %k%f\n"
-# END
-
-# kate: hl Zsh; folding-markers on;
+# endregion

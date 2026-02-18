@@ -3,33 +3,8 @@
 # System Maintenance & Backup
 # Updates system, firmware, cleans cache, checks services, and backups Konsave profile.
 # ------------------------------------------------------------------------------
-#
-# DEVELOPMENT RULES:
-#
-# 1. Safety: `setopt ERR_EXIT NO_UNSET PIPE_FAIL EXTENDED_GLOB`.
-# 2. Syntax: Native Zsh modifiers (e.g. ${VAR:t}).
-# 3. Heredocs: Use language ID (e.g. <<ZSH, <<INI), unique IDs for nesting, and quote 'ID' to disable expansion.
-# 4. Structure:
-#    a) Sandwich numbered section separators (# ------) with 1 line padding before.
-#    b) Purpose comment block (1 line padding) at start of every numbered section summarising code.
-#    c) No inline/meta comments. Compact vertical layout (minimise blank lines)
-#    d) Retain frequent context info markers (%F{cyan}) inside dense logic blocks to prevent 'frozen' UI state.
-#    e) Code wrapped in '# BEGIN' and '# END' markers.
-#    f) Kate modeline at EOF.
-# 5. Idempotency: Re-runnable scripts. Check state before changes.
-# 6. UI Hierarchy Print -P
-#    a) Process marker:          Green Block (%K{green}%F{black}). Used at Start/End.
-#    b) Section marker:          Blue Block  (%K{blue}%F{black}). Numbered.
-#    c) Sub-section marker:      Yellow Block (%K{yellow}%F{black}).
-#    d) Interaction:             Yellow description (%F{yellow}) + minimal `read` prompt.
-#    e) Context/Status:          Cyan (Info ℹ), Green (Success), Red (Error/Warning).
-#    f) Marker spacing:          i)  Use `\n...%k%f\n`.
-#                                ii) Context (Cyan) markers MUST start and end with `\n`.
-#                                iii) Omit top `\n` on consecutive markers.
-#
-# ------------------------------------------------------------------------------
 
-# BEGIN
+# region Init
 setopt ERR_EXIT NO_UNSET PIPE_FAIL EXTENDED_GLOB
 SCRIPT_DIR=${0:a:h}
 sudo -v
@@ -37,7 +12,7 @@ sudo -v
 SUDO_PID=$!
 trap 'kill $SUDO_PID' EXIT
 print -P "\n%K{green}%F{black} STARTING SYSTEM MAINTENANCE %k%f\n"
-# END
+# endregion
 
 # ------------------------------------------------------------------------------
 # 1. Environment & Profile
@@ -45,13 +20,14 @@ print -P "\n%K{green}%F{black} STARTING SYSTEM MAINTENANCE %k%f\n"
 
 # Purpose: Loads user shell configuration to ensure environment variables are present and detects the device profile (Desktop/Laptop). Prompts user if profile is missing.
 
-# BEGIN
+# region 1. Environment & Profile
 print -P "%K{blue}%F{black} 1. ENVIRONMENT & PROFILE %k%f\n"
 if [[ -f "$HOME/.zshrc" ]]; then
     unsetopt ERR_EXIT
     ZSH_SKIP_OMZ_CHECK=1 source "$HOME/.zshrc" >/dev/null 2>&1
     setopt ERR_EXIT
 fi
+
 if [[ -n "${SYS_PROFILE:-}" ]]; then
     PROFILE_TYPE="${(C)SYS_PROFILE}"
     print -P "Profile:      %F{green}Loaded ($PROFILE_TYPE)%f"
@@ -65,7 +41,7 @@ else
         *) print -P "%F{red}Invalid selection. Exiting.%f"; exit 1 ;;
     esac
 fi
-# END
+# endregion
 
 # ------------------------------------------------------------------------------
 # 2. Updates (System & Firmware)
@@ -73,7 +49,7 @@ fi
 
 # Purpose: Performs a layered update: Zsh plugins, System packages (Yay), Gemini CLI, Firmware (fwupd), and Soularr application/dependencies.
 
-# BEGIN
+# region 2. Updates (System & Firmware)
 print -P "\n%K{blue}%F{black} 2. UPDATES (SYSTEM & FIRMWARE) %k%f\n"
 print -P "%K{yellow}%F{black} ZSH PLUGIN UPDATES %k%f\n"
 ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
@@ -81,13 +57,16 @@ for plugin in "$ZSH_CUSTOM"/plugins/*/.git(N:h); do
     print -P "Updating plugin: %F{cyan}${plugin:t}%f"
     git -C "$plugin" pull
 done
+
 print -P "\n%K{yellow}%F{black} SYSTEM UPDATES %k%f\n"
 yay -Syu --noconfirm
+
 print -P "\n%K{yellow}%F{black} UPDATE GEMINI %k%f\n"
 if (( $+commands[npm] )); then
     print -P "%F{cyan}ℹ Updating Gemini CLI...%f\n"
     sudo npm update -g @google/gemini-cli
 fi
+
 print -P "\n%K{yellow}%F{black} FIRMWARE UPDATES %k%f\n"
 fwupdmgr refresh --force
 if fwupdmgr get-updates | grep -q "Devices with updates"; then
@@ -95,6 +74,7 @@ if fwupdmgr get-updates | grep -q "Devices with updates"; then
 else
     print -P "%F{yellow}No firmware updates available.%f"
 fi
+
 print -P "\n%K{yellow}%F{black} SOULARR UPDATES %k%f\n"
 SOULARR_DIR="/opt/soularr"
 if [[ -d "$SOULARR_DIR" ]]; then
@@ -110,7 +90,7 @@ if [[ -d "$SOULARR_DIR" ]]; then
 else
     print -P "%F{yellow}Soularr directory not found. Skipping.%f"
 fi
-# END
+# endregion
 
 # ------------------------------------------------------------------------------
 # 3. Cleanup
@@ -118,7 +98,7 @@ fi
 
 # Purpose: Removes orphan packages and trims the pacman package cache to the latest 3 versions. Displays current Btrfs usage.
 
-# BEGIN
+# region 3. Cleanup
 print -P "\n%K{blue}%F{black} 3. CLEANUP %k%f\n"
 if pacman -Qdtq >/dev/null 2>&1; then
     print "Removing orphans..."
@@ -126,18 +106,22 @@ if pacman -Qdtq >/dev/null 2>&1; then
 else
     print -P "%F{yellow}No orphans to remove.%f"
 fi
+
 print "Cleaning package cache (keeping last 3)..."
 if (( $+commands[paccache] )); then
     paccache -rk3
 else
     print -P "%F{red}Error: paccache not found. Install pacman-contrib.%f"
 fi
+
 print -P "\n%F{cyan}ℹ Btrfs Filesystem Usage:%f\n"
 sudo btrfs filesystem usage / -h | grep -E "Device size:|Free \(estimated\):"
+
 if mountpoint -q /mnt/Media; then
     print -P "\n%F{cyan}ℹ Media Drive Usage:%f\n"
     sudo btrfs filesystem usage /mnt/Media -h | grep -E "Device size:|Free \(estimated\):"
 fi
+
 print -P "\n%F{cyan}ℹ Checking for Bit Rot (Btrfs Checksum Errors):%f\n"
 if journalctl -k --since "30 days ago" | grep -i "btrfs: checksum error" >/dev/null 2>&1; then
     print -P "%F{red}⚠ WARNING: Checksum errors detected in the last 30 days!%f"
@@ -145,7 +129,7 @@ if journalctl -k --since "30 days ago" | grep -i "btrfs: checksum error" >/dev/n
 else
     print -P "%F{green}No checksum errors detected in system journal (30d).%f"
 fi
-# END
+# endregion
 
 # ------------------------------------------------------------------------------
 # 4. Media Integrity Checks (Desktop Only)
@@ -153,7 +137,7 @@ fi
 
 # Purpose: Enforces group membership and ACLs on the Media drive to prevent permission drift. Skips if not on Desktop profile.
 
-# BEGIN
+# region 4. Media Integrity Checks
 print -P "\n%K{blue}%F{black} 4. MEDIA INTEGRITY CHECKS %k%f\n"
 if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
     SERVICES=("sonarr" "radarr" "lidarr" "prowlarr" "jellyfin" "transmission" "slskd")
@@ -179,7 +163,7 @@ if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
 else
     print -P "%F{yellow}Skipped (Not Desktop).%f"
 fi
-# END
+# endregion
 
 # ------------------------------------------------------------------------------
 # 5. Service Health Check
@@ -187,13 +171,14 @@ fi
 
 # Purpose: Validates that critical services are enabled and active. Dynamically builds the service list based on the active Device Profile.
 
-# BEGIN
+# region 5. Service Health Check
 print -P "\n%K{blue}%F{black} 5. SERVICE HEALTH CHECK %k%f\n"
 typeset -a TARGET_SERVICES
 TARGET_SERVICES=(
     "NetworkManager" "bluetooth" "sshd" "plasmalogin" "fwupd"
     "reflector.timer" "btrfs-balance.timer" "btrfs-scrub@-.timer" "timeshift-hourly.timer"
 )
+
 if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
     TARGET_SERVICES+=(
         "jellyfin" "transmission" "sonarr" "radarr"
@@ -204,6 +189,7 @@ if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
 elif [[ "$PROFILE_TYPE" == "Laptop" ]]; then
     TARGET_SERVICES+=("power-profiles-daemon")
 fi
+
 for svc in "${TARGET_SERVICES[@]}"; do
     if ! systemctl is-enabled "$svc" &>/dev/null; then
         print -P "%F{yellow}Enabling service: $svc%f"
@@ -215,7 +201,7 @@ for svc in "${TARGET_SERVICES[@]}"; do
     fi
 done
 print -P "Service Status: %F{green}OK%f"
-# END
+# endregion
 
 # ------------------------------------------------------------------------------
 # 6. Visual Backup (Konsave)
@@ -223,21 +209,24 @@ print -P "Service Status: %F{green}OK%f"
 
 # Purpose: Exports the current KDE Plasma configuration via Konsave to the local repo and prunes old backups to maintain a history of 3.
 
-# BEGIN
+# region 6. Visual Backup (Konsave)
 print -P "\n%K{blue}%F{black} 6. VISUAL BACKUP (KONSAVE) %k%f\n"
 zmodload zsh/datetime; strftime -s DATE_STR '%Y-%m-%d' $EPOCHSECONDS
 PROFILE_NAME="$PROFILE_TYPE Dock $DATE_STR"
 REPO_ROOT=${SCRIPT_DIR:h}
 EXPORT_DIR="$REPO_ROOT/Resources/Konsave"
+
 if (( $+commands[konsave] )); then
     print -P "%F{cyan}ℹ Saving profile internally: $PROFILE_NAME%f\n"
     PYTHONWARNINGS="ignore" konsave -s "$PROFILE_NAME" -f
+    
     if [[ -d "$EXPORT_DIR" ]]; then
         print -P "\n%F{cyan}ℹ Exporting to repo: $EXPORT_DIR%f\n"
         PYTHONWARNINGS="ignore" konsave -e "$PROFILE_NAME" -d "$EXPORT_DIR" -f
     else
         print -P "%F{yellow}Warning: Export directory not found at $EXPORT_DIR%f"
     fi
+    
     KONSAVE_CONFIG="$HOME/.config/konsave/profiles"
     if [[ -d "$KONSAVE_CONFIG" ]]; then
         local -a internal_profiles=( "$KONSAVE_CONFIG"/"$PROFILE_TYPE Dock "*(-/On) )
@@ -248,6 +237,7 @@ if (( $+commands[konsave] )); then
             done
         fi
     fi
+    
     if [[ -d "$EXPORT_DIR" ]]; then
         local -a repo_files=( "$EXPORT_DIR"/"$PROFILE_TYPE Dock "*.knsv(.On) )
         if (( ${#repo_files} > 3 )); then
@@ -261,7 +251,7 @@ if (( $+commands[konsave] )); then
 else
     print -P "%F{red}Error: Konsave not installed. Skipping backup.%f"
 fi
-# END
+# endregion
 
 # ------------------------------------------------------------------------------
 # 7. Antigravity Integrity
@@ -269,13 +259,14 @@ fi
 
 # Purpose: Ensures that the local copy of agent rules and skills matches the Secrets repository source of truth, as Google Antigravity requires physical files rather than symlinks.
 
-# BEGIN
+# region 7. Antigravity Integrity
 print -P "\n%K{blue}%F{black} 7. ANTIGRAVITY INTEGRITY %k%f\n"
 SECRETS_RULES="$REPO_ROOT/Secrets/Gemini/Arch/Rules"
 SECRETS_SKILLS="$REPO_ROOT/Secrets/Gemini/Arch/Skills"
 LOCAL_RULES="$REPO_ROOT/.agent/rules"
 LOCAL_SKILLS="$REPO_ROOT/.agent/skills"
 CLI_SKILLS="$REPO_ROOT/.gemini/skills"
+
 check_alignment() {
     local src=$1 dst=$2 name=$3
     if [[ ! -d "$src" ]]; then
@@ -298,14 +289,12 @@ check_alignment() {
 check_alignment "$SECRETS_RULES" "$LOCAL_RULES" "Agent Rules"
 check_alignment "$SECRETS_SKILLS" "$LOCAL_SKILLS" "Agent Skills"
 check_alignment "$SECRETS_SKILLS" "$CLI_SKILLS" "CLI Skills"
-# END
+# endregion
 
 # ------------------------------------------------------------------------------
 # End
 # ------------------------------------------------------------------------------
 
-# BEGIN
+# region End
 print -P "\n%K{green}%F{black} SYSTEM MAINTENANCE COMPLETE %k%f\n"
-# END
-
-# kate: hl Zsh; folding-markers on;
+# endregion
