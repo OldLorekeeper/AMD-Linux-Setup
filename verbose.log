@@ -1,0 +1,6 @@
+Intel(R) Ethernet NVM Update Tool
+NVMUpdate version 1.41.3.1
+Copyright(C) 2013 - 2024 Intel Corporation.
+
+/home/curtis/.gemini/tmp/amd-linux-setup/i225_nvm/I225/Linux_x64/nvmupdate64e -v -l verbose.log 
+

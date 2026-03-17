@@ -321,7 +321,7 @@ mount "$PART1" /mnt/efi
 print -P "\n%K{blue}%F{black} 6. BASE INSTALLATION %k%f\n"
 
 CORE_PKGS=(
-    "amd-ucode" "antigravity" "base" "base-devel" "bluez" "bluez-utils" "btrfs-progs"
+    "amd-ucode" "base" "base-devel" "bluez" "bluez-utils" "btrfs-progs"
     "cachyos-keyring" "cachyos-mirrorlist" "cachyos-settings" "cachyos-v4-mirrorlist"
     "efibootmgr" "git" "grub" "grub-btrfs" "inetutils" "linux-cachyos"
     "linux-cachyos-headers" "linux-firmware" "networkmanager" "networkmanager-qt"
@@ -470,7 +470,7 @@ sudo -u "$TARGET_USER" git clone https://aur.archlinux.org/yay.git
 cd yay; sudo -u "$TARGET_USER" makepkg -si --noconfirm; cd ..; rm -rf yay
 
 print -P "\n%K{yellow}%F{black} EXTENDED PACKAGES %k%f\n"
-TARGET_AUR=("darkly-bin" "geekbench" "google-chrome" "konsave" "kwin-effects-better-blur-dx" "papirus-folders" "plasma6-applets-panel-colorizer" "timeshift-systemd-timer")
+TARGET_AUR=("antigravity" "darkly-bin" "geekbench" "google-chrome" "konsave" "kwin-effects-better-blur-dx" "papirus-folders" "plasma6-applets-panel-colorizer" "timeshift-systemd-timer")
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     TARGET_AUR+=("lact" "lidarr-bin" "prowlarr-bin" "python-schedule" "radarr-bin" "slskd-bin" "sonarr-bin" "sunshine")
 elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
