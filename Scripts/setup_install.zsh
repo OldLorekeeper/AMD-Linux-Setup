@@ -528,34 +528,36 @@ rm -f "/home/$TARGET_USER/.zshrc"
 ln -sf "$REPO_DIR/Resources/zshrc/zshrc_$DEVICE_PROFILE" "/home/$TARGET_USER/.zshrc"
 
 if [[ "$SECRETS_LOADED" == "true" ]]; then
-    print -P "\n%F{cyan}ℹ Installing Gemini CLI...%f\n"
-    npm install -g @google/gemini-cli 1>/dev/null 2>&1
-    
-    print -P "\n%F{cyan}ℹ Linking Antigravity Config...%f\n"
-    mkdir -p "/home/$TARGET_USER/.gemini/antigravity" "/home/$TARGET_USER/.antigravity"
+    print -P "\n%F{cyan}ℹ Setting up Gemini CLI and Antigravity...%f\n"
+    (
+        print -P "\n%F{cyan}ℹ Installing Gemini CLI...%f\n"
+        npm install -g @google/gemini-cli 1>/dev/null 2>&1
 
-    # Unified Configuration
-    ln -sf "$SECRETS_DIR/Gemini/Arch/config.json" "/home/$TARGET_USER/.gemini/antigravity/mcp_config.json"
-    ln -sf "$SECRETS_DIR/Gemini/Arch/config.json" "$REPO_DIR/.gemini/settings.json"
-    [[ -f "$SECRETS_DIR/Gemini/Global/settings.json" ]] && ln -sf "$SECRETS_DIR/Gemini/Global/settings.json" "/home/$TARGET_USER/.gemini/settings.json"
-    [[ -f "$SECRETS_DIR/Gemini/Global/argv.json" ]] && ln -sf "$SECRETS_DIR/Gemini/Global/argv.json" "/home/$TARGET_USER/.antigravity/argv.json"
+        print -P "\n%F{cyan}ℹ Linking Antigravity Config...%f\n"
+        mkdir -p "/home/$TARGET_USER/.gemini/antigravity" "/home/$TARGET_USER/.antigravity"
+        mkdir -p "$REPO_DIR/.gemini" "$REPO_DIR/.agent"
 
-    # Agent Structure & Skills
-    rm -rf "$REPO_DIR/.agent/rules" "$REPO_DIR/.agent/skills" "$REPO_DIR/.gemini/skills"
-    cp -r "$SECRETS_DIR/Gemini/Arch/Rules" "$REPO_DIR/.agent/rules"
-    cp -r "$SECRETS_DIR/Gemini/Arch/Skills" "$REPO_DIR/.agent/skills"
-    cp -r "$SECRETS_DIR/Gemini/Arch/Skills" "$REPO_DIR/.gemini/skills"
+        # Unified Configuration
+        ln -sf "$SECRETS_DIR/Gemini/Arch/config.json" "/home/$TARGET_USER/.gemini/antigravity/mcp_config.json"
+        ln -sf "$SECRETS_DIR/Gemini/Arch/config.json" "$REPO_DIR/.gemini/settings.json"
+        [[ -f "$SECRETS_DIR/Gemini/Global/settings.json" ]] && ln -sf "$SECRETS_DIR/Gemini/Global/settings.json" "/home/$TARGET_USER/.gemini/settings.json"
+        [[ -f "$SECRETS_DIR/Gemini/Global/argv.json" ]] && ln -sf "$SECRETS_DIR/Gemini/Global/argv.json" "/home/$TARGET_USER/.antigravity/argv.json"
 
-    # Context & Editor
-    ln -sf "$SECRETS_DIR/Gemini/Arch/VSCode" "$REPO_DIR/.vscode"
-    ln -sf "$SECRETS_DIR/Gemini/Arch/GeminiIgnore" "$REPO_DIR/.geminiignore"
-    
-    if [[ -f "$SECRETS_DIR/Gemini/Global/persona.md" ]]; then
-        ln -sf "$SECRETS_DIR/Gemini/Global/persona.md" "/home/$TARGET_USER/.gemini/GEMINI.md"
-        cat "$SECRETS_DIR/Gemini/Global/persona.md" "$SECRETS_DIR/Gemini/Arch/context.md" > "$REPO_DIR/GEMINI.md"
-    fi
+        # Agent Structure & Skills
+        rm -rf "$REPO_DIR/.agent/rules" "$REPO_DIR/.agent/skills" "$REPO_DIR/.gemini/skills"
+        ln -sf "$SECRETS_DIR/Gemini/Arch/Rules" "$REPO_DIR/.agent/rules"
+        ln -sf "$SECRETS_DIR/Gemini/Arch/Skills" "$REPO_DIR/.agent/skills"
+        ln -sf "$SECRETS_DIR/Gemini/Arch/Skills" "$REPO_DIR/.gemini/skills"
+        # Context & Editor
+        ln -sf "$SECRETS_DIR/Gemini/Arch/VSCode" "$REPO_DIR/.vscode"
+        ln -sf "$SECRETS_DIR/Gemini/Arch/GeminiIgnore" "$REPO_DIR/.geminiignore"
+
+        if [[ -f "$SECRETS_DIR/Gemini/Global/persona.md" ]]; then
+            ln -sf "$SECRETS_DIR/Gemini/Global/persona.md" "/home/$TARGET_USER/.gemini/GEMINI.md"
+            cat "$SECRETS_DIR/Gemini/Global/persona.md" "$SECRETS_DIR/Gemini/Arch/context.md" > "$REPO_DIR/GEMINI.md"
+        fi
+    ) || print -P "\n%F{red}⚠ Gemini CLI setup encountered an issue but the install will continue.%f\n"
 fi
-
 print -P "\n%K{yellow}%F{black} FINAL THEMING %k%f\n"
 print -P "\n%F{cyan}ℹ Applying Konsole and icon themes...%f\n"
 mkdir -p "/home/$TARGET_USER/.local/share/konsole"
