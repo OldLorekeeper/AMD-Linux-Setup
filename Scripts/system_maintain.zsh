@@ -47,7 +47,7 @@ fi
 # 2. Updates (System & Firmware)
 # ------------------------------------------------------------------------------
 
-# Purpose: Performs a layered update: Zsh plugins, System packages (Yay), Gemini CLI, Firmware (fwupd), and Soularr application/dependencies.
+# Purpose: Performs a layered update: Zsh plugins, System packages (Yay), Gemini CLI, and Firmware (fwupd).
 
 # region 2. Updates (System & Firmware)
 print -P "\n%K{blue}%F{black} 2. UPDATES (SYSTEM & FIRMWARE) %k%f\n"
@@ -73,22 +73,6 @@ if fwupdmgr get-updates | grep -q "Devices with updates"; then
     fwupdmgr update -y
 else
     print -P "%F{yellow}No firmware updates available.%f"
-fi
-
-print -P "\n%K{yellow}%F{black} SOULARR UPDATES %k%f\n"
-SOULARR_DIR="/opt/soularr"
-if [[ -d "$SOULARR_DIR" ]]; then
-    print -P "%F{cyan}ℹ Checking Soularr updates...%f\n"
-    if git -C "$SOULARR_DIR" pull | grep -q "Already up to date"; then
-         print -P "%F{green}Soularr is up to date.%f"
-    else
-         print -P "%F{green}Soularr updated. Refreshing Python dependencies...%f"
-         uv pip install -U -r "$SOULARR_DIR/requirements.txt" --python "$SOULARR_DIR/.venv"
-         print -P "%F{yellow}Restarting Soularr service...%f"
-         sudo systemctl restart soularr.timer
-    fi
-else
-    print -P "%F{yellow}Soularr directory not found. Skipping.%f"
 fi
 # endregion
 
@@ -140,7 +124,7 @@ fi
 # region 4. Media Integrity Checks
 print -P "\n%K{blue}%F{black} 4. MEDIA INTEGRITY CHECKS %k%f\n"
 if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
-    SERVICES=("sonarr" "radarr" "lidarr" "prowlarr" "jellyfin" "transmission" "slskd")
+    SERVICES=("sonarr" "radarr" "prowlarr" "jellyfin" "transmission")
     print -P "%F{cyan}ℹ Verifying service group memberships...%f\n"
     for svc in $SERVICES; do
         if id "$svc" &>/dev/null; then
@@ -182,7 +166,7 @@ TARGET_SERVICES=(
 if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
     TARGET_SERVICES+=(
         "jellyfin" "transmission" "sonarr" "radarr"
-        "lidarr" "prowlarr" "slskd" "soularr.timer" "lactd"
+        "prowlarr" "lactd"
         "btrfs-scrub@mnt-Media.timer"
     )
     [[ -f /usr/lib/systemd/system/grub-btrfsd.service ]] && TARGET_SERVICES+=("grub-btrfsd")

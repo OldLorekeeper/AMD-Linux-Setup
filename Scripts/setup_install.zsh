@@ -130,7 +130,7 @@ fi
 # 3. Device Profile Selection
 # ------------------------------------------------------------------------------
 
-# Purpose: Determines hardware profile (Desktop/Laptop) and collects device-specific data (Media UUID, Slskd/Soulseek credentials, EDID config).
+# Purpose: Determines hardware profile (Desktop/Laptop) and collects device-specific data (Media UUID, EDID config).
 
 # region 3. Device Profile
 print -P "\n%K{blue}%F{black} 3. DEVICE PROFILE %k%f\n"
@@ -144,11 +144,6 @@ case $PROFILE_SEL in
     *) print -P "\n%F{red}Invalid selection.%f\n"; exit 1 ;;
 esac
 
-SLSKD_USER="${SLSKD_USER:-}"
-SLSKD_PASS="${SLSKD_PASS:-}"
-SLSKD_API_KEY="${SLSKD_API_KEY:-}"
-SOULSEEK_USER="${SOULSEEK_USER:-}"
-SOULSEEK_PASS="${SOULSEEK_PASS:-}"
 MEDIA_UUID=""
 EDID_ENABLE=""
 MONITOR_PORT=""
@@ -160,32 +155,6 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
 
     print -P "%F{yellow}Enter Media Drive UUID:%f"
     read "MEDIA_UUID?UUID (Leave empty to skip): "
-
-    if [[ -z "$SLSKD_USER" ]]; then
-        print -P "%F{yellow}Enter Slskd Credentials:%f"
-        read "SLSKD_USER?Username: "
-    else
-        print -P "Slskd User:   %F{green}Loaded from secrets%f"
-    fi
-    if [[ -z "$SLSKD_PASS" ]]; then
-        read -s "SLSKD_PASS?Password: "; print ""
-    fi
-    if [[ -z "$SLSKD_API_KEY" ]]; then
-        print -P "\n%F{cyan}ℹ Generating random Slskd API key...%f\n"
-        SLSKD_API_KEY=$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 32)
-    else
-        print -P "Slskd API Key: %F{green}Loaded from secrets%f"
-    fi
-
-    if [[ -z "$SOULSEEK_USER" ]]; then
-        print -P "%F{yellow}Enter Soulseek Credentials:%f"
-        read "SOULSEEK_USER?Username: "
-    else
-        print -P "Soulseek User: %F{green}Loaded from secrets%f"
-    fi
-    if [[ -z "$SOULSEEK_PASS" ]]; then
-        read -s "SOULSEEK_PASS?Password: "; print ""
-    fi
 
     print -P "\n%K{yellow}%F{black} DISPLAY CONFIGURATION %k%f\n"
     print -P "%F{yellow}Configure Custom Display EDID?%f"
@@ -341,7 +310,7 @@ CORE_PKGS=(
     "virt-manager" "vlc" "vlc-plugin-ffmpeg" "vulkan-headers" "wayland-protocols"
     "wine" "wine-mono" "winetricks" "xpadneo-dkms"
 )
-DESKTOP_PKGS=("jellyfin-server" "jellyfin-web" "kid3" "lutris" "python-dotenv" "python-pydantic" "python-requests" "python-setuptools" "python-wheel" "solaar" "yt-dlp")
+DESKTOP_PKGS=("jellyfin-server" "jellyfin-web" "lutris" "python-dotenv" "python-pydantic" "python-requests" "python-setuptools" "python-wheel" "solaar" "yt-dlp")
 LAPTOP_PKGS=("moonlight-qt" "power-profiles-daemon" "sof-firmware")
 
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
@@ -387,11 +356,6 @@ GIT_EMAIL=${(q)GIT_EMAIL}
 GIT_PAT=${(q)GIT_PAT}
 APPLY_KONSAVE=${(q)APPLY_KONSAVE}
 DEVICE_PROFILE=${(q)DEVICE_PROFILE}
-SLSKD_USER=${(q)SLSKD_USER}
-SLSKD_PASS=${(q)SLSKD_PASS}
-SLSKD_API_KEY=${(q)SLSKD_API_KEY}
-SOULSEEK_USER=${(q)SOULSEEK_USER}
-SOULSEEK_PASS=${(q)SOULSEEK_PASS}
 MEDIA_UUID=${(q)MEDIA_UUID}
 MONITOR_PORT=${(q)MONITOR_PORT}
 SECRETS_LOADED=${(q)SECRETS_LOADED:-false}
@@ -472,7 +436,7 @@ cd yay; sudo -u "$TARGET_USER" makepkg -si --noconfirm; cd ..; rm -rf yay
 print -P "\n%K{yellow}%F{black} EXTENDED PACKAGES %k%f\n"
 TARGET_AUR=("antigravity" "darkly-bin" "geekbench" "google-chrome" "konsave" "kwin-effects-better-blur-dx" "papirus-folders" "plasma6-applets-panel-colorizer" "timeshift-systemd-timer")
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
-    TARGET_AUR+=("lact" "lidarr-bin" "prowlarr-bin" "python-schedule" "radarr-bin" "slskd-bin" "sonarr-bin" "sunshine")
+    TARGET_AUR+=("lact" "prowlarr-bin" "python-schedule" "radarr-bin" "sonarr-bin" "sunshine")
 elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
     TARGET_AUR+=("mkinitcpio-numlock")
 fi
@@ -625,41 +589,25 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
         ln -sf "$REPO_DIR/Scripts/$script" "/usr/local/bin/${script:r}"; chmod +x "$REPO_DIR/Scripts/$script"
     done
     
-    mkdir -p /etc/slskd
-    print -l "web:" "  port: 5030" "  authentication:" "    username: $SLSKD_USER" "    password: $SLSKD_PASS" "    api_keys:" "      master:" "        key: $SLSKD_API_KEY" "        role: administrator" "soulseek:" "  username: $SOULSEEK_USER" "  password: $SOULSEEK_PASS" "directories:" "  downloads: /mnt/Media/Downloads/slskd/Complete" "  incomplete: /mnt/Media/Downloads/slskd/Incomplete" > /etc/slskd/slskd.yml
-    
-    cd /opt; git clone https://github.com/mrusse/soularr.git; chown -R "$TARGET_USER:$TARGET_USER" /opt/soularr
-    sudo -u "$TARGET_USER" uv venv /opt/soularr/.venv; sudo -u "$TARGET_USER" uv pip install -r /opt/soularr/requirements.txt
-    
-    mkdir -p /opt/soularr/config
-    print -l "[App]" "prefix = /soularr" "[Slskd]" "host_url = http://localhost:5030" "api_key = $SLSKD_API_KEY" "[Lidarr]" "host_url = http://localhost:8686" "api_key =" > /opt/soularr/config/config.ini
-    chown -R "$TARGET_USER:$TARGET_USER" /opt/soularr/config
-    
-    print -l "[Unit]" "Wants=network-online.target lidarr.service slskd.service" "Requires=lidarr.service slskd.service" "RequiresMountsFor=/mnt/Media" "[Service]" "Type=oneshot" "User=$TARGET_USER" "Group=$(id -gn $TARGET_USER)" "UMask=0002" "WorkingDirectory=/opt/soularr" "ExecStart=/opt/soularr/.venv/bin/python /opt/soularr/soularr.py --config-dir /opt/soularr/config --no-lock-file" > /etc/systemd/system/soularr.service
-    print -l "[Unit]" "Description=Run Soularr every 30 minutes" "[Timer]" "OnCalendar=*:0/30" "Persistent=true" "[Install]" "WantedBy=timers.target" > /etc/systemd/system/soularr.timer
-    systemctl enable soularr.timer
-    
     if [[ -n "$MEDIA_UUID" ]]; then
         mkdir -p /mnt/Media; mount /mnt/Media || true
         if mountpoint -q /mnt/Media; then
-            mkdir -p /mnt/Media/{Films,TV,Music/{Maintained,Manual},Downloads/{lidarr,radarr,slskd,sonarr,transmission}}
+            mkdir -p /mnt/Media/{Films,TV,Music,Downloads/{radarr,sonarr,transmission}}
             chattr +C /mnt/Media/Downloads || true
             chown -R "$TARGET_USER:media" /mnt/Media; chmod -R 775 /mnt/Media; setfacl -R -m g:media:rwX /mnt/Media; setfacl -R -m d:g:media:rwX /mnt/Media
         fi
-        for svc in sonarr radarr lidarr prowlarr transmission slskd; do
+        for svc in sonarr radarr prowlarr transmission; do
             mkdir -p "/etc/systemd/system/$svc.service.d"
             print -l "[Unit]" "RequiresMountsFor=/mnt/Media" > "/etc/systemd/system/$svc.service.d/media-mount.conf"
             print -l "[Service]" "UMask=0002" > "/etc/systemd/system/$svc.service.d/permissions.conf"
             usermod -aG media "$svc" 2>/dev/null || true
         done
-        mkdir -p /etc/systemd/system/slskd.service.d
-        print -l "[Service]" "ExecStart=" "ExecStart=/usr/lib/slskd/slskd --config /etc/slskd/slskd.yml" > /etc/systemd/system/slskd.service.d/override.conf
     fi
     
     print "d /dev/shm/jellyfin 0755 jellyfin jellyfin -" > /etc/tmpfiles.d/jellyfin-transcode.conf
     usermod -aG render,video jellyfin || true
     wget -O /etc/udev/rules.d/42-solaar-uinput.rules https://raw.githubusercontent.com/pwr-Solaar/Solaar/refs/heads/master/rules.d-uinput/42-logitech-unify-permissions.rules
-    systemctl enable jellyfin transmission sonarr radarr lidarr prowlarr slskd
+    systemctl enable jellyfin transmission sonarr radarr prowlarr
     mkdir -p /var/lib/systemd/linger; touch "/var/lib/systemd/linger/$TARGET_USER"
     mkdir -p "/home/$TARGET_USER/.config/systemd/user/default.target.wants"
     ln -sf /usr/lib/systemd/user/sunshine.service "/home/$TARGET_USER/.config/systemd/user/default.target.wants/sunshine.service"
