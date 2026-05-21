@@ -306,7 +306,7 @@ CORE_PKGS=(
     "inkscape" "isoimagewriter" "iw" "iwd" "jq" "kio-admin" "kio-gdrive" "lib32-gamemode"
     "lib32-gnutls" "lib32-vulkan-radeon" "libva-utils" "libvirt" "lz4" "mkinitcpio-firmware"
     "npm" "nss-mdns" "obsidian" "papirus-icon-theme" "protontricks" "protonup-qt"
-    "python-pip" "qemu-desktop" "realtime-privileges" "steam" "tailscale" "transmission-cli" "uv" "vdpauinfo"
+    "qemu-desktop" "realtime-privileges" "rocm-opencl-runtime" "steam" "tailscale" "transmission-cli" "uv" "vdpauinfo"
     "virt-manager" "vlc" "vlc-plugin-ffmpeg" "vulkan-headers" "wayland-protocols"
     "wine" "wine-mono" "winetricks" "xpadneo-dkms"
 )
@@ -434,7 +434,7 @@ sudo -u "$TARGET_USER" git clone https://aur.archlinux.org/yay.git
 cd yay; sudo -u "$TARGET_USER" makepkg -si --noconfirm; cd ..; rm -rf yay
 
 print -P "\n%K{yellow}%F{black} EXTENDED PACKAGES %k%f\n"
-TARGET_AUR=("antigravity" "darkly-bin" "geekbench" "google-chrome" "konsave" "kwin-effects-better-blur-dx" "papirus-folders" "plasma6-applets-panel-colorizer" "timeshift-systemd-timer")
+TARGET_AUR=("antigravity-cli" "antigravity-ide" "darkly-bin" "geekbench" "google-chrome" "konsave" "kwin-effects-better-blur-dx" "papirus-folders" "plasma6-applets-panel-colorizer" "timeshift-systemd-timer")
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     TARGET_AUR+=("lact" "prowlarr-bin" "python-schedule" "radarr-bin" "sonarr-bin" "sunshine")
 elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
@@ -492,35 +492,31 @@ rm -f "/home/$TARGET_USER/.zshrc"
 ln -sf "$REPO_DIR/Resources/zshrc/zshrc_$DEVICE_PROFILE" "/home/$TARGET_USER/.zshrc"
 
 if [[ "$SECRETS_LOADED" == "true" ]]; then
-    print -P "\n%F{cyan}ℹ Setting up Gemini CLI and Antigravity...%f\n"
+    print -P "\n%F{cyan}ℹ Setting up Antigravity CLI...%f\n"
     (
-        print -P "\n%F{cyan}ℹ Installing Gemini CLI...%f\n"
-        npm install -g @google/gemini-cli 1>/dev/null 2>&1
-
         print -P "\n%F{cyan}ℹ Linking Antigravity Config...%f\n"
-        mkdir -p "/home/$TARGET_USER/.gemini/antigravity" "/home/$TARGET_USER/.antigravity"
-        mkdir -p "$REPO_DIR/.gemini" "$REPO_DIR/.agent"
+        mkdir -p "/home/$TARGET_USER/.gemini/antigravity-cli"
+        mkdir -p "$REPO_DIR/.gemini" "$REPO_DIR/.agents"
 
-        # Unified Configuration
-        ln -sf "$SECRETS_DIR/Gemini/Arch/config.json" "/home/$TARGET_USER/.gemini/antigravity/mcp_config.json"
-        ln -sf "$SECRETS_DIR/Gemini/Arch/config.json" "$REPO_DIR/.gemini/settings.json"
-        [[ -f "$SECRETS_DIR/Gemini/Global/settings.json" ]] && ln -sf "$SECRETS_DIR/Gemini/Global/settings.json" "/home/$TARGET_USER/.gemini/settings.json"
-        [[ -f "$SECRETS_DIR/Gemini/Global/argv.json" ]] && ln -sf "$SECRETS_DIR/Gemini/Global/argv.json" "/home/$TARGET_USER/.antigravity/argv.json"
+        # Localised Configuration
+        [[ -f "$SECRETS_DIR/Antigravity/Global/config.json" ]] && ln -sf "$SECRETS_DIR/Antigravity/Global/config.json" "/home/$TARGET_USER/.gemini/antigravity-cli/mcp_config.json"
+        ln -sf "$SECRETS_DIR/Antigravity/Arch/config.json" "$REPO_DIR/.agents/mcp_config.json"
+        [[ -f "$SECRETS_DIR/Antigravity/Global/settings.json" ]] && ln -sf "$SECRETS_DIR/Antigravity/Global/settings.json" "/home/$TARGET_USER/.gemini/antigravity-cli/settings.json"
+        [[ -f "$SECRETS_DIR/Antigravity/Global/argv.json" ]] && ln -sf "$SECRETS_DIR/Antigravity/Global/argv.json" "/home/$TARGET_USER/.gemini/antigravity-cli/argv.json"
 
         # Agent Structure & Skills
-        rm -rf "$REPO_DIR/.agent/rules" "$REPO_DIR/.agent/skills" "$REPO_DIR/.gemini/skills"
-        ln -sf "$SECRETS_DIR/Gemini/Arch/Rules" "$REPO_DIR/.agent/rules"
-        ln -sf "$SECRETS_DIR/Gemini/Arch/Skills" "$REPO_DIR/.agent/skills"
-        ln -sf "$SECRETS_DIR/Gemini/Arch/Skills" "$REPO_DIR/.gemini/skills"
+        rm -rf "$REPO_DIR/.agents/rules" "$REPO_DIR/.agents/skills" "$REPO_DIR/.gemini/skills"
+        ln -sf "$SECRETS_DIR/Antigravity/Arch/Rules" "$REPO_DIR/.agents/rules"
+        ln -sf "$SECRETS_DIR/Antigravity/Arch/Skills" "$REPO_DIR/.agents/skills"
         # Context & Editor
-        ln -sf "$SECRETS_DIR/Gemini/Arch/VSCode" "$REPO_DIR/.vscode"
-        ln -sf "$SECRETS_DIR/Gemini/Arch/GeminiIgnore" "$REPO_DIR/.geminiignore"
+        ln -sf "$SECRETS_DIR/Antigravity/Arch/VSCode" "$REPO_DIR/.vscode"
+        ln -sf "$SECRETS_DIR/Antigravity/Arch/AntigravityIgnore" "$REPO_DIR/.geminiignore"
 
-        if [[ -f "$SECRETS_DIR/Gemini/Global/persona.md" ]]; then
-            ln -sf "$SECRETS_DIR/Gemini/Global/persona.md" "/home/$TARGET_USER/.gemini/GEMINI.md"
-            cat "$SECRETS_DIR/Gemini/Global/persona.md" "$SECRETS_DIR/Gemini/Arch/context.md" > "$REPO_DIR/GEMINI.md"
+        if [[ -f "$SECRETS_DIR/Antigravity/Global/persona.md" ]]; then
+            ln -sf "$SECRETS_DIR/Antigravity/Global/persona.md" "/home/$TARGET_USER/.gemini/antigravity-cli/GEMINI.md"
+            cat "$SECRETS_DIR/Antigravity/Global/persona.md" "$SECRETS_DIR/Antigravity/Arch/context.md" > "$REPO_DIR/GEMINI.md"
         fi
-    ) || print -P "\n%F{red}⚠ Gemini CLI setup encountered an issue but the install will continue.%f\n"
+    ) || print -P "\n%F{red}⚠ Antigravity CLI setup encountered an issue but the install will continue.%f\n"
 fi
 print -P "\n%K{yellow}%F{black} FINAL THEMING %k%f\n"
 print -P "\n%F{cyan}ℹ Applying Konsole and icon themes...%f\n"

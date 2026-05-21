@@ -37,18 +37,18 @@ print -P "Root:         %F{cyan}$REPO_ROOT%f"
 # 2. Functions
 # ------------------------------------------------------------------------------
 
-# Purpose: Define the core git operations and Gemini helper.
+# Purpose: Define the core git operations and Antigravity helper.
 
 # region 2. Functions
 get_contextual_msg() {
     local repo_path="$1"
     local input_msg="$2"
-    if [[ "$input_msg" == "System update" ]] && (( $+commands[gemini] )); then
+    if [[ "$input_msg" == "System update" ]] && (( $+commands[antigravity-cli] )); then
         local diff_stat=$(git -C "$repo_path" diff --cached --stat 2>/dev/null)
         if [[ -n "$diff_stat" ]]; then
             # Use stat for overview and truncated diff for detail
             local diff_ctx=$(git -C "$repo_path" diff --cached | head -n 50)
-            local gen_msg=$(gemini "Generate a concise git commit message (max 72 chars). 
+            local gen_msg=$(antigravity-cli "Generate a concise git commit message (max 72 chars). 
 Return ONLY the raw message text.
 
 Overview:
@@ -113,8 +113,8 @@ do_commit() {
     done
 
     local -A commit_msgs
-    if [[ "$msg" == "System update" ]] && (( $+commands[gemini] )); then
-        print -P "%F{cyan}ℹ Gemini: Analyzing changes in parallel...%f\n"
+    if [[ "$msg" == "System update" ]] && (( $+commands[antigravity-cli] )); then
+        print -P "%F{cyan}ℹ Antigravity: Analyzing changes in parallel...%f\n"
         local tmp_dir=$(mktemp -d)
         for repo in $active_repos; do
             ( get_contextual_msg "$repo_paths[$repo]" "$msg" > "$tmp_dir/$repo" ) &

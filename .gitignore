@@ -3,7 +3,7 @@
 .directory/
 .gemini
 Secrets/
-.geminiignore
+.antigravityignore
 GEMINI.md
-.agent
+.agents
 .vscode
