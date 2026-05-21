@@ -64,7 +64,7 @@ fi
 # region 2. User Configuration
 print -P "\n%K{blue}%F{black} 2. USER CONFIGURATION %k%f\n"
 
-print -P "\n%K{yellow}%F{black} SYSTEM IDENTITY %k%f\n"
+print -P "%K{yellow}%F{black} SYSTEM IDENTITY %k%f\n"
 if [[ -z "${HOSTNAME:-}" ]]; then
     print -P "%F{yellow}Enter System Hostname:%f"
     read "HOSTNAME?Hostname [NCC-1701]: "
@@ -190,7 +190,7 @@ fi
 # region 4. Live Preparation
 print -P "\n%K{blue}%F{black} 4. LIVE PREPARATION %k%f\n"
 
-print -P "\n%K{yellow}%F{black} INSTALLATION TARGET %k%f\n"
+print -P "%K{yellow}%F{black} INSTALLATION TARGET %k%f\n"
 print -P "%F{yellow}Installation Target:%f"
 read "DISK_SEL?Disk (e.g. nvme0n1): "
 DISK="/dev/$DISK_SEL"
@@ -292,7 +292,7 @@ print -P "\n%K{blue}%F{black} 6. BASE INSTALLATION %k%f\n"
 CORE_PKGS=(
     "amd-ucode" "base" "base-devel" "bluez" "bluez-utils" "btrfs-progs"
     "cachyos-keyring" "cachyos-mirrorlist" "cachyos-settings" "cachyos-v4-mirrorlist"
-    "efibootmgr" "git" "grub" "grub-btrfs" "inetutils" "linux-cachyos"
+    "efibootmgr" "git" "grub" "grub-btrfs" "linux-cachyos"
     "linux-cachyos-headers" "linux-firmware" "networkmanager" "networkmanager-qt"
     "openssh" "pacman-contrib" "reflector" "sudo" "timeshift" "vim"
     "wireless-regdb" "zram-generator" "zsh"
@@ -306,11 +306,11 @@ CORE_PKGS=(
     "inkscape" "isoimagewriter" "iw" "iwd" "jq" "kio-admin" "kio-gdrive" "lib32-gamemode"
     "lib32-gnutls" "lib32-vulkan-radeon" "libva-utils" "libvirt" "lz4" "mkinitcpio-firmware"
     "npm" "nss-mdns" "obsidian" "papirus-icon-theme" "protontricks" "protonup-qt"
-    "qemu-desktop" "realtime-privileges" "rocm-opencl-runtime" "steam" "tailscale" "transmission-cli" "uv" "vdpauinfo"
+    "qemu-desktop" "realtime-privileges" "rocm-hip-runtime" "rocm-opencl-runtime" "steam" "tailscale" "transmission-cli" "uv" "vdpauinfo"
     "virt-manager" "vlc" "vlc-plugin-ffmpeg" "vulkan-headers" "wayland-protocols"
     "wine" "wine-mono" "winetricks" "xpadneo-dkms"
 )
-DESKTOP_PKGS=("jellyfin-server" "jellyfin-web" "lutris" "python-dotenv" "python-pydantic" "python-requests" "python-setuptools" "python-wheel" "solaar" "yt-dlp")
+DESKTOP_PKGS=("jellyfin-server" "jellyfin-web" "lutris" "solaar" "yt-dlp")
 LAPTOP_PKGS=("moonlight-qt" "power-profiles-daemon" "sof-firmware")
 
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
@@ -367,7 +367,7 @@ setopt ERR_EXIT NO_UNSET PIPE_FAIL EXTENDED_GLOB
 source /install_vars.zsh; rm /install_vars.zsh
 trap 'rm -f /etc/sudoers.d/99_setup_temp' EXIT
 
-print -P "\n%K{yellow}%F{black} IDENTITY & LOCALE %k%f\n"
+print -P "%K{yellow}%F{black} IDENTITY & LOCALE %k%f\n"
 
 print -P "\n%F{cyan}ℹ Configuring Timezone and Locale...%f\n"
 ln -sf /usr/share/zoneinfo/Europe/London /etc/localtime
@@ -436,7 +436,7 @@ cd yay; sudo -u "$TARGET_USER" makepkg -si --noconfirm; cd ..; rm -rf yay
 print -P "\n%K{yellow}%F{black} EXTENDED PACKAGES %k%f\n"
 TARGET_AUR=("antigravity-cli" "antigravity-ide" "darkly-bin" "geekbench" "google-chrome" "konsave" "kwin-effects-better-blur-dx" "papirus-folders" "plasma6-applets-panel-colorizer" "timeshift-systemd-timer")
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
-    TARGET_AUR+=("lact" "prowlarr-bin" "python-schedule" "radarr-bin" "sonarr-bin" "sunshine")
+    TARGET_AUR+=("lact" "prowlarr-bin" "radarr-bin" "seerr" "sonarr-bin" "sunshine")
 elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
     TARGET_AUR+=("mkinitcpio-numlock")
 fi
@@ -552,13 +552,13 @@ fi
 print -P "\n%F{cyan}ℹ Applying KWin Rules...%f\n"
 sudo -u "$TARGET_USER" "$REPO_DIR/Scripts/kwin_sync.zsh" "$DEVICE_PROFILE"
 
-print -l "LIBVA_DRIVER_NAME=radeonsi" "VDPAU_DRIVER=radeonsi" "WINEFSYNC=1" "RADV_PERFTEST=gpl" >> /etc/environment
+print -l "LIBVA_DRIVER_NAME=radeonsi" "VDPAU_DRIVER=radeonsi" "WINEFSYNC=1" >> /etc/environment
 print 'ACTION=="add|change", KERNEL=="nvme[0-9]n[0-9]", ATTR{queue/scheduler}="kyber"' > /etc/udev/rules.d/60-iosched.rules
 
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     print -P "\n%F{cyan}ℹ Applying Desktop Configuration...%f\n"
     print 'SUBSYSTEM=="pci", ATTR{vendor}=="0x1022", ATTR{device}=="0x43f7", ATTR{power/control}="on"' > /etc/udev/rules.d/99-xhci-fix.rules
-    GRUB_CMDLINE="split_lock_detect=off loglevel=3 quiet amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=3440x1440@60 amd_pstate=active"
+    GRUB_CMDLINE="split_lock_detect=off loglevel=3 quiet amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=3440x1440@60"
     EDID_SRC="$REPO_DIR/Resources/Sunshine/custom_2560x1600.bin"
     if [[ -f "$EDID_SRC" ]]; then
         mkdir -p /usr/lib/firmware/edid; cp "$EDID_SRC" /usr/lib/firmware/edid/
@@ -603,7 +603,7 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     print "d /dev/shm/jellyfin 0755 jellyfin jellyfin -" > /etc/tmpfiles.d/jellyfin-transcode.conf
     usermod -aG render,video jellyfin || true
     wget -O /etc/udev/rules.d/42-solaar-uinput.rules https://raw.githubusercontent.com/pwr-Solaar/Solaar/refs/heads/master/rules.d-uinput/42-logitech-unify-permissions.rules
-    systemctl enable jellyfin transmission sonarr radarr prowlarr
+    systemctl enable jellyfin transmission sonarr radarr prowlarr seerr
     mkdir -p /var/lib/systemd/linger; touch "/var/lib/systemd/linger/$TARGET_USER"
     mkdir -p "/home/$TARGET_USER/.config/systemd/user/default.target.wants"
     ln -sf /usr/lib/systemd/user/sunshine.service "/home/$TARGET_USER/.config/systemd/user/default.target.wants/sunshine.service"
@@ -620,7 +620,7 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
 elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
     print -P "\n%F{cyan}ℹ Applying Laptop Configuration...%f\n"
     print "options rtw89_pci disable_aspm_l1=y disable_aspm_l1ss=y" > /etc/modprobe.d/rtw89.conf
-    GRUB_CMDLINE="loglevel=3 quiet amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=2560x1600@60 amd_pstate=active"
+    GRUB_CMDLINE="loglevel=3 quiet amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=2560x1600@60"
     sed -i "s|^GRUB_CMDLINE_LINUX_DEFAULT=.*|GRUB_CMDLINE_LINUX_DEFAULT=\"$GRUB_CMDLINE\"|" /etc/default/grub
     sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=2/' /etc/default/grub
     sed -i 's/HOOKS=(\(.*\))/HOOKS=(\1 numlock)/' /etc/mkinitcpio.conf

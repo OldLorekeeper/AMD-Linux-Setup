@@ -119,7 +119,7 @@ fi
 # region 4. Media Integrity Checks
 print -P "\n%K{blue}%F{black} 4. MEDIA INTEGRITY CHECKS %k%f\n"
 if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
-    SERVICES=("sonarr" "radarr" "prowlarr" "jellyfin" "transmission")
+    SERVICES=("sonarr" "radarr" "prowlarr" "jellyfin" "transmission" "seerr")
     print -P "%F{cyan}ℹ Verifying service group memberships...%f\n"
     for svc in $SERVICES; do
         if id "$svc" &>/dev/null; then
@@ -161,7 +161,7 @@ TARGET_SERVICES=(
 if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
     TARGET_SERVICES+=(
         "jellyfin" "transmission" "sonarr" "radarr"
-        "prowlarr" "lactd"
+        "prowlarr" "lactd" "seerr"
         "btrfs-scrub@mnt-Media.timer"
     )
     [[ -f /usr/lib/systemd/system/grub-btrfsd.service ]] && TARGET_SERVICES+=("grub-btrfsd")
