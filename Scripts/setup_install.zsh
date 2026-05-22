@@ -5,7 +5,7 @@
 # Target: AMD Ryzen 7000+ & Radeon 7000+ | KDE Plasma 6 | CachyOS Kernel
 # ------------------------------------------------------------------------------
 
-# region 0. Runtime Configuration
+# region
 setopt ERR_EXIT NO_UNSET PIPE_FAIL EXTENDED_GLOB
 SCRIPT_DIR=${0:a:h}
 print -P "\n%K{green}%F{black} STARTING AMD-LINUX-SETUP (ZEN 4) %k%f\n"
@@ -14,7 +14,8 @@ print -P "\n%K{green}%F{black} STARTING AMD-LINUX-SETUP (ZEN 4) %k%f\n"
 # ------------------------------------------------------------------------------
 # 1. Pre-flight Checks & Secrets
 # ------------------------------------------------------------------------------
-# region 1. Pre-flight & Secrets
+
+# region
 print -P "\n%K{blue}%F{black} 1. PRE-FLIGHT & SECRETS %k%f\n"
 if [[ ! -d /sys/firmware/efi/efivars ]]; then
     print -P "%F{red}Error: System is not booted in UEFI mode.%f\n"
@@ -68,7 +69,8 @@ fi
 # ------------------------------------------------------------------------------
 # 2. User Configuration
 # ------------------------------------------------------------------------------
-# region 2. User Configuration
+
+# region
 print -P "\n%K{blue}%F{black} 2. USER CONFIGURATION %k%f\n"
 
 print -P "%K{yellow}%F{black} SYSTEM IDENTITY %k%f\n"
@@ -136,7 +138,8 @@ fi
 # ------------------------------------------------------------------------------
 # 3. Device Profile Selection
 # ------------------------------------------------------------------------------
-# region 3. Device Profile
+
+# region
 print -P "\n%K{blue}%F{black} 3. DEVICE PROFILE %k%f\n"
 
 print -l "1) Desktop (Ryzen 7800X3D / RX 7900 XT)" "2) Laptop (Ryzen 7840HS / 780M)"
@@ -188,7 +191,8 @@ fi
 # ------------------------------------------------------------------------------
 # 4. Live Environment Preparation
 # ------------------------------------------------------------------------------
-# region 4. Live Preparation
+
+# region
 print -P "\n%K{blue}%F{black} 4. LIVE PREPARATION %k%f\n"
 
 print -P "%K{yellow}%F{black} INSTALLATION TARGET %k%f\n"
@@ -242,7 +246,8 @@ pacman -Sy
 # ------------------------------------------------------------------------------
 # 5. Partitioning & Formatting
 # ------------------------------------------------------------------------------
-# region 5. Partitioning
+
+# region
 print -P "\n%K{blue}%F{black} 5. PARTITIONING & FORMATTING %k%f\n"
 sgdisk -Z "$DISK"
 sgdisk -o "$DISK"
@@ -281,7 +286,8 @@ mount "$PART1" /mnt/efi
 # ------------------------------------------------------------------------------
 # 6. Base Installation
 # ------------------------------------------------------------------------------
-# region 6. Base Installation
+
+# region
 print -P "\n%K{blue}%F{black} 6. BASE INSTALLATION %k%f\n"
 
 CORE_PKGS=(
@@ -334,7 +340,8 @@ cp /etc/pacman.d/mirrorlist /mnt/etc/pacman.d/mirrorlist
 # ------------------------------------------------------------------------------
 # 7. System Configuration (Chroot)
 # ------------------------------------------------------------------------------
-# region 7. Chroot Configuration
+
+# region
 print -P "\n%K{blue}%F{black} 7. SYSTEM CONFIGURATION (CHROOT) %k%f\n"
 
 cat <<ZSH > /mnt/install_vars.zsh
@@ -364,7 +371,8 @@ arch-chroot /mnt /setup_chroot.zsh
 # ------------------------------------------------------------------------------
 # 8. Completion
 # ------------------------------------------------------------------------------
-# region 8. Cleanup
+
+# region
 rm -f /mnt/setup_chroot.zsh
 umount -R /mnt
 print -P "\n%K{green}%F{black} PROCESS COMPLETE %k%f\n"

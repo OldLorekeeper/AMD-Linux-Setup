@@ -4,7 +4,7 @@
 # Configures the base system from within the new arch-chroot environment.
 # ------------------------------------------------------------------------------
 
-# region 0. Runtime Configuration
+# region
 setopt ERR_EXIT NO_UNSET PIPE_FAIL EXTENDED_GLOB
 source /install_vars.zsh; rm -f /install_vars.zsh
 trap 'rm -f /etc/sudoers.d/99_setup_temp' EXIT
@@ -13,7 +13,8 @@ trap 'rm -f /etc/sudoers.d/99_setup_temp' EXIT
 # ------------------------------------------------------------------------------
 # 1. Identity & Locale
 # ------------------------------------------------------------------------------
-# region 1. Identity & Locale
+
+# region
 print -P "\n%K{yellow}%F{black} IDENTITY & LOCALE %k%f\n"
 print -P "%F{cyan}ℹ Configuring Timezone and Locale...%f\n"
 ln -sf /usr/share/zoneinfo/Europe/London /etc/localtime
@@ -29,7 +30,8 @@ print -l "127.0.1.1   $HOSTNAME.localdomain $HOSTNAME" "127.0.0.1   localhost" "
 # ------------------------------------------------------------------------------
 # 2. Users & Permissions
 # ------------------------------------------------------------------------------
-# region 2. Users & Permissions
+
+# region
 print -P "\n%K{yellow}%F{black} USERS & PERMISSIONS %k%f\n"
 print -P "%F{cyan}ℹ Creating user: $TARGET_USER...%f\n"
 getent group polkit >/dev/null || groupadd --gid 102 polkit
@@ -47,7 +49,8 @@ mkdir -p "/home/$TARGET_USER/Games"; chown "$TARGET_USER:$TARGET_USER" "/home/$T
 # ------------------------------------------------------------------------------
 # 3. Network & Services
 # ------------------------------------------------------------------------------
-# region 3. Network & Services
+
+#region
 print -P "\n%K{yellow}%F{black} NETWORK & SERVICES %k%f\n"
 print -P "%F{cyan}ℹ Configuring NetworkManager, iwd, and Bluetooth...%f\n"
 mkdir -p /etc/NetworkManager/conf.d; print -l "[device]" "wifi.backend=iwd" > /etc/NetworkManager/conf.d/wifi_backend.conf
@@ -68,7 +71,8 @@ chmod +x /etc/NetworkManager/dispatcher.d/{99-tailscale-gro,disable-wifi-powersa
 # ------------------------------------------------------------------------------
 # 4. Bootloader
 # ------------------------------------------------------------------------------
-# region 4. Bootloader
+
+# region
 print -P "\n%K{yellow}%F{black} BOOTLOADER %k%f\n"
 print -P "%F{cyan}ℹ Installing GRUB...%f\n"
 grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB
@@ -77,7 +81,8 @@ grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB
 # ------------------------------------------------------------------------------
 # 5. Build Env & Repos
 # ------------------------------------------------------------------------------
-# region 5. Build Env & Repos
+
+# region
 print -P "\n%K{yellow}%F{black} BUILD ENV & REPOS %k%f\n"
 print -P "%F{cyan}ℹ Tuning makepkg and pacman keys...%f\n"
 sed -i 's/-march=x86-64 -mtune=generic/-march=native/' /etc/makepkg.conf
@@ -97,7 +102,8 @@ pacman -Sy
 # ------------------------------------------------------------------------------
 # 6. AUR Helper (yay)
 # ------------------------------------------------------------------------------
-# region 6. AUR Helper
+
+#region
 print -P "\n%K{yellow}%F{black} AUR HELPER %k%f\n"
 print -P "%F{cyan}ℹ Cloning and building yay...%f\n"
 chown -R "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER"
@@ -109,7 +115,8 @@ cd yay; sudo -u "$TARGET_USER" makepkg -si --noconfirm; cd ..; rm -rf yay
 # ------------------------------------------------------------------------------
 # 7. Extended Packages
 # ------------------------------------------------------------------------------
-# region 7. Extended Packages
+
+# region
 print -P "\n%K{yellow}%F{black} EXTENDED PACKAGES %k%f\n"
 TARGET_AUR=("antigravity" "antigravity-cli" "antigravity-ide" "darkly-bin" "geekbench" "google-chrome" "konsave" "kwin-effects-better-blur-dx" "papirus-folders" "plasma6-applets-panel-colorizer" "timeshift-systemd-timer")
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
@@ -125,7 +132,8 @@ sudo -u "$TARGET_USER" yay -S --needed --noconfirm "${TARGET_AUR[@]}"
 # ------------------------------------------------------------------------------
 # 8. Dotfiles & Home
 # ------------------------------------------------------------------------------
-# region 8. Dotfiles & Home
+
+# region
 print -P "\n%K{yellow}%F{black} DOTFILES & HOME %k%f\n"
 print -P "%F{cyan}ℹ Setting up Git identity and repositories...%f\n"
 mkdir -p "/home/$TARGET_USER"{Make,Obsidian} "/home/$TARGET_USER/.local/bin"
@@ -214,7 +222,8 @@ fi
 # ------------------------------------------------------------------------------
 # 9. Final Theming
 # ------------------------------------------------------------------------------
-# region 9. Final Theming
+
+# region
 print -P "\n%K{yellow}%F{black} FINAL THEMING %k%f\n"
 print -P "%F{cyan}ℹ Applying Konsole and icon themes...%f\n"
 mkdir -p "/home/$TARGET_USER/.local/share/konsole"
@@ -236,7 +245,8 @@ mkdir -p "/home/$TARGET_USER/.local/share/"{icons,kxmlgui5,plasma,color-schemes,
 # ------------------------------------------------------------------------------
 # 10. Device Logic
 # ------------------------------------------------------------------------------
-# region 10. Device Logic
+
+# region
 print -P "\n%K{yellow}%F{black} DEVICE LOGIC & THEME %k%f\n"
 print -P "%F{cyan}ℹ Fixing permissions...%f\n"
 chown -R "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER"
@@ -334,7 +344,8 @@ fi
 # ------------------------------------------------------------------------------
 # 11. Final Tuning
 # ------------------------------------------------------------------------------
-# region 11. Final Tuning
+
+# region
 print -P "\n%K{yellow}%F{black} FINAL TUNING %k%f\n"
 print -P "%F{cyan}ℹ Removing Discover and Plasma Meta...%f\n"
 pacman -Qi plasma-meta &>/dev/null && { pacman -R --noconfirm plasma-meta; pacman -D --asexplicit plasma-desktop; }
@@ -369,7 +380,8 @@ mkinitcpio -P; grub-mkconfig -o /boot/grub/grub.cfg
 # ------------------------------------------------------------------------------
 # 12. First Boot Setup
 # ------------------------------------------------------------------------------
-# region 12. First Boot Setup
+
+# region
 print -P "\n%K{yellow}%F{black} FIRST BOOT SETUP %k%f\n"
 print -P "%F{cyan}ℹ Scheduling First Boot Setup...%f\n"
 mkdir -p "/home/$TARGET_USER/.config/autostart"

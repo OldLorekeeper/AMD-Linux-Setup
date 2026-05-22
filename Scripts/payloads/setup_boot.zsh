@@ -4,7 +4,7 @@
 # Automatically runs on first user login to apply final graphical and hardware tweaks.
 # ------------------------------------------------------------------------------
 
-# region 0. Runtime Configuration
+# region
 setopt ERR_EXIT NO_UNSET PIPE_FAIL EXTENDED_GLOB
 source "$HOME/.zshrc"
 sleep 5
@@ -15,7 +15,8 @@ REPO_DIR="$HOME/Obsidian/AMD-Linux-Setup"
 # ------------------------------------------------------------------------------
 # 1. Device Profile Tweaks
 # ------------------------------------------------------------------------------
-# region 1. Device Profile Tweaks
+
+# region
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     print -P "%F{cyan}ℹ Connecting to Tailscale...%f\n"
     sudo tailscale up --advertise-exit-node
@@ -33,7 +34,8 @@ fi
 # ------------------------------------------------------------------------------
 # 2. Sunshine Configuration
 # ------------------------------------------------------------------------------
-# region 2. Sunshine Configuration
+
+# region
 if [[ "$DEVICE_PROFILE" == "desktop" ]] && (( $+commands[kscreen-doctor] )); then
     print -P "\n%K{yellow}%F{black} SUNSHINE CONFIGURATION %k%f\n"
     print -P "%F{cyan}ℹ Current Output Configuration:%f\n"
@@ -53,7 +55,8 @@ fi
 # ------------------------------------------------------------------------------
 # 3. Cleanup & Completion
 # ------------------------------------------------------------------------------
-# region 3. Cleanup & Completion
+
+# region
 print -P "\n%F{green}System Setup Complete!%f"
 read "k?Press Enter to cleanup..."
 rm "$HOME/.config/autostart/setup_boot.desktop" "$HOME/.local/bin/setup_boot.zsh"
