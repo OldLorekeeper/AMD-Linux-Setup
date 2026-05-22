@@ -263,7 +263,7 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     print 'w /sys/devices/system/cpu/cpu*/cpufreq/energy_performance_preference - - - - performance' > /etc/tmpfiles.d/amd-epp.conf
     GRUB_CMDLINE="split_lock_detect=off loglevel=3 quiet amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=3440x1440@60"
     EDID_SRC="$REPO_DIR/Resources/Sunshine/custom_2560x1600.bin"
-    if [[ -f "$EDID_SRC" ]]; then
+    if [[ "$EDID_ENABLE" == (#i)y* ]] && [[ -f "$EDID_SRC" ]]; then
         mkdir -p /usr/lib/firmware/edid; cp "$EDID_SRC" /usr/lib/firmware/edid/
         sed -i 's|^FILES=(|FILES=(/usr/lib/firmware/edid/custom_2560x1600.bin |' /etc/mkinitcpio.conf
         [[ -n "$MONITOR_PORT" ]] && GRUB_CMDLINE="$GRUB_CMDLINE drm.edid_firmware=${MONITOR_PORT}:edid/custom_2560x1600.bin"
@@ -376,6 +376,7 @@ mkdir -p "/home/$TARGET_USER/.config/autostart"
 
 if [[ -f /setup_boot.zsh ]]; then
     cp /setup_boot.zsh "/home/$TARGET_USER/.local/bin/setup_boot.zsh"
+    sed -i "s/\$DEVICE_PROFILE/$DEVICE_PROFILE/g" "/home/$TARGET_USER/.local/bin/setup_boot.zsh"
     chmod +x "/home/$TARGET_USER/.local/bin/setup_boot.zsh"
     chown "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/.local/bin/setup_boot.zsh"
     print -l "[Desktop Entry]" "Type=Application" "Exec=konsole --separate --hide-tabbar -e /home/$TARGET_USER/.local/bin/setup_boot.zsh" "Hidden=false" "NoDisplay=false" "Name=First Boot Setup" "X-GNOME-Autostart-enabled=true" > "/home/$TARGET_USER/.config/autostart/setup_boot.desktop"
