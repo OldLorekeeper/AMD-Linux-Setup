@@ -567,6 +567,7 @@ print 'ACTION=="add|change", KERNEL=="nvme[0-9]n[0-9]", ATTR{queue/scheduler}="k
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     print -P "\n%F{cyan}ℹ Applying Desktop Configuration...%f\n"
     print 'SUBSYSTEM=="pci", ATTR{vendor}=="0x1022", ATTR{device}=="0x43f7", ATTR{power/control}="on"' > /etc/udev/rules.d/99-xhci-fix.rules
+    print 'w /sys/devices/system/cpu/cpu*/cpufreq/energy_performance_preference - - - - performance' > /etc/tmpfiles.d/amd-epp.conf
     GRUB_CMDLINE="split_lock_detect=off loglevel=3 quiet amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=3440x1440@60"
     EDID_SRC="$REPO_DIR/Resources/Sunshine/custom_2560x1600.bin"
     if [[ -f "$EDID_SRC" ]]; then
