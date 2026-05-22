@@ -35,7 +35,7 @@ The scripts and steps contained in this repo are tailored to the below system pr
 ---
 ## Architecture
 
-​The setup utilises a unified, monolithic installer to ensure consistency and atomic configuration.
+​The setup utilises a seamlessly modular installer to ensure consistency and atomic configuration.
 
 #### ​Stage 1: Unified Installer (Live Environment)
 
