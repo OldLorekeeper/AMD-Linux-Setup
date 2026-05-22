@@ -434,7 +434,7 @@ sudo -u "$TARGET_USER" git clone https://aur.archlinux.org/yay.git
 cd yay; sudo -u "$TARGET_USER" makepkg -si --noconfirm; cd ..; rm -rf yay
 
 print -P "\n%K{yellow}%F{black} EXTENDED PACKAGES %k%f\n"
-TARGET_AUR=("antigravity-cli" "antigravity-ide" "darkly-bin" "geekbench" "google-chrome" "konsave" "kwin-effects-better-blur-dx" "papirus-folders" "plasma6-applets-panel-colorizer" "timeshift-systemd-timer")
+TARGET_AUR=("antigravity" "antigravity-cli" "antigravity-ide" "darkly-bin" "geekbench" "google-chrome" "konsave" "kwin-effects-better-blur-dx" "papirus-folders" "plasma6-applets-panel-colorizer" "timeshift-systemd-timer")
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     TARGET_AUR+=("lact" "prowlarr-bin" "radarr-bin" "seerr" "sonarr-bin" "sunshine")
 elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then

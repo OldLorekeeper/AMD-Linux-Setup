@@ -153,6 +153,7 @@ fi
 # region 5. Service Health Check
 print -P "\n%K{blue}%F{black} 5. SERVICE HEALTH CHECK %k%f\n"
 typeset -a TARGET_SERVICES
+typeset -a TARGET_USER_SERVICES
 TARGET_SERVICES=(
     "NetworkManager" "bluetooth" "sshd" "plasmalogin" "fwupd"
     "reflector.timer" "btrfs-balance.timer" "btrfs-scrub@-.timer" "timeshift-hourly.timer"
@@ -164,22 +165,45 @@ if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
         "prowlarr" "lactd" "seerr"
         "btrfs-scrub@mnt-Media.timer"
     )
+    TARGET_USER_SERVICES=(
+        "sunshine" "byparr"
+    )
     [[ -f /usr/lib/systemd/system/grub-btrfsd.service ]] && TARGET_SERVICES+=("grub-btrfsd")
 elif [[ "$PROFILE_TYPE" == "Laptop" ]]; then
     TARGET_SERVICES+=("power-profiles-daemon")
 fi
 
+print -P "%F{cyan}ℹ Checking System Services...%f\n"
 for svc in "${TARGET_SERVICES[@]}"; do
     if ! systemctl is-enabled "$svc" &>/dev/null; then
-        print -P "%F{yellow}Enabling service: $svc%f"
+        print -P "%F{yellow}Enabling system service: $svc%f"
         sudo systemctl enable "$svc"
     fi
     if ! systemctl is-active "$svc" &>/dev/null; then
-        print -P "%F{yellow}Starting service: $svc%f"
+        print -P "%F{yellow}Starting system service: $svc%f"
         sudo systemctl start "$svc"
     fi
 done
-print -P "Service Status: %F{green}OK%f"
+
+if (( ${#TARGET_USER_SERVICES} > 0 )); then
+    print -P "\n%F{cyan}ℹ Checking User Services...%f\n"
+    for svc in "${TARGET_USER_SERVICES[@]}"; do
+        # Check if it's already manually linked (like we do in setup_install.zsh)
+        if [[ ! -f "$HOME/.config/systemd/user/default.target.wants/${svc}.service" ]]; then
+            if ! systemctl --user is-enabled "$svc" &>/dev/null; then
+                print -P "%F{yellow}Enabling user service: $svc%f"
+                systemctl --user enable "$svc" 2>/dev/null || true
+            fi
+        fi
+        
+        if ! systemctl --user is-active "$svc" &>/dev/null; then
+            print -P "%F{yellow}Starting user service: $svc%f"
+            systemctl --user start "$svc" 2>/dev/null || true
+        fi
+    done
+fi
+
+print -P "\nService Status: %F{green}OK%f"
 # endregion
 
 # ------------------------------------------------------------------------------
