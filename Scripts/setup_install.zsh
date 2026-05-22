@@ -523,7 +523,7 @@ if [[ "$SECRETS_LOADED" == "true" ]]; then
 
         if [[ -f "$SECRETS_DIR/Antigravity/Global/persona.md" ]]; then
             ln -sf "$SECRETS_DIR/Antigravity/Global/persona.md" "/home/$TARGET_USER/.gemini/GEMINI.md"
-            cat "$SECRETS_DIR/Antigravity/Global/persona.md" "$SECRETS_DIR/Antigravity/Arch/context.md" > "$REPO_DIR/GEMINI.md"
+            ln -sf "$SECRETS_DIR/Antigravity/Arch/context.md" "$REPO_DIR/GEMINI.md"
         fi
     ) || print -P "\n%F{red}⚠ Antigravity CLI setup encountered an issue but the install will continue.%f\n"
 fi
