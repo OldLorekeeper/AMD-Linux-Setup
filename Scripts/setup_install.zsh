@@ -314,7 +314,7 @@ CORE_PKGS=(
     "pipewire-pulse" "plasma-login-manager" "plasma-meta" "plasma-nm" "plasma-pa" "plasma-systemmonitor"
     "powerdevil" "spectacle" "vulkan-radeon" "wireplumber"
     "7zip" "bash-language-server" "chromium" "cmake" "cmake-extras" "cpupower"
-    "cups" "dkms" "dnsmasq" "dosfstools" "edk2-ovmf" "ethtool" "extra-cmake-modules"
+    "cups" "dkms" "dnsmasq" "dosfstools" "edk2-ovmf" "ethtool" "extra-cmake-modules" "ghostscript"
     "fastfetch" "fwupd" "gamemode" "gamescope" "gwenview" "hunspell-en_gb"
     "inkscape" "isoimagewriter" "iw" "iwd" "jq" "kio-admin" "kio-gdrive" "lib32-gamemode"
     "lib32-gnutls" "lib32-vulkan-radeon" "libva-utils" "libvirt" "lz4" "mkinitcpio-firmware"
