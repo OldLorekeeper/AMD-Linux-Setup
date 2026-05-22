@@ -495,14 +495,23 @@ if [[ "$SECRETS_LOADED" == "true" ]]; then
     print -P "\n%F{cyan}ℹ Setting up Antigravity CLI...%f\n"
     (
         print -P "\n%F{cyan}ℹ Linking Antigravity Config...%f\n"
-        mkdir -p "/home/$TARGET_USER/.gemini/antigravity-cli"
+        mkdir -p "/home/$TARGET_USER/.gemini/config"
+        mkdir -p "/home/$TARGET_USER/.antigravity-ide"
         mkdir -p "$REPO_DIR/.gemini" "$REPO_DIR/.agents"
 
         # Localised Configuration
-        [[ -f "$SECRETS_DIR/Antigravity/Global/config.json" ]] && ln -sf "$SECRETS_DIR/Antigravity/Global/config.json" "/home/$TARGET_USER/.gemini/antigravity-cli/mcp_config.json"
+        [[ -f "$SECRETS_DIR/Antigravity/Global/config.json" ]] && ln -sf "$SECRETS_DIR/Antigravity/Global/config.json" "/home/$TARGET_USER/.gemini/config/mcp_config.json"
         ln -sf "$SECRETS_DIR/Antigravity/Arch/config.json" "$REPO_DIR/.agents/mcp_config.json"
-        [[ -f "$SECRETS_DIR/Antigravity/Global/settings.json" ]] && ln -sf "$SECRETS_DIR/Antigravity/Global/settings.json" "/home/$TARGET_USER/.gemini/antigravity-cli/settings.json"
-        [[ -f "$SECRETS_DIR/Antigravity/Global/argv.json" ]] && ln -sf "$SECRETS_DIR/Antigravity/Global/argv.json" "/home/$TARGET_USER/.gemini/antigravity-cli/argv.json"
+        [[ -f "$SECRETS_DIR/Antigravity/Global/settings.json" ]] && ln -sf "$SECRETS_DIR/Antigravity/Global/settings.json" "/home/$TARGET_USER/.gemini/config/config.json"
+        [[ -f "$SECRETS_DIR/Antigravity/Global/argv.json" ]] && ln -sf "$SECRETS_DIR/Antigravity/Global/argv.json" "/home/$TARGET_USER/.antigravity-ide/argv.json"
+
+        # IDE Configuration (Antigravity IDE User Settings)
+        IDE_SECRETS="$SECRETS_DIR/Antigravity/IDE"
+        if [[ -d "$IDE_SECRETS" ]]; then
+            mkdir -p "/home/$TARGET_USER/.config/antigravity-ide"
+            rm -rf "/home/$TARGET_USER/.config/antigravity-ide/User" 2>/dev/null
+            ln -sf "$IDE_SECRETS/User" "/home/$TARGET_USER/.config/antigravity-ide/User"
+        fi
 
         # Agent Structure & Skills
         rm -rf "$REPO_DIR/.agents/rules" "$REPO_DIR/.agents/skills" "$REPO_DIR/.gemini/skills"
@@ -513,7 +522,7 @@ if [[ "$SECRETS_LOADED" == "true" ]]; then
         ln -sf "$SECRETS_DIR/Antigravity/Arch/AntigravityIgnore" "$REPO_DIR/.geminiignore"
 
         if [[ -f "$SECRETS_DIR/Antigravity/Global/persona.md" ]]; then
-            ln -sf "$SECRETS_DIR/Antigravity/Global/persona.md" "/home/$TARGET_USER/.gemini/antigravity-cli/GEMINI.md"
+            ln -sf "$SECRETS_DIR/Antigravity/Global/persona.md" "/home/$TARGET_USER/.gemini/GEMINI.md"
             cat "$SECRETS_DIR/Antigravity/Global/persona.md" "$SECRETS_DIR/Antigravity/Arch/context.md" > "$REPO_DIR/GEMINI.md"
         fi
     ) || print -P "\n%F{red}⚠ Antigravity CLI setup encountered an issue but the install will continue.%f\n"
