@@ -14,6 +14,8 @@ trap 'rm -f /etc/sudoers.d/99_setup_temp' EXIT
 # 1. Identity & Locale
 # ------------------------------------------------------------------------------
 
+# Purpose: Configures system locale, timezone, and hostname based on pre-flight variables.
+
 # region
 print -P "\n%K{yellow}%F{black} IDENTITY & LOCALE %k%f\n"
 print -P "%F{cyan}ℹ Configuring Timezone and Locale...%f\n"
@@ -30,6 +32,8 @@ print -l "127.0.1.1   $HOSTNAME.localdomain $HOSTNAME" "127.0.0.1   localhost" "
 # ------------------------------------------------------------------------------
 # 2. Users & Permissions
 # ------------------------------------------------------------------------------
+
+# Purpose: Creates the primary user account, applies passwords, and configures sudo/media permissions.
 
 # region
 print -P "\n%K{yellow}%F{black} USERS & PERMISSIONS %k%f\n"
@@ -49,6 +53,8 @@ mkdir -p "/home/$TARGET_USER/Games"; chown "$TARGET_USER:$TARGET_USER" "/home/$T
 # ------------------------------------------------------------------------------
 # 3. Network & Services
 # ------------------------------------------------------------------------------
+
+# Purpose: Configures NetworkManager, iwd (Wi-Fi), Bluetooth, and reflector services.
 
 #region
 print -P "\n%K{yellow}%F{black} NETWORK & SERVICES %k%f\n"
@@ -72,6 +78,8 @@ chmod +x /etc/NetworkManager/dispatcher.d/{99-tailscale-gro,disable-wifi-powersa
 # 4. Bootloader
 # ------------------------------------------------------------------------------
 
+# Purpose: Installs the GRUB bootloader to the EFI partition.
+
 # region
 print -P "\n%K{yellow}%F{black} BOOTLOADER %k%f\n"
 print -P "%F{cyan}ℹ Installing GRUB...%f\n"
@@ -81,6 +89,8 @@ grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB
 # ------------------------------------------------------------------------------
 # 5. Build Env & Repos
 # ------------------------------------------------------------------------------
+
+# Purpose: Optimises makepkg for native architecture, populates Arch/CachyOS keyrings, and updates mirrors.
 
 # region
 print -P "\n%K{yellow}%F{black} BUILD ENV & REPOS %k%f\n"
@@ -103,6 +113,8 @@ pacman -Sy
 # 6. AUR Helper (yay)
 # ------------------------------------------------------------------------------
 
+# Purpose: Clones and builds the 'yay' AUR helper.
+
 #region
 print -P "\n%K{yellow}%F{black} AUR HELPER %k%f\n"
 print -P "%F{cyan}ℹ Cloning and building yay...%f\n"
@@ -115,6 +127,8 @@ cd yay; sudo -u "$TARGET_USER" makepkg -si --noconfirm; cd ..; rm -rf yay
 # ------------------------------------------------------------------------------
 # 7. Extended Packages
 # ------------------------------------------------------------------------------
+
+# Purpose: Installs extended AUR packages based on the active hardware profile.
 
 # region
 print -P "\n%K{yellow}%F{black} EXTENDED PACKAGES %k%f\n"
@@ -132,6 +146,8 @@ sudo -u "$TARGET_USER" yay -S --needed --noconfirm "${TARGET_AUR[@]}"
 # ------------------------------------------------------------------------------
 # 8. Dotfiles & Home
 # ------------------------------------------------------------------------------
+
+# Purpose: Configures Git identity, clones the main repository, and sets up Oh My Zsh and Antigravity IDE configuration.
 
 # region
 print -P "\n%K{yellow}%F{black} DOTFILES & HOME %k%f\n"
@@ -223,6 +239,8 @@ fi
 # 9. Final Theming
 # ------------------------------------------------------------------------------
 
+# Purpose: Applies custom KDE Plasma theming, including Konsole profiles, Papirus folders, and specific Kate icons.
+
 # region
 print -P "\n%K{yellow}%F{black} FINAL THEMING %k%f\n"
 print -P "%F{cyan}ℹ Applying Konsole and icon themes...%f\n"
@@ -245,6 +263,8 @@ mkdir -p "/home/$TARGET_USER/.local/share/"{icons,kxmlgui5,plasma,color-schemes,
 # ------------------------------------------------------------------------------
 # 10. Device Logic
 # ------------------------------------------------------------------------------
+
+# Purpose: Applies device-specific logic (e.g. Konsave profiles, KWin rules, GRUB parameters, and Sunshine configuration).
 
 # region
 print -P "\n%K{yellow}%F{black} DEVICE LOGIC & THEME %k%f\n"
@@ -345,6 +365,8 @@ fi
 # 11. Final Tuning
 # ------------------------------------------------------------------------------
 
+# Purpose: Cleans up unnecessary packages and configures advanced system tuning (ZRAM, BBR, Btrfs balance timers, mkinitcpio hooks).
+
 # region
 print -P "\n%K{yellow}%F{black} FINAL TUNING %k%f\n"
 print -P "%F{cyan}ℹ Removing Discover and Plasma Meta...%f\n"
@@ -380,6 +402,8 @@ mkinitcpio -P; grub-mkconfig -o /boot/grub/grub.cfg
 # ------------------------------------------------------------------------------
 # 12. First Boot Setup
 # ------------------------------------------------------------------------------
+
+# Purpose: Injects the Stage 3 (First Boot) payload into the user's autostart directory to trigger on next login.
 
 # region
 print -P "\n%K{yellow}%F{black} FIRST BOOT SETUP %k%f\n"

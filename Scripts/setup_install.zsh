@@ -15,6 +15,8 @@ print -P "\n%K{green}%F{black} STARTING AMD-LINUX-SETUP (ZEN 4) %k%f\n"
 # 1. Pre-flight Checks & Secrets
 # ------------------------------------------------------------------------------
 
+# Purpose: Validates UEFI boot mode and internet connectivity. Fetches the repository and secrets.
+
 # region
 print -P "\n%K{blue}%F{black} 1. PRE-FLIGHT & SECRETS %k%f\n"
 if [[ ! -d /sys/firmware/efi/efivars ]]; then
@@ -69,6 +71,8 @@ fi
 # ------------------------------------------------------------------------------
 # 2. User Configuration
 # ------------------------------------------------------------------------------
+
+# Purpose: Configures system identity (Hostname, User, Passwords) and Git credentials. Defaults are used if variables were not loaded via secrets.
 
 # region
 print -P "\n%K{blue}%F{black} 2. USER CONFIGURATION %k%f\n"
@@ -139,6 +143,8 @@ fi
 # 3. Device Profile Selection
 # ------------------------------------------------------------------------------
 
+# Purpose: Determines hardware profile (Desktop/Laptop) and collects device-specific data (Media UUID, EDID config).
+
 # region
 print -P "\n%K{blue}%F{black} 3. DEVICE PROFILE %k%f\n"
 
@@ -191,6 +197,8 @@ fi
 # ------------------------------------------------------------------------------
 # 4. Live Environment Preparation
 # ------------------------------------------------------------------------------
+
+# Purpose: Selects target disk, confirms wipe, and optimizes live environment (pacman.conf, Reflector, CachyOS repos).
 
 # region
 print -P "\n%K{blue}%F{black} 4. LIVE PREPARATION %k%f\n"
@@ -247,6 +255,8 @@ pacman -Sy
 # 5. Partitioning & Formatting
 # ------------------------------------------------------------------------------
 
+# Purpose: Creates a GPT layout (EFI + Root), formats partitions (VFAT/Btrfs), creates subvolumes, and mounts to /mnt.
+
 # region
 print -P "\n%K{blue}%F{black} 5. PARTITIONING & FORMATTING %k%f\n"
 sgdisk -Z "$DISK"
@@ -286,6 +296,8 @@ mount "$PART1" /mnt/efi
 # ------------------------------------------------------------------------------
 # 6. Base Installation
 # ------------------------------------------------------------------------------
+
+# Purpose: Installs core packages via pacstrap, generates fstab, and copies pacman configuration.
 
 # region
 print -P "\n%K{blue}%F{black} 6. BASE INSTALLATION %k%f\n"
@@ -341,6 +353,8 @@ cp /etc/pacman.d/mirrorlist /mnt/etc/pacman.d/mirrorlist
 # 7. System Configuration (Chroot)
 # ------------------------------------------------------------------------------
 
+# Purpose: Injects the modular payload scripts into the chroot environment and executes the Stage 2 (Chroot) setup.
+
 # region
 print -P "\n%K{blue}%F{black} 7. SYSTEM CONFIGURATION (CHROOT) %k%f\n"
 
@@ -371,6 +385,8 @@ arch-chroot /mnt /setup_chroot.zsh
 # ------------------------------------------------------------------------------
 # 8. Completion
 # ------------------------------------------------------------------------------
+
+# Purpose: Cleans up temporary scripts and unmounts the system.
 
 # region
 rm -f /mnt/setup_chroot.zsh

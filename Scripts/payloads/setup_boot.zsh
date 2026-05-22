@@ -16,6 +16,8 @@ REPO_DIR="$HOME/Obsidian/AMD-Linux-Setup"
 # 1. Device Profile Tweaks
 # ------------------------------------------------------------------------------
 
+# Purpose: Applies specific graphical and network tweaks for the desktop profile (e.g. Tailscale, Transmission umask).
+
 # region
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     print -P "%F{cyan}ℹ Connecting to Tailscale...%f\n"
@@ -34,6 +36,8 @@ fi
 # ------------------------------------------------------------------------------
 # 2. Sunshine Configuration
 # ------------------------------------------------------------------------------
+
+# Purpose: Configures Sunshine streaming parameters via kscreen-doctor for headless mode management.
 
 # region
 if [[ "$DEVICE_PROFILE" == "desktop" ]] && (( $+commands[kscreen-doctor] )); then
@@ -55,6 +59,8 @@ fi
 # ------------------------------------------------------------------------------
 # 3. Cleanup & Completion
 # ------------------------------------------------------------------------------
+
+# Purpose: Removes the temporary first-boot autostart entry and completes the installation process.
 
 # region
 print -P "\n%F{green}System Setup Complete!%f"
