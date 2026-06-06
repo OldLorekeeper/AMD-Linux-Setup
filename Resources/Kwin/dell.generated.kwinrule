@@ -1,11 +1,11 @@
 # SIZES:
-# Small: 675,405
-# Tall: 667,742
-# Wide: 1297,762
-# Boxy: 837,712
+# Small: 800,575
+# Tall: 900,950
+# Wide: 1400,950
+# Boxy: 900,800
 
 [Start Small]
-size=675,405
+size=800,575
 Description=Start Small
 ignoregeometry=true
 ignoregeometryrule=2
@@ -20,7 +20,7 @@ wmclassmatch=3
 # -------------------
 
 [Start Tall]
-size=667,742
+size=900,950
 Description=Start Tall
 placementrule=2
 sizerule=3
@@ -33,7 +33,7 @@ wmclassmatch=3
 # -------------------
 
 [Start Wide]
-size=1297,762
+size=1400,950
 Description=Start Wide
 placementrule=2
 sizerule=3
@@ -46,7 +46,7 @@ wmclassmatch=3
 # -------------------
 
 [Start Boxy]
-size=837,712
+size=900,800
 Description=Start Boxy
 placementrule=2
 sizerule=3

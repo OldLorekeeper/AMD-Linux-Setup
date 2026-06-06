@@ -77,7 +77,11 @@ do_pull() {
     if [[ -d "$REPO_ROOT/Secrets" ]]; then
         print -P "\n%K{yellow}%F{black} SECRETS %k%f\n"
         print -P "%F{cyan}ℹ Updating Secrets Repo...%f\n"
-        git -C "$REPO_ROOT/Secrets" pull
+        if git -C "$REPO_ROOT/Secrets" symbolic-ref -q HEAD >/dev/null; then
+            git -C "$REPO_ROOT/Secrets" pull
+        else
+            print -P "%F{yellow}Warning: Secrets is in a detached HEAD state. Skipping pull.%f"
+        fi
     fi
     
     if [[ -d "$PRIVACY_ROOT" ]]; then
@@ -131,12 +135,12 @@ do_commit() {
     fi
 
     for repo in Secrets Privacy Main; do
-        if [[ -n "$repo_paths[$repo]" ]]; then
+        if [[ -n "${repo_paths[$repo]:-}" ]]; then
             print -P "%K{yellow}%F{black} ${repo:u} %k%f\n"
             [[ "$repo" == "Main" && -d "$REPO_ROOT/Secrets" ]] && git -C "$REPO_ROOT" add Secrets
-            local final_msg="$commit_msgs[$repo]"
+            local final_msg="${commit_msgs[$repo]:-}"
             [[ "$final_msg" != "$msg" ]] && print -P "  > Generated: %F{green}$final_msg%f"
-            git -C "$repo_paths[$repo]" commit -m "$final_msg" || true
+            git -C "${repo_paths[$repo]:-}" commit -m "$final_msg" || true
             print ""
         fi
     done

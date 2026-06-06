@@ -284,7 +284,7 @@ fi
 print -P "\n%F{cyan}ℹ Applying KWin Rules...%f\n"
 sudo -u "$TARGET_USER" "$REPO_DIR/Scripts/kwin_sync.zsh" "$DEVICE_PROFILE"
 
-print -l "LIBVA_DRIVER_NAME=radeonsi" "VDPAU_DRIVER=radeonsi" "WINEFSYNC=1" >> /etc/environment
+print -l "LIBVA_DRIVER_NAME=iHD" "WINEFSYNC=1" >> /etc/environment
 print 'ACTION=="add|change", KERNEL=="nvme[0-9]n[0-9]", ATTR{queue/scheduler}="kyber"' > /etc/udev/rules.d/60-iosched.rules
 
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
