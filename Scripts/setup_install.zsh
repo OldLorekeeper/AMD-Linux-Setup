@@ -226,9 +226,10 @@ print -P "\n%F{cyan}ℹ Adding CachyOS repositories...%f\n"
 pacman-key --recv-keys F3B607488DB35A47 --keyserver keyserver.ubuntu.com
 pacman-key --lsign-key F3B607488DB35A47
 CACHY_URL="https://mirror.cachyos.org/repo/x86_64/cachyos"
-get_latest_pkg() { curl -s "$CACHY_URL/" | grep -oP "${1}-[0-9][^>]*?pkg\.tar\.zst(?=\")" | sort -V | tail -n1; }
-
 print -P "\n%F{cyan}ℹ Resolving latest package versions...%f\n"
+MIRROR_LIST=$(curl -s --connect-timeout 5 --max-time 10 "$CACHY_URL/")
+get_latest_pkg() { grep -oP "${1}-[0-9][^>]*?pkg\.tar\.zst(?=\")" <<< "$MIRROR_LIST" | sort -V | tail -n1; }
+
 PKG_KEYRING=$(get_latest_pkg "cachyos-keyring")
 PKG_MIRROR=$(get_latest_pkg "cachyos-mirrorlist")
 PKG_V4=$(get_latest_pkg "cachyos-v4-mirrorlist")
