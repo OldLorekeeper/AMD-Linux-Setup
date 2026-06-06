@@ -291,7 +291,7 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     CORE_PKGS+=("${DESKTOP_PKGS[@]}")
     mkdir -p /mnt/var/lib/jellyfin
     chattr +C /mnt/var/lib/jellyfin
-elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
+elif [[ "$DEVICE_PROFILE" == "laptop" || "$DEVICE_PROFILE" == "dell" ]]; then
     CORE_PKGS+=("${LAPTOP_PKGS[@]}")
 fi
 
