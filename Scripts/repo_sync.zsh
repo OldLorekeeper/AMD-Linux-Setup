@@ -71,9 +71,19 @@ do_pull() {
     print -P "%F{cyan}ℹ Updating Main Repo...%f\n"
     git -C "$REPO_ROOT" pull
     
+    local secrets_branch=""
+    if [[ -d "$REPO_ROOT/Secrets" ]]; then
+        secrets_branch=$(git -C "$REPO_ROOT/Secrets" symbolic-ref --short -q HEAD || true)
+    fi
+
     print -P "\n%F{cyan}ℹ Synchronising Submodules...%f"
     git -C "$REPO_ROOT" submodule update --init --recursive
     
+    if [[ -n "$secrets_branch" ]]; then
+        print -P "\n%F{cyan}ℹ Restoring Secrets branch: $secrets_branch...%f"
+        git -C "$REPO_ROOT/Secrets" checkout "$secrets_branch"
+    fi
+
     if [[ -d "$REPO_ROOT/Secrets" ]]; then
         print -P "\n%K{yellow}%F{black} SECRETS %k%f\n"
         print -P "%F{cyan}ℹ Updating Secrets Repo...%f\n"
@@ -152,12 +162,20 @@ do_push() {
     if [[ -d "$REPO_ROOT/Secrets" ]]; then
         print -P "%K{yellow}%F{black} SECRETS %k%f\n"
         print -P "%F{cyan}ℹ Pushing Secrets...%f\n"
-        git -C "$REPO_ROOT/Secrets" push
+        if git -C "$REPO_ROOT/Secrets" symbolic-ref -q HEAD >/dev/null; then
+            git -C "$REPO_ROOT/Secrets" push
+        else
+            print -P "%F{yellow}Warning: Secrets is in a detached HEAD state. Skipping push.%f"
+        fi
     fi
     if [[ -d "$PRIVACY_ROOT" ]]; then
         print -P "\n%K{yellow}%F{black} PRIVACY %k%f\n"
         print -P "%F{cyan}ℹ Pushing Privacy...%f\n"
-        git -C "$PRIVACY_ROOT" push
+        if git -C "$PRIVACY_ROOT" symbolic-ref -q HEAD >/dev/null; then
+            git -C "$PRIVACY_ROOT" push
+        else
+            print -P "%F{yellow}Warning: Privacy is in a detached HEAD state. Skipping push.%f"
+        fi
     fi
     print -P "\n%K{yellow}%F{black} MAIN %k%f\n"
     print -P "%F{cyan}ℹ Pushing Main...%f\n"
