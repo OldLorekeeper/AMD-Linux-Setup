@@ -34,10 +34,11 @@ if [[ -n "${SYS_PROFILE:-}" ]]; then
 else
     print -P "%F{yellow}Select Device Type for Backup:%f"
     print -P "%F{cyan}ℹ Context: Determines backup labeling and service checks.%f\n"
-    read "kwin_choice?Choice [1=Desktop, 2=Laptop]: "
+    read "kwin_choice?Choice [1=Desktop, 2=Laptop, 3=Dell]: "
     case $kwin_choice in
         1) PROFILE_TYPE="Desktop" ;;
         2) PROFILE_TYPE="Laptop" ;;
+        3) PROFILE_TYPE="Dell" ;;
         *) print -P "%F{red}Invalid selection. Exiting.%f"; exit 1 ;;
     esac
 fi
@@ -169,7 +170,7 @@ if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
         "sunshine" "byparr"
     )
     [[ -f /usr/lib/systemd/system/grub-btrfsd.service ]] && TARGET_SERVICES+=("grub-btrfsd")
-elif [[ "$PROFILE_TYPE" == "Laptop" ]]; then
+elif [[ "$PROFILE_TYPE" == "Laptop" || "$PROFILE_TYPE" == "Dell" ]]; then
     TARGET_SERVICES+=("power-profiles-daemon")
 fi
 

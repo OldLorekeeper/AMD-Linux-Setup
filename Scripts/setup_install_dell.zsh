@@ -1,8 +1,8 @@
 #!/bin/zsh
 # ------------------------------------------------------------------------------
-# AMD-Linux-Setup: Unified Installer (Zen 4)
+# AMD-Linux-Setup: Unified Installer (Intel/Optimus)
 # A seamlessly modular, opinionated Arch Linux installer replacing archinstall.
-# Target: AMD Ryzen 7000+ & Radeon 7000+ | KDE Plasma 6 | CachyOS Kernel
+# Target: Dell XPS 9550 (Intel Skylake & Nvidia 950m) | KDE Plasma 6 | CachyOS Kernel
 # ------------------------------------------------------------------------------
 
 # region
@@ -147,51 +147,12 @@ fi
 
 # region
 print -P "\n%K{blue}%F{black} 3. DEVICE PROFILE %k%f\n"
+print -P "%F{cyan}ℹ Target: Dell XPS 9550 (Laptop Profile Selected)%f\n"
 
-print -l "1) Desktop (Ryzen 7800X3D / RX 7900 XT)" "2) Laptop (Ryzen 7840HS / 780M)"
-print -P "%F{yellow}Select Hardware Profile:%f"
-read "PROFILE_SEL?Selection [1-2]: "
-case $PROFILE_SEL in
-    1) DEVICE_PROFILE="desktop" ;;
-    2) DEVICE_PROFILE="laptop" ;;
-    *) print -P "\n%F{red}Invalid selection.%f\n"; exit 1 ;;
-esac
-
+DEVICE_PROFILE="dell"
 MEDIA_UUID=""
 EDID_ENABLE=""
 MONITOR_PORT=""
-
-if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
-    print -P "\n%K{yellow}%F{black} DESKTOP STORAGE & AUTOMATION %k%f\n"
-    print -P "%F{cyan}ℹ Scanning block devices...%f\n"
-    lsblk -o NAME,SIZE,FSTYPE,LABEL,UUID | grep -v loop || true
-
-    print -P "%F{yellow}Enter Media Drive UUID:%f"
-    read "MEDIA_UUID?UUID (Leave empty to skip): "
-
-    print -P "\n%K{yellow}%F{black} DISPLAY CONFIGURATION %k%f\n"
-    print -P "%F{yellow}Configure Custom Display EDID?%f"
-    read "EDID_ENABLE?Enable 2560x1600 EDID? [y/N]: "
-    
-    if [[ "$EDID_ENABLE" == (#i)y* ]]; then
-        print -P "\n%F{cyan}ℹ Detecting connected ports...%f\n"
-        typeset -a CONNECTED_PORTS
-        for status_file in /sys/class/drm/*/status(N); do
-            grep -q "connected" "$status_file" && CONNECTED_PORTS+=("${${status_file:h}:t#*-}")
-        done
-        
-        if (( ${#CONNECTED_PORTS} == 0 )); then
-            print -P "\n%F{red}No monitors detected.%f\n"
-            print -P "%F{yellow}Enter Monitor Port Manually:%f"
-            read "MONITOR_PORT?Port: "
-        elif (( ${#CONNECTED_PORTS} == 1 )); then
-            MONITOR_PORT="${CONNECTED_PORTS[1]}"
-            print -P "Selected:     %F{green}$MONITOR_PORT%f"
-        else
-            select opt in "${CONNECTED_PORTS[@]}"; do MONITOR_PORT="$opt"; break; done
-        fi
-    fi
-fi
 # endregion
 
 # ------------------------------------------------------------------------------
@@ -217,7 +178,7 @@ print -P "\n%K{yellow}%F{black} LIVE OPTIMISATION %k%f\n"
 timedatectl set-ntp true
 
 print -P "%F{cyan}ℹ Optimising pacman.conf and mirrors...%f\n"
-sed -i 's/^Architecture = auto$/Architecture = auto x86_64_v4/' /etc/pacman.conf
+sed -i 's/^Architecture = auto$/Architecture = auto x86_64_v3/' /etc/pacman.conf
 sed -i 's/^#Color/Color/' /etc/pacman.conf
 sed -i 's/^#*ParallelDownloads\s*=.*/ParallelDownloads = 20/' /etc/pacman.conf
 reflector --country GB,IE,NL,DE,FR,EU --latest 20 --sort rate --save /etc/pacman.d/mirrorlist
@@ -231,20 +192,20 @@ get_latest_pkg() { curl -s "$CACHY_URL/" | grep -oP "${1}-[0-9][^>]*?pkg\.tar\.z
 print -P "\n%F{cyan}ℹ Resolving latest package versions...%f\n"
 PKG_KEYRING=$(get_latest_pkg "cachyos-keyring")
 PKG_MIRROR=$(get_latest_pkg "cachyos-mirrorlist")
-PKG_V4=$(get_latest_pkg "cachyos-v4-mirrorlist")
+PKG_V3=$(get_latest_pkg "cachyos-v3-mirrorlist")
 
-if [[ -z "$PKG_KEYRING" || -z "$PKG_MIRROR" || -z "$PKG_V4" ]]; then
+if [[ -z "$PKG_KEYRING" || -z "$PKG_MIRROR" || -z "$PKG_V3" ]]; then
     print -P "\n%F{red}Error: Could not resolve CachyOS packages.%f\n"
     exit 1
 fi
 
 print -P "\n%F{green}Found: $PKG_KEYRING%f\n"
-pacman -U --noconfirm "${CACHY_URL}/${PKG_KEYRING}" "${CACHY_URL}/${PKG_MIRROR}" "${CACHY_URL}/${PKG_V4}"
+pacman -U --noconfirm "${CACHY_URL}/${PKG_KEYRING}" "${CACHY_URL}/${PKG_MIRROR}" "${CACHY_URL}/${PKG_V3}"
 
 if ! grep -q "cachyos" /etc/pacman.conf; then
-    print -l "" "[cachyos-znver4]" "Include = /etc/pacman.d/cachyos-v4-mirrorlist" \
-             "[cachyos-core-znver4]" "Include = /etc/pacman.d/cachyos-v4-mirrorlist" \
-             "[cachyos-extra-znver4]" "Include = /etc/pacman.d/cachyos-v4-mirrorlist" \
+    print -l "" "[cachyos-v3]" "Include = /etc/pacman.d/cachyos-v3-mirrorlist" \
+             "[cachyos-core-v3]" "Include = /etc/pacman.d/cachyos-v3-mirrorlist" \
+             "[cachyos-extra-v3]" "Include = /etc/pacman.d/cachyos-v3-mirrorlist" \
              "[cachyos]" "Include = /etc/pacman.d/cachyos-mirrorlist" >> /etc/pacman.conf
 fi
 sed -i "/\[multilib\]/,/Include/"'s/^#//' /etc/pacman.conf
@@ -303,8 +264,8 @@ mount "$PART1" /mnt/efi
 print -P "\n%K{blue}%F{black} 6. BASE INSTALLATION %k%f\n"
 
 CORE_PKGS=(
-    "amd-ucode" "base" "base-devel" "bluez" "bluez-utils" "btrfs-progs"
-    "cachyos-keyring" "cachyos-mirrorlist" "cachyos-settings" "cachyos-v4-mirrorlist"
+    "intel-ucode" "base" "base-devel" "bluez" "bluez-utils" "btrfs-progs"
+    "cachyos-keyring" "cachyos-mirrorlist" "cachyos-settings" "cachyos-v3-mirrorlist"
     "efibootmgr" "git" "grub" "grub-btrfs" "linux-cachyos"
     "linux-cachyos-headers" "linux-firmware" "networkmanager" "networkmanager-qt"
     "openssh" "pacman-contrib" "reflector" "sudo" "timeshift" "vim"
@@ -312,14 +273,14 @@ CORE_PKGS=(
     "ark" "bluedevil" "dolphin" "kate" "kinfocenter" "konsole" "kscreen"
     "kwallet-pam" "mesa" "partitionmanager" "pipewire" "pipewire-alsa"
     "pipewire-pulse" "plasma-login-manager" "plasma-meta" "plasma-nm" "plasma-pa" "plasma-systemmonitor"
-    "powerdevil" "spectacle" "vulkan-radeon" "wireplumber"
+    "powerdevil" "spectacle" "vulkan-intel" "intel-media-driver" "wireplumber"
     "7zip" "bash-language-server" "chromium" "cmake" "cmake-extras" "cpupower"
     "cups" "dkms" "dnsmasq" "dosfstools" "edk2-ovmf" "ethtool" "extra-cmake-modules" "ghostscript"
     "fastfetch" "fwupd" "gamemode" "gamescope" "gwenview" "hunspell-en_gb"
     "inkscape" "isoimagewriter" "iw" "iwd" "jq" "kio-admin" "kio-gdrive" "lib32-gamemode"
-    "lib32-gnutls" "lib32-vulkan-radeon" "libva-utils" "libvirt" "lz4" "mkinitcpio-firmware"
+    "lib32-gnutls" "lib32-vulkan-intel" "libva-utils" "libvirt" "lz4" "mkinitcpio-firmware"
     "npm" "nss-mdns" "obsidian" "papirus-icon-theme" "protontricks" "protonup-qt"
-    "qemu-desktop" "realtime-privileges" "rocm-hip-runtime" "rocm-opencl-runtime" "steam" "tailscale" "transmission-cli" "uv" "vdpauinfo"
+    "qemu-desktop" "realtime-privileges" "steam" "tailscale" "transmission-cli" "uv" "vdpauinfo"
     "virt-manager" "vlc" "vlc-plugin-ffmpeg" "vulkan-headers" "wayland-protocols"
     "wine" "wine-mono" "winetricks" "xpadneo-dkms"
 )
@@ -330,7 +291,7 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     CORE_PKGS+=("${DESKTOP_PKGS[@]}")
     mkdir -p /mnt/var/lib/jellyfin
     chattr +C /mnt/var/lib/jellyfin
-elif [[ "$DEVICE_PROFILE" == "laptop" || "$DEVICE_PROFILE" == "dell" ]]; then
+elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
     CORE_PKGS+=("${LAPTOP_PKGS[@]}")
 fi
 
@@ -375,7 +336,7 @@ SECRETS_LOADED=${(q)SECRETS_LOADED:-false}
 ZSH
 
 print -P "%F{cyan}ℹ Injecting payload scripts into chroot...%f\n"
-cp "$PAYLOAD_DIR/setup_chroot.zsh" /mnt/setup_chroot.zsh
+cp "$PAYLOAD_DIR/setup_chroot_dell.zsh" /mnt/setup_chroot.zsh
 cp "$PAYLOAD_DIR/setup_boot.zsh" /mnt/setup_boot.zsh
 chmod +x /mnt/setup_chroot.zsh
 

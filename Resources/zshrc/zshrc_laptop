@@ -178,6 +178,7 @@ kwin-edit() {
     case "$target" in
         "desktop") file_path="$repo_dir/desktop.rule.template" ;;
         "laptop")  file_path="$repo_dir/laptop.rule.template" ;;
+        "dell")    file_path="$repo_dir/dell.rule.template" ;;
         "common")  file_path="$repo_dir/common.kwinrule.fragment" ;;
         *)         file_path="$repo_dir/common.kwinrule.fragment" ;;
     esac

@@ -106,7 +106,7 @@ source $ZSH/oh-my-zsh.sh
 # --- Custom Aliases and Functions ---
 # Start Custom Aliases
 
-export SYS_PROFILE="desktop"
+export SYS_PROFILE="dell"
 
 # ------------------------------------------------------------------------------
 # 1. CUSTOM CONFIGURATION

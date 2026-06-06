@@ -352,8 +352,7 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
 
 elif [[ "$DEVICE_PROFILE" == "laptop" || "$DEVICE_PROFILE" == "dell" ]]; then
     print -P "\n%F{cyan}ℹ Applying Laptop Configuration...%f\n"
-    print "options rtw89_pci disable_aspm_l1=y disable_aspm_l1ss=y" > /etc/modprobe.d/rtw89.conf
-    GRUB_CMDLINE="loglevel=3 quiet amdgpu.ppfeaturemask=0xffffffff hugepages=512 video=2560x1600@60"
+    GRUB_CMDLINE="loglevel=3 quiet hugepages=512"
     sed -i "s|^GRUB_CMDLINE_LINUX_DEFAULT=.*|GRUB_CMDLINE_LINUX_DEFAULT=\"$GRUB_CMDLINE\"|" /etc/default/grub
     sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=2/' /etc/default/grub
     sed -i 's/HOOKS=(\(.*\))/HOOKS=(\1 numlock)/' /etc/mkinitcpio.conf
@@ -389,10 +388,10 @@ fi
 systemctl enable --now btrfs-balance.timer btrfs-scrub@-.timer timeshift-hourly.timer
 
 mkdir -p /etc/pacman.d/hooks
-print -l "[Trigger]" "Operation = Install" "Operation = Upgrade" "Type = Package" "Target = amd-ucode" "Target = btrfs-progs" "Target = mkinitcpio-firmware" "Target = linux-cachyos-headers" "[Action]" "Description = Rebuilding initramfs..." "When = PostTransaction" "Exec = /usr/bin/mkinitcpio -P" > /etc/pacman.d/hooks/98-rebuild-initramfs.hook
+print -l "[Trigger]" "Operation = Install" "Operation = Upgrade" "Type = Package" "Target = intel-ucode" "Target = btrfs-progs" "Target = mkinitcpio-firmware" "Target = linux-cachyos-headers" "[Action]" "Description = Rebuilding initramfs..." "When = PostTransaction" "Exec = /usr/bin/mkinitcpio -P" > /etc/pacman.d/hooks/98-rebuild-initramfs.hook
 print -l "[Trigger]" "Operation = Install" "Operation = Upgrade" "Operation = Remove" "Type = Package" "Target = linux-cachyos" "[Action]" "Description = Updating GRUB..." "When = PostTransaction" "Exec = /usr/bin/grub-mkconfig -o /boot/grub/grub.cfg" > /etc/pacman.d/hooks/99-update-grub.hook
 
-sed -i 's|^MODULES=.*|MODULES=(amdgpu nvme)|' /etc/mkinitcpio.conf
+sed -i 's|^MODULES=.*|MODULES=(i915 nvme)|' /etc/mkinitcpio.conf
 sed -i 's/^#COMPRESSION="zstd"/COMPRESSION="lz4"/' /etc/mkinitcpio.conf
 
 print -P "\n%F{cyan}ℹ Regenerating initramfs and GRUB...%f\n"
