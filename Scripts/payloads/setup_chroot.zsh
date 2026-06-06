@@ -38,7 +38,7 @@ print -l "127.0.1.1   $HOSTNAME.localdomain $HOSTNAME" "127.0.0.1   localhost" "
 # region
 print -P "\n%K{yellow}%F{black} USERS & PERMISSIONS %k%f\n"
 print -P "%F{cyan}ℹ Creating user: $TARGET_USER...%f\n"
-getent group polkit >/dev/null || groupadd --gid 102 polkit
+getent group polkit >/dev/null || groupadd polkit
 id -u "$TARGET_USER" &>/dev/null || useradd -m -G wheel,input,render,video,storage,gamemode,libvirt,realtime -s /bin/zsh "$TARGET_USER"
 print "root:$ROOT_PASS" | chpasswd
 print "$TARGET_USER:$USER_PASS" | chpasswd
