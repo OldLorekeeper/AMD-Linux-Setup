@@ -40,30 +40,6 @@ print -P "Root:         %F{cyan}$REPO_ROOT%f"
 # Purpose: Define the core git operations and Antigravity helper.
 
 # region 2. Functions
-get_contextual_msg() {
-    local repo_path="$1"
-    local input_msg="$2"
-    if [[ "$input_msg" == "System update" ]] && (( $+commands[agy] )); then
-        local diff_stat=$(git -C "$repo_path" diff --cached --stat 2>/dev/null)
-        if [[ -n "$diff_stat" ]]; then
-            # Use stat for overview and truncated diff for detail
-            local diff_ctx=$(git -C "$repo_path" diff --cached | head -n 50)
-            local gen_msg=$(agy -p "Generate a concise git commit message (max 72 chars). 
-Return ONLY the raw message text.
-
-Overview:
-$diff_stat
-
-Details:
-$diff_ctx" 2>/dev/null)
-            if [[ -n "$gen_msg" ]]; then
-                echo "${${gen_msg#[\"\']}%[\"\']}"
-                return
-            fi
-        fi
-    fi
-    echo "$input_msg"
-}
 
 safe_pull() {
     local repo_path="$1"
@@ -156,31 +132,33 @@ do_commit() {
         git -C "$repo_paths[$repo]" add .
     done
 
-    local -A commit_msgs
-    if [[ "$msg" == "System update" ]] && (( $+commands[agy] )); then
-        print -P "%F{cyan}ℹ Antigravity: Analyzing changes in parallel...%f\n"
-        local tmp_dir=$(mktemp -d)
-        for repo in $active_repos; do
-            ( get_contextual_msg "$repo_paths[$repo]" "$msg" > "$tmp_dir/$repo" ) &
-        done
-        wait
-        for repo in $active_repos; do
-            commit_msgs[$repo]=$(cat "$tmp_dir/$repo")
-        done
-        rm -rf "$tmp_dir"
-    else
-        for repo in $active_repos; do
-            commit_msgs[$repo]="$msg"
-        done
-    fi
+    local current_date=$(date +%Y-%m-%d)
+    local wip_msg="chore: daily incremental changes ($current_date)"
 
     for repo in Secrets Privacy Main; do
         if [[ -n "${repo_paths[$repo]:-}" ]]; then
+            local repo_dir="${repo_paths[$repo]}"
             print -P "%K{yellow}%F{black} ${repo:u} %k%f\n"
             [[ "$repo" == "Main" && -d "$REPO_ROOT/Secrets" ]] && git -C "$REPO_ROOT" add Secrets
-            local final_msg="${commit_msgs[$repo]:-}"
-            [[ "$final_msg" != "$msg" ]] && print -P "  > Generated: %F{green}$final_msg%f"
-            git -C "${repo_paths[$repo]:-}" commit -m "$final_msg" || true
+            
+            # Skip if no changes are staged
+            if git -C "$repo_dir" diff --cached --quiet; then
+                print -P "  > %F{cyan}No changes to commit.%f\n"
+                continue
+            fi
+            
+            if [[ "$msg" == "System update" ]]; then
+                local last_msg=$(git -C "$repo_dir" log -1 --format=%s 2>/dev/null || echo "")
+                if [[ "$last_msg" == "$wip_msg" ]]; then
+                    print -P "  > %F{cyan}Amending today's WIP commit...%f"
+                    git -C "$repo_dir" commit --amend --no-edit -q || true
+                else
+                    print -P "  > %F{cyan}Creating new WIP commit for today...%f"
+                    git -C "$repo_dir" commit -m "$wip_msg" -q || true
+                fi
+            else
+                git -C "$repo_dir" commit -m "$msg" -q || true
+            fi
             print ""
         fi
     done
@@ -193,7 +171,7 @@ do_push() {
         print -P "%K{yellow}%F{black} SECRETS %k%f\n"
         print -P "%F{cyan}ℹ Pushing Secrets...%f\n"
         if git -C "$REPO_ROOT/Secrets" symbolic-ref -q HEAD >/dev/null; then
-            git -C "$REPO_ROOT/Secrets" push
+            git -C "$REPO_ROOT/Secrets" push --force-with-lease
         else
             print -P "%F{yellow}Warning: Secrets is in a detached HEAD state. Skipping push.%f"
         fi
@@ -202,14 +180,14 @@ do_push() {
         print -P "\n%K{yellow}%F{black} PRIVACY %k%f\n"
         print -P "%F{cyan}ℹ Pushing Privacy...%f\n"
         if git -C "$PRIVACY_ROOT" symbolic-ref -q HEAD >/dev/null; then
-            git -C "$PRIVACY_ROOT" push
+            git -C "$PRIVACY_ROOT" push --force-with-lease
         else
             print -P "%F{yellow}Warning: Privacy is in a detached HEAD state. Skipping push.%f"
         fi
     fi
     print -P "\n%K{yellow}%F{black} MAIN %k%f\n"
     print -P "%F{cyan}ℹ Pushing Main...%f\n"
-    git -C "$REPO_ROOT" push
+    git -C "$REPO_ROOT" push --force-with-lease
     print -P "\nStatus: %F{green}Push Complete%f"
 }
 # endregion
