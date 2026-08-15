@@ -8,3 +8,9 @@ GEMINI.md
 .agents
 .vscode
 sqlite_mcp_server.db
+
+# Global Exclusions
+__pycache__/
+node_modules/
+*.log
+.DS_Store
