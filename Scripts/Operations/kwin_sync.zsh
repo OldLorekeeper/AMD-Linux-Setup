@@ -7,7 +7,7 @@
 # region Init
 setopt ERR_EXIT NO_UNSET PIPE_FAIL EXTENDED_GLOB
 SCRIPT_DIR=${0:a:h}
-REPO_ROOT=${SCRIPT_DIR:h}
+REPO_ROOT=${SCRIPT_DIR:h:h}
 print -P "\n%K{green}%F{black} KWIN SYNC & APPLY %k%f\n"
 # endregion
 

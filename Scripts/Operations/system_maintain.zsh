@@ -216,7 +216,7 @@ print -P "\nService Status: %F{green}OK%f"
 print -P "\n%K{blue}%F{black} 6. VISUAL BACKUP (KONSAVE) %k%f\n"
 zmodload zsh/datetime; strftime -s DATE_STR '%Y-%m-%d' $EPOCHSECONDS
 PROFILE_NAME="$PROFILE_TYPE Dock $DATE_STR"
-REPO_ROOT=${SCRIPT_DIR:h}
+REPO_ROOT=${SCRIPT_DIR:h:h}
 EXPORT_DIR="$REPO_ROOT/Resources/Konsave"
 
 if (( $+commands[konsave] )); then
