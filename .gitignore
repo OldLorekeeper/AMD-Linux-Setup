@@ -1,0 +1,10 @@
+.obsidian/
+.trash/
+.directory/
+.gemini
+Secrets/
+.antigravityignore
+GEMINI.md
+.agents
+.vscode
+sqlite_mcp_server.db
