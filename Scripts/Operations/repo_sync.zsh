@@ -45,7 +45,7 @@ safe_pull() {
     local repo_path="$1"
     
     local has_changes=false
-    if ! git -C "$repo_path" diff --quiet || ! git -C "$repo_path" diff --cached --quiet; then
+    if ! git -C "$repo_path" diff --ignore-submodules --quiet || ! git -C "$repo_path" diff --ignore-submodules --cached --quiet; then
         has_changes=true
     fi
     
