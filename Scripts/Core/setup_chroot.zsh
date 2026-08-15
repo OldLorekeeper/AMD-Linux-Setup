@@ -288,7 +288,7 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     
     print "$TARGET_USER ALL=(ALL) NOPASSWD: /usr/local/bin/sunshine_gpu_boost" > /etc/sudoers.d/90-sunshine-boost
     chmod 440 /etc/sudoers.d/90-sunshine-boost
-    for script in sunshine_gpu_boost.zsh sunshine_hdr.zsh sunshine_res.zsh sunshine_laptop.zsh; do
+    for script in sunshine_gpu_boost.zsh sunshine_hdr.zsh sunshine_res.zsh sunshine_laptop.zsh sunshine_configure.zsh; do
         ln -sf "$REPO_DIR/Scripts/Sunshine/$script" "/usr/local/bin/${script:r}"; chmod +x "$REPO_DIR/Scripts/Sunshine/$script"
     done
     

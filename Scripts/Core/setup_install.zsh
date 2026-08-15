@@ -28,9 +28,9 @@ if ! ping -c 3 archlinux.org &>/dev/null; then
     exit 1
 fi
 
-if [[ -d "$SCRIPT_DIR/Core" ]]; then
+if [[ -f "$SCRIPT_DIR/setup_chroot.zsh" ]]; then
     print -P "%F{cyan}ℹ Using local Core directory...%f\n"
-    PAYLOAD_DIR="$SCRIPT_DIR/Core"
+    PAYLOAD_DIR="$SCRIPT_DIR"
 else
     print -P "%F{cyan}ℹ Fetching installer components...%f\n"
     if ! curl -fsSL "https://github.com/OldLorekeeper/Arch-Config/archive/refs/heads/main.zip" -o /tmp/amd_setup.zip; then

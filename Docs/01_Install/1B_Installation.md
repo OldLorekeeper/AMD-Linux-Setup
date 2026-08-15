@@ -22,7 +22,7 @@ This modular script handles partitioning, formatting, package installation, and 
 > Do not run this command via a pipe (`| zsh`) as it requires interactive user input. Use the process substitution method below.
 
 ```bash
-zsh <(curl -Ls https://smplu.link/cctFs)
+zsh <(curl -Ls https://smplu.link/bYUs7)
 ```
 
 ### Script Workflow & Inputs
