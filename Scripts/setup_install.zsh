@@ -330,7 +330,7 @@ print -P "\n%K{blue}%F{black} 6. BASE INSTALLATION %k%f\n"
 CORE_PKGS=(
     "base" "base-devel" "bluez" "bluez-utils" "btrfs-progs"
     "cachyos-keyring" "cachyos-mirrorlist" "cachyos-settings"
-    "efibootmgr" "git" "grub" "grub-btrfs" "linux-cachyos"
+    "efibootmgr" "git" "git-lfs" "grub" "grub-btrfs" "linux-cachyos"
     "linux-cachyos-headers" "linux-firmware" "networkmanager" "networkmanager-qt"
     "openssh" "pacman-contrib" "reflector" "sudo" "timeshift" "vim"
     "wireless-regdb" "zram-generator" "zsh"

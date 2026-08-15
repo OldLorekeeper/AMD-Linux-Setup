@@ -108,6 +108,41 @@ do_pull() {
     print -P "\nStatus: %F{green}Pull Complete%f\n"
 }
 
+generate_agy_msg() {
+    local repo_path="$1"
+    local is_amend="$2"
+    
+    if ! (( $+commands[agy] )); then
+        return 1
+    fi
+
+    local diff_cmd=(git -C "$repo_path" diff --cached)
+    if [[ "$is_amend" == "true" ]] && git -C "$repo_path" rev-parse HEAD~1 >/dev/null 2>&1; then
+        diff_cmd=(git -C "$repo_path" diff HEAD~1 --cached)
+    fi
+
+    local diff_stat=$("${diff_cmd[@]}" --stat 2>/dev/null)
+    if [[ -z "$diff_stat" ]]; then
+        return 1
+    fi
+
+    local diff_ctx=$("${diff_cmd[@]}" | head -n 500)
+    local gen_msg=$(agy -p "Generate a concise, conventional git commit message (max 72 chars) that summarises all of these changes. 
+Return ONLY the raw message text without any markdown or backticks.
+
+Overview:
+$diff_stat
+
+Details:
+$diff_ctx" 2>/dev/null)
+    
+    if [[ -n "$gen_msg" ]]; then
+        echo "${${gen_msg#[\"\']}%[\"\']}"
+        return 0
+    fi
+    return 1
+}
+
 do_commit() {
     local msg="$1"
     print -P "\n%K{blue}%F{black} 3. COMMIT %k%f\n"
@@ -148,13 +183,25 @@ do_commit() {
             fi
             
             if [[ "$msg" == "System update" ]]; then
-                local last_msg=$(git -C "$repo_dir" log -1 --format=%s 2>/dev/null || echo "")
-                if [[ "$last_msg" == "$wip_msg" ]]; then
-                    print -P "  > %F{cyan}Amending today's WIP commit...%f"
-                    git -C "$repo_dir" commit --amend --no-edit -q || true
+                local current_date=$(date +%Y-%m-%d)
+                local wip_fallback="chore: daily incremental changes ($current_date)"
+                local last_commit_date=$(git -C "$repo_dir" log -1 --format=%cd --date=short 2>/dev/null || echo "")
+                
+                local is_amend="false"
+                [[ "$last_commit_date" == "$current_date" ]] && is_amend="true"
+
+                print -P "  > %F{cyan}Antigravity: Analyzing changes...%f"
+                local agy_msg=$(generate_agy_msg "$repo_dir" "$is_amend")
+                local final_msg="${agy_msg:-$wip_fallback}"
+
+                if [[ "$is_amend" == "true" ]]; then
+                    print -P "  > %F{cyan}Amending today's commit with updated summary...%f"
+                    [[ -n "$agy_msg" ]] && print -P "  > Generated: %F{green}$agy_msg%f"
+                    git -C "$repo_dir" commit --amend -m "$final_msg" -q || true
                 else
-                    print -P "  > %F{cyan}Creating new WIP commit for today...%f"
-                    git -C "$repo_dir" commit -m "$wip_msg" -q || true
+                    print -P "  > %F{cyan}Creating new daily commit...%f"
+                    [[ -n "$agy_msg" ]] && print -P "  > Generated: %F{green}$agy_msg%f"
+                    git -C "$repo_dir" commit -m "$final_msg" -q || true
                 fi
             else
                 git -C "$repo_dir" commit -m "$msg" -q || true
