@@ -1,0 +1,20 @@
+{
+    "KPackageStructure": "KWin/Script",
+    "KPlugin": {
+        "Name": "KWin Custom Sizes",
+        "Description": "Instantly resize and center the active window to Small, Tall, Wide, or Boxy sizes via shortcuts.",
+        "Icon": "preferences-system-windows",
+        "Id": "kwin-custom-sizes",
+        "Version": "1.0",
+        "License": "GPL",
+        "Category": "Window Management",
+        "Authors": [
+            {
+                "Name": "Curtis",
+                "Email": "curtis@local"
+            }
+        ]
+    },
+    "X-Plasma-API": "javascript",
+    "X-Plasma-MainScript": "code/main.js"
+}
