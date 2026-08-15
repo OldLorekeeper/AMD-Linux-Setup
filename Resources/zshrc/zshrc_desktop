@@ -139,10 +139,10 @@ git() {
     fi
     if [[ "$1" == "clone" && -n "$2" && -z "$3" ]]; then
         if [[ "$PWD" == "$HOME" ]]; then
-            print -P "%F{yellow}Auto-cloning to ~/Make...%f"
+            print -P "%F{yellow}Auto-cloning to ~/Projects...%f"
             # Extract basename and remove .git extension
             local repo_name="${${2:t}%.git}"
-            command git clone "$2" "$HOME/Make/$repo_name"
+            command git clone "$2" "$HOME/Projects/$repo_name"
         else
             command git clone "$2"
         fi

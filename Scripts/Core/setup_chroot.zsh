@@ -154,7 +154,7 @@ sudo -u "$TARGET_USER" yay -S --needed --noconfirm "${TARGET_AUR[@]}"
 # region
 print -P "\n%K{yellow}%F{black} DOTFILES & HOME %k%f\n"
 print -P "%F{cyan}ℹ Setting up Git identity and repositories...%f\n"
-mkdir -p "/home/$TARGET_USER"{Make,Obsidian} "/home/$TARGET_USER/.local/bin"
+mkdir -p "/home/$TARGET_USER"{Projects,Obsidian} "/home/$TARGET_USER/.local/bin"
 chown -R "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER"
 
 if [[ -n "$GIT_NAME" ]]; then
@@ -334,16 +334,16 @@ table ip mangle {
 NFT
     systemctl enable nftables
 
-    TRAWL_DIR="/home/$TARGET_USER/Make/Trawl"
+    TRAWL_DIR="/home/$TARGET_USER/Projects/Trawl"
     print -P "\n%F{cyan}ℹ Installing TRAWL...%f\n"
     sudo -u "$TARGET_USER" git clone https://github.com/germondai/trawl "$TRAWL_DIR"
     (cd "$TRAWL_DIR" && sudo -u "$TARGET_USER" cp .env.example .env && sudo -u "$TARGET_USER" bun install)
     
-    print -l "[Unit]" "Description=TRAWL" "After=network.target redis.service" "[Service]" "Type=simple" "WorkingDirectory=%h/Make/Trawl" "ExecStart=/usr/bin/bun run dev:api" "Restart=always" "[Install]" "WantedBy=default.target" > "/home/$TARGET_USER/.config/systemd/user/trawl.service"
+    print -l "[Unit]" "Description=TRAWL" "After=network.target redis.service" "[Service]" "Type=simple" "WorkingDirectory=%h/Projects/Trawl" "ExecStart=/usr/bin/bun run dev:api" "Restart=always" "[Install]" "WantedBy=default.target" > "/home/$TARGET_USER/.config/systemd/user/trawl.service"
     chown "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/.config/systemd/user/trawl.service"
     ln -sf "/home/$TARGET_USER/.config/systemd/user/trawl.service" "/home/$TARGET_USER/.config/systemd/user/default.target.wants/trawl.service"
 
-    ARRSTACK_DIR="/home/$TARGET_USER/Make/arrstack-mcp"
+    ARRSTACK_DIR="/home/$TARGET_USER/Projects/arrstack-mcp"
     print -P "\n%F{cyan}ℹ Installing arrstack-mcp...%f\n"
     sudo -u "$TARGET_USER" git clone https://github.com/ct4nk3r/arrstack-mcp.git "$ARRSTACK_DIR"
     (cd "$ARRSTACK_DIR" && sudo -u "$TARGET_USER" uv venv && sudo -u "$TARGET_USER" uv pip install -r requirements.txt "mcp<2.0.0")
