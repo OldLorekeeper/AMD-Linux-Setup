@@ -1,4 +1,4 @@
-## 1.1.1 | Pre-Installation
+## 1A.1 | Pre-Installation
 
 Follow the ArchWiki pre-installation steps until you have successfully booted into the live environment:
 
@@ -6,4 +6,4 @@ Follow the ArchWiki pre-installation steps until you have successfully booted in
 
 ---
 
-### [Next ⇢](1.2-Installation.md)
+### [Next ⇢](1B_Installation.md)

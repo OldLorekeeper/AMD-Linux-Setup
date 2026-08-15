@@ -180,7 +180,7 @@ if [[ -n "$GIT_PAT" ]]; then
 else
     mkdir -p "$SECRETS_DIR"
 fi
-chmod +x "$REPO_DIR/Scripts/"*.zsh
+chmod +x "$REPO_DIR/Scripts/"*/*.zsh
 
 if [[ ! -d "/home/$TARGET_USER/.oh-my-zsh" ]]; then
     print -P "\n%F{cyan}ℹ Installing Oh My Zsh...%f\n"
@@ -200,40 +200,7 @@ rm -f "/home/$TARGET_USER/.zshrc"
 ln -sf "$REPO_DIR/Resources/zshrc/zshrc_$DEVICE_PROFILE" "/home/$TARGET_USER/.zshrc"
 
 if [[ "$SECRETS_LOADED" == "true" ]]; then
-    print -P "\n%F{cyan}ℹ Setting up Antigravity CLI...%f\n"
-    (
-        print -P "%F{cyan}ℹ Linking Antigravity Config...%f\n"
-        mkdir -p "/home/$TARGET_USER/.gemini/config"
-        mkdir -p "/home/$TARGET_USER/.antigravity-ide"
-        mkdir -p "$REPO_DIR/.gemini" "$REPO_DIR/.agents"
-
-        # Localised Configuration
-        [[ -f "$SECRETS_DIR/Antigravity/Global/config.json" ]] && ln -sf "$SECRETS_DIR/Antigravity/Global/config.json" "/home/$TARGET_USER/.gemini/config/mcp_config.json"
-        ln -sf "$SECRETS_DIR/Antigravity/Arch/config.json" "$REPO_DIR/.agents/mcp_config.json"
-        [[ -f "$SECRETS_DIR/Antigravity/Global/settings.json" ]] && ln -sf "$SECRETS_DIR/Antigravity/Global/settings.json" "/home/$TARGET_USER/.gemini/config/config.json"
-        [[ -f "$SECRETS_DIR/Antigravity/Global/argv.json" ]] && ln -sf "$SECRETS_DIR/Antigravity/Global/argv.json" "/home/$TARGET_USER/.antigravity-ide/argv.json"
-
-        # IDE Configuration (Antigravity IDE User Settings)
-        IDE_SECRETS="$SECRETS_DIR/Antigravity/IDE"
-        if [[ -d "$IDE_SECRETS" ]]; then
-            mkdir -p "/home/$TARGET_USER/.config/antigravity-ide"
-            rm -rf "/home/$TARGET_USER/.config/antigravity-ide/User" 2>/dev/null
-            ln -sf "$IDE_SECRETS/User" "/home/$TARGET_USER/.config/antigravity-ide/User"
-        fi
-
-        # Agent Structure & Skills
-        rm -rf "$REPO_DIR/.agents/rules" "$REPO_DIR/.agents/skills" "$REPO_DIR/.gemini/skills"
-        ln -sf "$SECRETS_DIR/Antigravity/Arch/Rules" "$REPO_DIR/.agents/rules"
-        ln -sf "$SECRETS_DIR/Antigravity/Arch/Skills" "$REPO_DIR/.agents/skills"
-        # Context & Editor
-        ln -sf "$SECRETS_DIR/Antigravity/Arch/VSCode" "$REPO_DIR/.vscode"
-        ln -sf "$SECRETS_DIR/Antigravity/Arch/AntigravityIgnore" "$REPO_DIR/.geminiignore"
-
-        if [[ -f "$SECRETS_DIR/Antigravity/Global/persona.md" ]]; then
-            ln -sf "$SECRETS_DIR/Antigravity/Global/persona.md" "/home/$TARGET_USER/.gemini/GEMINI.md"
-            ln -sf "$SECRETS_DIR/Antigravity/Arch/context.md" "$REPO_DIR/GEMINI.md"
-        fi
-    ) || print -P "\n%F{red}⚠ Antigravity CLI setup encountered an issue but the install will continue.%f\n"
+    zsh "$REPO_DIR/Scripts/Operations/antigravity_sync.zsh" "$TARGET_USER" || print -P "\n%F{red}⚠ Antigravity Sync encountered an issue but the install will continue.%f\n"
 fi
 # endregion
 
@@ -284,7 +251,7 @@ if [[ "$APPLY_KONSAVE" == "true" ]]; then
 fi
 
 print -P "\n%F{cyan}ℹ Applying KWin Rules...%f\n"
-sudo -u "$TARGET_USER" "$REPO_DIR/Scripts/kwin_sync.zsh" "$DEVICE_PROFILE"
+sudo -u "$TARGET_USER" "$REPO_DIR/Scripts/Operations/kwin_sync.zsh" "$DEVICE_PROFILE"
 
 print -l "LIBVA_DRIVER_NAME=radeonsi" "VDPAU_DRIVER=radeonsi" "WINEFSYNC=1" "PROTON_USE_NTSYNC=1" "PROTON_ENABLE_WAYLAND=1" >> /etc/environment
 print 'ACTION=="add|change", KERNEL=="nvme[0-9]n[0-9]", ATTR{queue/scheduler}="none"' > /etc/udev/rules.d/60-iosched.rules
@@ -294,7 +261,7 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     
     print -P "%F{cyan}ℹ Configuring Media Optimizer Cronjob...%f\n"
     systemctl enable cronie.service
-    ln -sf "$REPO_DIR/Scripts/media_optimizer.zsh" /usr/local/bin/media_optimizer
+    ln -sf "$REPO_DIR/Scripts/Utils/media_optimizer.zsh" /usr/local/bin/media_optimizer
     sudo -u "$TARGET_USER" bash -c '(crontab -l 2>/dev/null; echo "0 1 * * * /usr/local/bin/media_optimizer > /tmp/media_optimizer.log 2>&1") | crontab -'
     
     print 'SUBSYSTEM=="pci", ATTR{vendor}=="0x1022", ATTR{device}=="0x43f7", ATTR{power/control}="on"' > /etc/udev/rules.d/99-xhci-fix.rules
@@ -309,7 +276,6 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     sed -i "s|^GRUB_CMDLINE_LINUX_DEFAULT=.*|GRUB_CMDLINE_LINUX_DEFAULT=\"$GRUB_CMDLINE\"|" /etc/default/grub
     sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=2/' /etc/default/grub
     
-    ln -sf "$REPO_DIR/Scripts/jellyfin_fix_cover_art.zsh" "/home/$TARGET_USER/.local/bin/fix_cover_art"
     print -l '#!/bin/bash' 'shopt -s nullglob' "cp \"$REPO_DIR/Resources/Icons/Sunshine\"/*.svg \"/usr/share/icons/hicolor/scalable/status/\"" 'setcap cap_sys_admin+p $(readlink -f $(command -v sunshine))' > /usr/local/bin/replace-sunshine-icons.sh
     chmod +x /usr/local/bin/replace-sunshine-icons.sh; /usr/local/bin/replace-sunshine-icons.sh
     
@@ -323,7 +289,7 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     print "$TARGET_USER ALL=(ALL) NOPASSWD: /usr/local/bin/sunshine_gpu_boost" > /etc/sudoers.d/90-sunshine-boost
     chmod 440 /etc/sudoers.d/90-sunshine-boost
     for script in sunshine_gpu_boost.zsh sunshine_hdr.zsh sunshine_res.zsh sunshine_laptop.zsh; do
-        ln -sf "$REPO_DIR/Scripts/$script" "/usr/local/bin/${script:r}"; chmod +x "$REPO_DIR/Scripts/$script"
+        ln -sf "$REPO_DIR/Scripts/Sunshine/$script" "/usr/local/bin/${script:r}"; chmod +x "$REPO_DIR/Scripts/Sunshine/$script"
     done
     
     if [[ -n "$MEDIA_UUID" ]]; then
@@ -472,4 +438,4 @@ print -P "\n%F{cyan}ℹ Finalizing permissions...%f\n"
 chown -R "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER"
 # endregion
 
-# ANTIGRAVITY LINK: Next stage is scheduled for next login via -> Scripts/payloads/setup_boot.zsh
+# ANTIGRAVITY LINK: Next stage is scheduled for next login via -> Scripts/Core/setup_boot.zsh

@@ -68,7 +68,7 @@ This repository adheres to strict scripting standards to maintain stability:
 - **Shell:** `zsh` is used for all system logic and configuration.
 - **Idempotency:** Post-install scripts are designed to be safe to re-run to repair configuration drift.
 - **Safety:** All zsh scripts utilise `setopt ERR_EXIT NO_UNSET PIPE_FAIL`.
-- **Formatting:** Scripts utilise compact layouts with double-dotted line separators for readability (see [TEMPLATES](./Scripts/TEMPLATES) folder))
+- **Formatting:** Scripts utilise compact layouts with double-dotted line separators for readability (see [Templates](./Scripts/Templates) folder))
 
 ---
 ## License and disclaimer

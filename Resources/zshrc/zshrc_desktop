@@ -155,22 +155,22 @@ git() {
 # 4. ARCH REPO MANAGEMENT
 # ------------------------------------------------------------------------------
 
-alias repo-sync="$ARCH_REPO/Scripts/repo_sync.zsh sync"
-alias repo-pull="$ARCH_REPO/Scripts/repo_sync.zsh pull"
-alias repo-push="$ARCH_REPO/Scripts/repo_sync.zsh push"
-alias repo-commit="$ARCH_REPO/Scripts/repo_sync.zsh commit"
+alias repo-sync="$ARCH_REPO/Scripts/Operations/repo_sync.zsh sync"
+alias repo-pull="$ARCH_REPO/Scripts/Operations/repo_sync.zsh pull"
+alias repo-push="$ARCH_REPO/Scripts/Operations/repo_sync.zsh push"
+alias repo-commit="$ARCH_REPO/Scripts/Operations/repo_sync.zsh commit"
 
 # ------------------------------------------------------------------------------
 # 5. SYSTEM MAINTENANCE
 # ------------------------------------------------------------------------------
 
-alias maintain="$ARCH_REPO/Scripts/system_maintain.zsh"
+alias maintain="$ARCH_REPO/Scripts/Operations/system_maintain.zsh"
 
 # ------------------------------------------------------------------------------
 # 6. KWIN MANAGEMENT
 # ------------------------------------------------------------------------------
 
-alias kwin-sync="$ARCH_REPO/Scripts/kwin_sync.zsh"
+alias kwin-sync="$ARCH_REPO/Scripts/Operations/kwin_sync.zsh"
 
 kwin-edit() {
     local target="${1:-$SYS_PROFILE}"

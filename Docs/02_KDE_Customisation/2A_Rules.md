@@ -1,6 +1,6 @@
-## 2.1.1 | App Sizes
+## 2A.1 | App Sizes
 
-Window rules for certain app sizes are set during setup by `Scripts/kwin_sync.zsh`.
+Window rules for certain app sizes are set during setup by `Scripts/Operations/kwin_sync.zsh`.
 
 > [!TIP]
 > Common values can be changed in the terminal by running `edit-kwin` and `update-kwin`.
@@ -8,7 +8,7 @@ Window rules for certain app sizes are set during setup by `Scripts/kwin_sync.zs
 
 ---
 
-## 2.1.2 | Other Rules
+## 2A.2 | Other Rules
 
 You may need to add these additional Window rules if you notice any issues with OpenGL displaying in the dock or PiP not working as intended.
 
@@ -34,4 +34,4 @@ You may need to add these additional Window rules if you notice any issues with 
 
 ---
 
-### [Next ⇢](../3-Miscellaneous/3.1-Tweaks.md)
+### [Next ⇢](../03_Miscellaneous/3A_Tweaks.md)

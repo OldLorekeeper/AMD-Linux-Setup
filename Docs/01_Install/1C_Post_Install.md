@@ -1,4 +1,4 @@
-## 1.3.1 | Install Microsoft Fonts
+## 1C.1 | Install Microsoft Fonts
 
 1.  Navigate to the Microsoft URL and download the **English International** version of the Windows 11 ISO. 
 2.  Rename it to `win11.iso`.
@@ -15,7 +15,7 @@ sudo cp -r ~/Downloads/fonts/* /usr/share/fonts/microsoft/
 
 ---
 
-## 1.3.2 | Setup Obsidian
+## 1C.2 | Setup Obsidian
 
 Open `Obsidian` and select the cloned `Arch-Config` repo folder as an existing vault.
 
@@ -26,13 +26,13 @@ Open `Obsidian` and select the cloned `Arch-Config` repo folder as an existing v
 
 ---
 
-## 1.3.3 | Install Affinity Software
+## 1C.3 | Install Affinity Software
 
 Follow the GUI installation guide at the [AffinityOnLinux GitHub repository](https://github.com/ryzendew/AffinityOnLinux).
 
 ---
 
-## 1.3.4 | MouseTiler
+## 1C.4 | MouseTiler
 
 Install MouseTiler and configure using below layouts: https://github.com/rxappdev/MouseTiler
 
@@ -67,7 +67,7 @@ Install MouseTiler and configure using below layouts: https://github.com/rxappde
 
 ---
 
-## 1.3.5 | Desktop Specifics
+## 1C.5 | Desktop Specifics
 
 ### Jellyfin Transcoding
 
@@ -101,7 +101,7 @@ Custom scripts should be symlinked to `/usr/local/bin/`. Manually add these **Do
 
 ---
 
-## 1.3.6 | Laptop Specifics
+## 1C.6 | Laptop Specifics
 
 ### Power Management
 
@@ -112,6 +112,6 @@ Configure your specific preferences in KDE:
 
 ---
 
-### [Next ⇢](../2-KDE-Customisation/2.1-Rules.md)
+### [Next ⇢](../02_KDE_Customisation/2A_Rules.md)
 
 ```

@@ -49,7 +49,7 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]] && (( $+commands[kscreen-doctor] )); the
         read "STREAM_IDX?Target Stream Mode Index: "
         read "DEFAULT_IDX?Default Mode Index: "
         for script in sunshine_hdr.zsh sunshine_res.zsh sunshine_laptop.zsh; do
-            [[ -f "$REPO_DIR/Scripts/$script" ]] && sed -i -e "s/^MONITOR=.*/MONITOR=\"$MON_ID\"/" -e "s/^STREAM_MODE=.*/STREAM_MODE=\"$STREAM_IDX\"/" -e "s/^DEFAULT_MODE=.*/DEFAULT_MODE=\"$DEFAULT_IDX\"/" "$REPO_DIR/Scripts/$script"
+            [[ -f "$REPO_DIR/Scripts/Sunshine/$script" ]] && sed -i -e "s/^MONITOR=.*/MONITOR=\"$MON_ID\"/" -e "s/^STREAM_MODE=.*/STREAM_MODE=\"$STREAM_IDX\"/" -e "s/^DEFAULT_MODE=.*/DEFAULT_MODE=\"$DEFAULT_IDX\"/" "$REPO_DIR/Scripts/Sunshine/$script"
             print -P "%F{green}Updated variables in $script%f"
         done
      fi

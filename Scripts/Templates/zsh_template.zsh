@@ -16,7 +16,6 @@
 #    c) No inline/meta comments. Compact vertical layout (minimise blank lines)
 #    d) Retain frequent context info markers (%F{cyan}) inside dense logic blocks to prevent 'frozen' UI state.
 #    e) Code wrapped in '# BEGIN' and '# END' markers.
-#    f) Kate modeline at EOF.
 # 6. UI Hierarchy Print -P
 #    a) Process marker:          Green Block (%K{green}%F{black}). Used at Start/End.
 #    b) Section marker:          Blue Block  (%K{blue}%F{black}). Numbered.
@@ -189,4 +188,3 @@ fi
 print -P "\n%K{green}%F{black} AUDIT COMPLETE %k%f\n"
 # END
 
-# kate: hl Zsh; folding-markers on;

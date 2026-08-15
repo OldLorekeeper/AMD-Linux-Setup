@@ -8,7 +8,7 @@
 # region
 setopt ERR_EXIT NO_UNSET PIPE_FAIL EXTENDED_GLOB
 SCRIPT_DIR=${0:a:h}
-print -P "\n%K{green}%F{black} STARTING AMD-LINUX-SETUP (ZEN 4) %k%f\n"
+print -P "\n%K{green}%F{black} STARTING ARCH-CONFIG (ZEN 4) %k%f\n"
 # endregion
 
 # ------------------------------------------------------------------------------
@@ -28,9 +28,9 @@ if ! ping -c 3 archlinux.org &>/dev/null; then
     exit 1
 fi
 
-if [[ -d "$SCRIPT_DIR/payloads" ]]; then
-    print -P "%F{cyan}ℹ Using local installer components...%f\n"
-    PAYLOAD_DIR="$SCRIPT_DIR/payloads"
+if [[ -d "$SCRIPT_DIR/Core" ]]; then
+    print -P "%F{cyan}ℹ Using local Core directory...%f\n"
+    PAYLOAD_DIR="$SCRIPT_DIR/Core"
 else
     print -P "%F{cyan}ℹ Fetching installer components...%f\n"
     if ! curl -fsSL "https://github.com/OldLorekeeper/Arch-Config/archive/refs/heads/main.zip" -o /tmp/amd_setup.zip; then
@@ -39,15 +39,15 @@ else
     fi
     mkdir -p /tmp/amd_setup
     bsdtar -xf /tmp/amd_setup.zip -C /tmp/amd_setup --strip-components=1
-    PAYLOAD_DIR="/tmp/amd_setup/Scripts/payloads"
+    PAYLOAD_DIR="/tmp/amd_setup/Scripts/Core"
     if [[ ! -d "$PAYLOAD_DIR" ]]; then
-        print -P "%F{red}Error: Failed to locate payloads in downloaded repository.%f\n"
+        print -P "%F{red}Error: Failed to locate Core in downloaded repository.%f\n"
         exit 1
     fi
 fi
 
 SECRETS_FILE="setup_secrets.enc"
-RAW_URL="https://raw.githubusercontent.com/OldLorekeeper/Arch-Config/main/Scripts/$SECRETS_FILE"
+RAW_URL="https://raw.githubusercontent.com/OldLorekeeper/Arch-Config/main/Scripts/Core/$SECRETS_FILE"
 if [[ ! -f "$SECRETS_FILE" ]]; then
     print -P "\n%F{cyan}ℹ Secrets file not found locally. Attempting remote fetch...%f\n"
     if curl -fsSL "$RAW_URL" -o "$SECRETS_FILE"; then
@@ -432,4 +432,4 @@ print -P "\n%K{green}%F{black} PROCESS COMPLETE %k%f\n"
 print -P "\n%F{yellow}Please reboot system and remove installation media%f\n"
 print -P "%F{cyan}ℹ Use 'reboot' command...%f\n"
 
-# ANTIGRAVITY LINK: Next stage is executed inside chroot via -> Scripts/payloads/setup_chroot.zsh
+# ANTIGRAVITY LINK: Next stage is executed inside chroot via -> Scripts/Core/setup_chroot.zsh

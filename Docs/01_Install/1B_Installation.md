@@ -1,4 +1,4 @@
-## 1.2.1 | Set Keyboard Locale
+## 1B.1 | Set Keyboard Locale
 
 ```bash
 loadkeys uk
@@ -6,7 +6,7 @@ loadkeys uk
 
 ---
 
-## 1.2.2 | Connect to WiFi
+## 1B.2 | Connect to WiFi
 
 ```bash
 iwctl --passphrase [password] station wlan0 connect [SSID]
@@ -14,7 +14,7 @@ iwctl --passphrase [password] station wlan0 connect [SSID]
 
 ---
 
-## 1.2.3 | Run Install Script
+## 1B.3 | Run Install Script
 
 This modular script handles partitioning, formatting, package installation, and system configuration.
 
@@ -57,7 +57,7 @@ The script is interactive. Be ready to provide the following information when pr
 
 ---
 
-## 1.2.4 | Reboot
+## 1B.4 | Reboot
 
 Once the script prints "System ready," reboot the machine:
 
@@ -70,4 +70,4 @@ reboot
 
 ---
 
-### [Next ⇢](1.3-Post-Install.md)
+### [Next ⇢](1C_Post_Install.md)
