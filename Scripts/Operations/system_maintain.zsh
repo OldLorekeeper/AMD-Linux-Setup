@@ -7,8 +7,8 @@
 # region Init
 setopt ERR_EXIT NO_UNSET PIPE_FAIL EXTENDED_GLOB
 SCRIPT_DIR=${0:a:h}
-sudo -v
-( while true; do sudo -v; sleep 60; done; ) &
+sudo -A -v
+( while true; do sudo -A -v; sleep 60; done; ) &
 SUDO_PID=$!
 trap 'kill $SUDO_PID' EXIT
 print -P "\n%K{green}%F{black} STARTING SYSTEM MAINTENANCE %k%f\n"
