@@ -266,7 +266,7 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     
     print 'SUBSYSTEM=="pci", ATTR{vendor}=="0x1022", ATTR{device}=="0x43f7", ATTR{power/control}="on"' > /etc/udev/rules.d/99-xhci-fix.rules
     print 'w /sys/devices/system/cpu/cpu*/cpufreq/energy_performance_preference - - - - performance' > /etc/tmpfiles.d/amd-epp.conf
-    GRUB_CMDLINE="split_lock_detect=off loglevel=3 quiet amdgpu.ppfeaturemask=0xffffffff video=3440x1440@60"
+    GRUB_CMDLINE="split_lock_detect=off loglevel=3 quiet amdgpu.ppfeaturemask=0xffffffff video=3440x1440@60 zswap.enabled=0"
     EDID_SRC="$REPO_DIR/Resources/Sunshine/custom_sunshine.bin"
     if [[ "$EDID_ENABLE" == (#i)y* ]] && [[ -f "$EDID_SRC" ]]; then
         mkdir -p /usr/lib/firmware/edid; cp "$EDID_SRC" /usr/lib/firmware/edid/
@@ -350,7 +350,7 @@ NFT
 
 elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
     print -P "\n%F{cyan}ℹ Applying Laptop Configuration...%f\n"
-    GRUB_CMDLINE="split_lock_detect=off loglevel=3 quiet hugepages=512 i915.enable_fbc=1 i915.enable_guc=2 rcutree.enable_rcu_lazy=1"
+    GRUB_CMDLINE="split_lock_detect=off loglevel=3 quiet hugepages=512 i915.enable_fbc=1 i915.enable_guc=3 rcutree.enable_rcu_lazy=1 mitigations=off zswap.enabled=0 mem_sleep_default=deep"
     sed -i "s|^GRUB_CMDLINE_LINUX_DEFAULT=.*|GRUB_CMDLINE_LINUX_DEFAULT=\"$GRUB_CMDLINE\"|" /etc/default/grub
     sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=2/' /etc/default/grub
     sed -i 's/HOOKS=(\(.*\))/HOOKS=(\1 numlock)/' /etc/mkinitcpio.conf
@@ -358,6 +358,9 @@ elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
     print -P "\n%F{cyan}ℹ Disabling NVIDIA GPU for power savings...%f\n"
     print -l "blacklist nouveau" "options nouveau modeset=0" "blacklist nvidia" "blacklist nvidia_drm" "blacklist nvidia_modeset" "blacklist nvidia_uvm" > /etc/modprobe.d/disable-nvidia.conf
     print 'ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x03[0-9]*", ATTR{power/control}="auto"' > /etc/udev/rules.d/80-nvidia-pm.rules
+
+    print -P "\n%F{cyan}ℹ Configuring Battery Charge Protection...%f\n"
+    print 'ACTION=="add", SUBSYSTEM=="power_supply", KERNEL=="BAT0", ATTR{charge_control_start_threshold}="75", ATTR{charge_control_end_threshold}="90"' > /etc/udev/rules.d/99-battery-threshold.rules
 
     systemctl enable power-profiles-daemon
 fi
@@ -389,10 +392,12 @@ if [[ -f /usr/lib/systemd/system/grub-btrfsd.service ]]; then
     systemctl enable grub-btrfsd
 fi
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
-    print 'SCX_SCHEDULER=scx_lavd' > /etc/default/scx
+    mkdir -p /etc/scx_loader
+    print 'default_sched = "scx_lavd"' > /etc/scx_loader/config.toml
     systemctl enable --now scx_loader.service btrfs-balance.timer btrfs-scrub@-.timer timeshift-hourly.timer
 elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
-    print 'SCX_SCHEDULER=scx_bpfland' > /etc/default/scx
+    mkdir -p /etc/scx_loader
+    print 'default_sched = "scx_bpfland"' > /etc/scx_loader/config.toml
     systemctl enable --now scx_loader.service btrfs-balance.timer btrfs-scrub@-.timer timeshift-hourly.timer
 else
     systemctl enable --now btrfs-balance.timer btrfs-scrub@-.timer timeshift-hourly.timer
