@@ -112,16 +112,12 @@ do_pull() {
 
 generate_agy_msg() {
     local repo_path="$1"
-    local is_amend="$2"
     
     if ! (( $+commands[agy] )); then
         return 1
     fi
 
     local diff_cmd=(git -C "$repo_path" diff --cached)
-    if [[ "$is_amend" == "true" ]] && git -C "$repo_path" rev-parse HEAD~1 >/dev/null 2>&1; then
-        diff_cmd=(git -C "$repo_path" diff HEAD~1 --cached)
-    fi
 
     local diff_stat=$("${diff_cmd[@]}" --stat 2>/dev/null)
     if [[ -z "$diff_stat" ]]; then
@@ -189,24 +185,14 @@ do_commit() {
             if [[ "$msg" == "System update" ]]; then
                 local current_date=$(date +%Y-%m-%d)
                 local wip_fallback="chore: daily incremental changes ($current_date)"
-                local last_commit_date=$(git -C "$repo_dir" log -1 --format=%cd --date=short 2>/dev/null || echo "")
-                
-                local is_amend="false"
-                [[ "$last_commit_date" == "$current_date" ]] && is_amend="true"
 
                 print -P "  > %F{cyan}Antigravity: Analyzing changes...%f"
-                local agy_msg=$(generate_agy_msg "$repo_dir" "$is_amend")
+                local agy_msg=$(generate_agy_msg "$repo_dir")
                 local final_msg="${agy_msg:-$wip_fallback}"
 
-                if [[ "$is_amend" == "true" ]]; then
-                    print -P "  > %F{cyan}Amending today's commit with updated summary...%f"
-                    [[ -n "$agy_msg" ]] && print -P "  > Generated: %F{green}$agy_msg%f"
-                    git -C "$repo_dir" commit --amend -m "$final_msg" -q || true
-                else
-                    print -P "  > %F{cyan}Creating new daily commit...%f"
-                    [[ -n "$agy_msg" ]] && print -P "  > Generated: %F{green}$agy_msg%f"
-                    git -C "$repo_dir" commit -m "$final_msg" -q || true
-                fi
+                print -P "  > %F{cyan}Creating new daily commit...%f"
+                [[ -n "$agy_msg" ]] && print -P "  > Generated: %F{green}$agy_msg%f"
+                git -C "$repo_dir" commit -m "$final_msg" -q || true
             else
                 git -C "$repo_dir" commit -m "$msg" -q || true
             fi
@@ -222,7 +208,7 @@ do_push() {
         print -P "%K{yellow}%F{black} SECRETS %k%f\n"
         print -P "%F{cyan}ℹ Pushing Secrets...%f\n"
         if git -C "$REPO_ROOT/Secrets" symbolic-ref -q HEAD >/dev/null; then
-            git -C "$REPO_ROOT/Secrets" push --force-with-lease
+            git -C "$REPO_ROOT/Secrets" push
         else
             print -P "%F{yellow}Warning: Secrets is in a detached HEAD state. Skipping push.%f"
         fi
@@ -231,14 +217,14 @@ do_push() {
         print -P "\n%K{yellow}%F{black} PRIVACY %k%f\n"
         print -P "%F{cyan}ℹ Pushing Privacy...%f\n"
         if git -C "$PRIVACY_ROOT" symbolic-ref -q HEAD >/dev/null; then
-            git -C "$PRIVACY_ROOT" push --force-with-lease
+            git -C "$PRIVACY_ROOT" push
         else
             print -P "%F{yellow}Warning: Privacy is in a detached HEAD state. Skipping push.%f"
         fi
     fi
     print -P "\n%K{yellow}%F{black} MAIN %k%f\n"
     print -P "%F{cyan}ℹ Pushing Main...%f\n"
-    git -C "$REPO_ROOT" push --force-with-lease
+    git -C "$REPO_ROOT" push
     print -P "\nStatus: %F{green}Push Complete%f"
 }
 # endregion
