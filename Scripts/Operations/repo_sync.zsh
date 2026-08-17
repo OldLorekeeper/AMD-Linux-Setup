@@ -99,10 +99,7 @@ do_pull() {
             print -P "\n%F{yellow}Warning: Secrets is in a detached HEAD state. Skipping pull.%f\n"
         fi
         
-        if [[ ! -f "$REPO_ROOT/Secrets/Antigravity/arch_memory.db" && -f "$REPO_ROOT/Secrets/Antigravity/seed.sql" ]]; then
-            print -P "\n%F{cyan}ℹ Reconstructing arch-memory.db from seed.sql...%f\n"
-            sqlite3 "$REPO_ROOT/Secrets/Antigravity/arch_memory.db" < "$REPO_ROOT/Secrets/Antigravity/seed.sql"
-        fi
+
     fi
     
     if [[ -d "$PRIVACY_ROOT" ]]; then
@@ -168,10 +165,7 @@ do_commit() {
         repo_paths[Privacy]="$PRIVACY_ROOT"
     fi
 
-    if [[ -f "$REPO_ROOT/Secrets/Antigravity/arch_memory.db" ]]; then
-        print -P "\n%F{cyan}ℹ Dumping arch-memory database...%f\n"
-        sqlite3 "$REPO_ROOT/Secrets/Antigravity/arch_memory.db" .dump > "$REPO_ROOT/Secrets/Antigravity/seed.sql"
-    fi
+
 
     for repo in $active_repos; do
         git -C "$repo_paths[$repo]" add .
