@@ -350,7 +350,7 @@ NFT
 
 elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
     print -P "\n%F{cyan}ℹ Applying Laptop Configuration...%f\n"
-    GRUB_CMDLINE="split_lock_detect=off loglevel=3 quiet hugepages=512 i915.enable_fbc=1 i915.enable_guc=3 i915.enable_psr=1 rcutree.enable_rcu_lazy=1 mitigations=off zswap.enabled=0 mem_sleep_default=deep"
+    GRUB_CMDLINE="split_lock_detect=off loglevel=3 quiet hugepages=512 i915.enable_fbc=1 i915.enable_guc=3 rcutree.enable_rcu_lazy=1 mitigations=off zswap.enabled=0 mem_sleep_default=deep"
     sed -i "s|^GRUB_CMDLINE_LINUX_DEFAULT=.*|GRUB_CMDLINE_LINUX_DEFAULT=\"$GRUB_CMDLINE\"|" /etc/default/grub
     sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=2/' /etc/default/grub
     sed -i 's/HOOKS=(\(.*\))/HOOKS=(\1 numlock)/' /etc/mkinitcpio.conf
