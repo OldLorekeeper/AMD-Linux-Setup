@@ -358,7 +358,7 @@ DESKTOP_PKGS=(
 LAPTOP_PKGS=(
     "intel-ucode" "cachyos-v3-mirrorlist" "vulkan-intel" "intel-media-driver"
     "lib32-vulkan-intel" "scx-scheds" "scx-tools"
-    "moonlight-qt" "power-profiles-daemon" "sof-firmware"
+    "moonlight-qt" "tlp" "tlp-rdw" "acpi_call-dkms" "intel-undervolt" "sof-firmware"
 )
 
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then

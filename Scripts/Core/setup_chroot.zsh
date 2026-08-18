@@ -350,19 +350,45 @@ NFT
 
 elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
     print -P "\n%F{cyan}ℹ Applying Laptop Configuration...%f\n"
-    GRUB_CMDLINE="split_lock_detect=off loglevel=3 quiet hugepages=512 i915.enable_fbc=1 i915.enable_guc=3 rcutree.enable_rcu_lazy=1 mitigations=off zswap.enabled=0 mem_sleep_default=deep"
+    GRUB_CMDLINE="split_lock_detect=off loglevel=3 quiet hugepages=512 i915.enable_fbc=1 i915.enable_guc=3 i915.enable_psr=1 rcutree.enable_rcu_lazy=1 mitigations=off zswap.enabled=0 mem_sleep_default=deep"
     sed -i "s|^GRUB_CMDLINE_LINUX_DEFAULT=.*|GRUB_CMDLINE_LINUX_DEFAULT=\"$GRUB_CMDLINE\"|" /etc/default/grub
     sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=2/' /etc/default/grub
     sed -i 's/HOOKS=(\(.*\))/HOOKS=(\1 numlock)/' /etc/mkinitcpio.conf
     
     print -P "\n%F{cyan}ℹ Disabling NVIDIA GPU for power savings...%f\n"
     print -l "blacklist nouveau" "options nouveau modeset=0" "blacklist nvidia" "blacklist nvidia_drm" "blacklist nvidia_modeset" "blacklist nvidia_uvm" > /etc/modprobe.d/disable-nvidia.conf
-    print 'ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x03[0-9]*", ATTR{power/control}="auto"' > /etc/udev/rules.d/80-nvidia-pm.rules
+    cat <<'INI' > /etc/systemd/system/nvidia-acpi-off.service
+[Unit]
+Description=Disable NVIDIA GPU on boot
+After=sysinit.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c "echo '\\_SB.PCI0.PEG0.PEGP._OFF' > /proc/acpi/call"
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+INI
+    systemctl enable nvidia-acpi-off.service
+
+    print -P "\n%F{cyan}ℹ Configuring Undervolting (-100mV)...%f\n"
+    cat <<'INI' > /etc/intel-undervolt.conf
+undervolt 0 'CPU' -100
+undervolt 1 'GPU' 0
+undervolt 2 'CPU Cache' -100
+undervolt 3 'System Agent' 0
+undervolt 4 'Analog I/O' 0
+INI
+    systemctl enable intel-undervolt.service
 
     print -P "\n%F{cyan}ℹ Configuring Battery Charge Protection...%f\n"
     print 'ACTION=="add", SUBSYSTEM=="power_supply", KERNEL=="BAT0", ATTR{charge_control_start_threshold}="75", ATTR{charge_control_end_threshold}="90"' > /etc/udev/rules.d/99-battery-threshold.rules
 
-    systemctl enable power-profiles-daemon
+    print -P "\n%F{cyan}ℹ Enabling TLP Power Management...%f\n"
+    systemctl mask systemd-rfkill.service systemd-rfkill.socket
+    sed -i 's/^#*WIFI_PWR_ON_BAT=.*/WIFI_PWR_ON_BAT=off/' /etc/tlp.conf
+    systemctl enable tlp
 fi
 # endregion
 
