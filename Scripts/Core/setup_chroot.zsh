@@ -253,11 +253,12 @@ fi
 print -P "\n%F{cyan}ℹ Applying KWin Rules...%f\n"
 sudo -u "$TARGET_USER" "$REPO_DIR/Scripts/Operations/kwin_sync.zsh" "$DEVICE_PROFILE"
 
-print -l "LIBVA_DRIVER_NAME=radeonsi" "VDPAU_DRIVER=radeonsi" "WINEFSYNC=1" "PROTON_USE_NTSYNC=1" "PROTON_ENABLE_WAYLAND=1" >> /etc/environment
+print -l "WINEFSYNC=1" "PROTON_USE_NTSYNC=1" "PROTON_ENABLE_WAYLAND=1" >> /etc/environment
 print 'ACTION=="add|change", KERNEL=="nvme[0-9]n[0-9]", ATTR{queue/scheduler}="none"' > /etc/udev/rules.d/60-iosched.rules
 
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     print -P "\n%F{cyan}ℹ Applying Desktop Configuration...%f\n"
+    print -l "LIBVA_DRIVER_NAME=radeonsi" "VDPAU_DRIVER=radeonsi" >> /etc/environment
     
     print -P "%F{cyan}ℹ Configuring Media Optimizer Cronjob...%f\n"
     systemctl enable cronie.service
@@ -350,6 +351,7 @@ NFT
 
 elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
     print -P "\n%F{cyan}ℹ Applying Laptop Configuration...%f\n"
+    print -l "LIBVA_DRIVER_NAME=iHD" >> /etc/environment
     GRUB_CMDLINE="split_lock_detect=off loglevel=3 quiet hugepages=512 i915.enable_fbc=1 i915.enable_guc=3 rcutree.enable_rcu_lazy=1 mitigations=off zswap.enabled=0 mem_sleep_default=deep"
     sed -i "s|^GRUB_CMDLINE_LINUX_DEFAULT=.*|GRUB_CMDLINE_LINUX_DEFAULT=\"$GRUB_CMDLINE\"|" /etc/default/grub
     sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=2/' /etc/default/grub
@@ -371,16 +373,6 @@ RemainAfterExit=yes
 WantedBy=multi-user.target
 INI
     systemctl enable nvidia-acpi-off.service
-
-    print -P "\n%F{cyan}ℹ Configuring Undervolting (-100mV)...%f\n"
-    cat <<'INI' > /etc/intel-undervolt.conf
-undervolt 0 'CPU' -100
-undervolt 1 'GPU' 0
-undervolt 2 'CPU Cache' -100
-undervolt 3 'System Agent' 0
-undervolt 4 'Analog I/O' 0
-INI
-    systemctl enable intel-undervolt.service
 
     print -P "\n%F{cyan}ℹ Configuring Battery Charge Protection...%f\n"
     print 'ACTION=="add", SUBSYSTEM=="power_supply", KERNEL=="BAT0", ATTR{charge_control_start_threshold}="75", ATTR{charge_control_end_threshold}="90"' > /etc/udev/rules.d/99-battery-threshold.rules

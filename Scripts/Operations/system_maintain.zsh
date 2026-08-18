@@ -170,7 +170,7 @@ if [[ "$PROFILE_TYPE" == "Desktop" ]]; then
     )
     [[ -f /usr/lib/systemd/system/grub-btrfsd.service ]] && TARGET_SERVICES+=("grub-btrfsd")
 elif [[ "$PROFILE_TYPE" == "Laptop" ]]; then
-    TARGET_SERVICES+=("tlp" "nvidia-acpi-off" "intel-undervolt")
+    TARGET_SERVICES+=("tlp" "nvidia-acpi-off")
 fi
 
 print -P "%F{cyan}ℹ Checking System Services...%f\n"
