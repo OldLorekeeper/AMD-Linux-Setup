@@ -6,12 +6,12 @@ Clean install: First version of `setup_install.zsh` run after `system_maintain.z
 
 ```yaml
 OS: Arch Linux x86_64
-Host: EXCALIBUR-16-AMD7 (1.0)
+Host: Dell XPS 15 9550 (1.0)
 Kernel: Linux 6.18.6-2-cachyos
 Uptime: 2 mins
 Packages: 1175 (pacman)
 Shell: zsh 5.9
-Display (BOE0B38): 2560x1600 @ 1.25x in 16", 165 Hz [Built-in]
+Display: 1920x1080 @ 1.00x in 15.6", 60 Hz [Built-in]
 DE: KDE Plasma 6.5.5
 WM: KWin (Wayland)
 WM Theme: Darkly
@@ -20,11 +20,12 @@ Icons: Papirus-Dark [Qt], Papirus-Dark [GTK2/3/4]
 Font: Adwaita Sans (10pt) [Qt], Adwaita Sans (10pt) [GTK2/3/4]
 Cursor: breeze (24px)
 Terminal: konsole 25.12.1
-CPU: AMD Ryzen 7 7840HS (16) @ 5.14 GHz
-GPU: AMD Radeon 780M Graphics [Integrated]
-Memory: 3.36 GiB / 30.66 GiB (11%)
-Swap: 0 B / 15.33 GiB (0%)
-Disk (/): 12.26 GiB / 952.87 GiB (1%) - btrfs
+CPU: Intel Core i5-6300HQ (4) @ 3.20 GHz
+GPU: Intel HD Graphics 530 [Integrated]
+GPU: NVIDIA GeForce GTX 960M [Discrete]
+Memory: 3.36 GiB / 7.66 GiB (43%)
+Swap: 0 B / 3.83 GiB (0%)
+Disk (/): 12.26 GiB / 931.51 GiB (1%) - btrfs
 Local IP (wlan0): 192.168.86.44/24
 Battery (Smart-BAT): 52% [Discharging]
 Locale: en_GB.UTF-8

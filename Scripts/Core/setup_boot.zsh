@@ -6,7 +6,9 @@
 
 # region
 setopt ERR_EXIT NO_UNSET PIPE_FAIL EXTENDED_GLOB
+unsetopt NO_UNSET
 source "$HOME/.zshrc"
+setopt NO_UNSET
 sleep 5
 print -P "\n%K{green}%F{black} RUNNING FIRST BOOT SETUP %k%f\n"
 REPO_DIR="$HOME/Obsidian/Arch-Config"
