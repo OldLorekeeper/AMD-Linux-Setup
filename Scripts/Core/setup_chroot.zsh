@@ -26,7 +26,7 @@ locale-gen
 print "LANG=en_GB.UTF-8" > /etc/locale.conf
 print "KEYMAP=uk" > /etc/vconsole.conf
 print "$HOSTNAME" > /etc/hostname
-print -l "127.0.1.1   $HOSTNAME.localdomain $HOSTNAME" "127.0.0.1   localhost" "::1         localhost" >> /etc/hosts
+grep -q "127.0.0.1   localhost" /etc/hosts || print -l "127.0.1.1   $HOSTNAME.localdomain $HOSTNAME" "127.0.0.1   localhost" "::1         localhost" >> /etc/hosts
 # endregion
 
 # ------------------------------------------------------------------------------
@@ -160,13 +160,10 @@ chown -R "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER"
 if [[ -n "$GIT_NAME" ]]; then
     sudo -u "$TARGET_USER" git config --global user.name "$GIT_NAME"
     sudo -u "$TARGET_USER" git config --global user.email "$GIT_EMAIL"
+    sudo -u "$TARGET_USER" git config --global credential.helper libsecret
     if [[ -n "$GIT_PAT" ]]; then
-        print "https://$GIT_NAME:$GIT_PAT@github.com" > "/home/$TARGET_USER/.git-credentials"
-        chmod 600 "/home/$TARGET_USER/.git-credentials"
-        chown "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/.git-credentials"
-        sudo -u "$TARGET_USER" git config --global credential.helper store
-    else
-        sudo -u "$TARGET_USER" git config --global credential.helper libsecret
+        # Inject the PAT into the first-boot script so it can be securely migrated to KDE Wallet
+        [[ -f /setup_boot.zsh ]] && sed -i "s|^# GIT_INJECTION_MARKER.*|print -l \"protocol=https\" \"host=github.com\" \"username=$GIT_NAME\" \"password=$GIT_PAT\" \\| git credential approve|" /setup_boot.zsh
     fi
 fi
 
@@ -253,12 +250,12 @@ fi
 print -P "\n%F{cyan}ℹ Applying KWin Rules...%f\n"
 sudo -u "$TARGET_USER" "$REPO_DIR/Scripts/Operations/kwin_sync.zsh" "$DEVICE_PROFILE"
 
-print -l "WINEFSYNC=1" "PROTON_USE_NTSYNC=1" "PROTON_ENABLE_WAYLAND=1" >> /etc/environment
+grep -q "WINEFSYNC=1" /etc/environment || print -l "WINEFSYNC=1" "PROTON_USE_NTSYNC=1" "PROTON_ENABLE_WAYLAND=1" >> /etc/environment
 print 'ACTION=="add|change", KERNEL=="nvme[0-9]n[0-9]", ATTR{queue/scheduler}="none"' > /etc/udev/rules.d/60-iosched.rules
 
 if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     print -P "\n%F{cyan}ℹ Applying Desktop Configuration...%f\n"
-    print -l "LIBVA_DRIVER_NAME=radeonsi" "VDPAU_DRIVER=radeonsi" >> /etc/environment
+    grep -q "LIBVA_DRIVER_NAME=radeonsi" /etc/environment || print -l "LIBVA_DRIVER_NAME=radeonsi" "VDPAU_DRIVER=radeonsi" >> /etc/environment
     
     print -P "%F{cyan}ℹ Configuring Media Optimizer Cronjob...%f\n"
     systemctl enable cronie.service
@@ -316,8 +313,8 @@ if [[ "$DEVICE_PROFILE" == "desktop" ]]; then
     wget -O /etc/udev/rules.d/42-solaar-uinput.rules https://raw.githubusercontent.com/pwr-Solaar/Solaar/refs/heads/master/rules.d-uinput/42-logitech-unify-permissions.rules
     systemctl enable jellyfin transmission-daemon sonarr radarr prowlarr seerr
     mkdir -p /var/lib/systemd/linger; touch "/var/lib/systemd/linger/$TARGET_USER"
-    mkdir -p "/home/$TARGET_USER/.config/systemd/user/default.target.wants"
-    ln -sf /usr/lib/systemd/user/app-dev.lizardbyte.app.Sunshine.service "/home/$TARGET_USER/.config/systemd/user/default.target.wants/app-dev.lizardbyte.app.Sunshine.service"
+    sudo -u "$TARGET_USER" mkdir -p "/home/$TARGET_USER/.config/systemd/user/default.target.wants"
+    sudo -u "$TARGET_USER" ln -sf /usr/lib/systemd/user/app-dev.lizardbyte.app.Sunshine.service "/home/$TARGET_USER/.config/systemd/user/default.target.wants/app-dev.lizardbyte.app.Sunshine.service"
     
     print -P "\n%F{cyan}ℹ Configuring Sunshine network QoS...%f\n"
     cat <<'NFT' > /etc/nftables.conf
@@ -340,9 +337,8 @@ NFT
     sudo -u "$TARGET_USER" git clone https://github.com/germondai/trawl "$TRAWL_DIR"
     (cd "$TRAWL_DIR" && sudo -u "$TARGET_USER" cp .env.example .env && sudo -u "$TARGET_USER" bun install)
     
-    print -l "[Unit]" "Description=TRAWL" "After=network.target redis.service" "[Service]" "Type=simple" "WorkingDirectory=%h/Projects/Trawl" "ExecStart=/usr/bin/bun run dev:api" "Restart=always" "[Install]" "WantedBy=default.target" > "/home/$TARGET_USER/.config/systemd/user/trawl.service"
-    chown "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/.config/systemd/user/trawl.service"
-    ln -sf "/home/$TARGET_USER/.config/systemd/user/trawl.service" "/home/$TARGET_USER/.config/systemd/user/default.target.wants/trawl.service"
+    print -l "[Unit]" "Description=TRAWL" "After=network.target redis.service" "[Service]" "Type=simple" "WorkingDirectory=%h/Projects/Trawl" "ExecStart=/usr/bin/bun run dev:api" "Restart=always" "[Install]" "WantedBy=default.target" | sudo -u "$TARGET_USER" tee "/home/$TARGET_USER/.config/systemd/user/trawl.service" > /dev/null
+    sudo -u "$TARGET_USER" ln -sf "/home/$TARGET_USER/.config/systemd/user/trawl.service" "/home/$TARGET_USER/.config/systemd/user/default.target.wants/trawl.service"
 
     ARRSTACK_DIR="/home/$TARGET_USER/Projects/arrstack-mcp"
     print -P "\n%F{cyan}ℹ Installing arrstack-mcp...%f\n"
@@ -351,7 +347,7 @@ NFT
 
 elif [[ "$DEVICE_PROFILE" == "laptop" ]]; then
     print -P "\n%F{cyan}ℹ Applying Laptop Configuration...%f\n"
-    print -l "LIBVA_DRIVER_NAME=iHD" >> /etc/environment
+    grep -q "LIBVA_DRIVER_NAME=iHD" /etc/environment || print -l "LIBVA_DRIVER_NAME=iHD" >> /etc/environment
     GRUB_CMDLINE="split_lock_detect=off loglevel=3 quiet hugepages=512 i915.enable_fbc=1 i915.enable_guc=3 rcutree.enable_rcu_lazy=1 mitigations=off zswap.enabled=0 mem_sleep_default=deep"
     sed -i "s|^GRUB_CMDLINE_LINUX_DEFAULT=.*|GRUB_CMDLINE_LINUX_DEFAULT=\"$GRUB_CMDLINE\"|" /etc/default/grub
     sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=2/' /etc/default/grub
@@ -374,12 +370,27 @@ WantedBy=multi-user.target
 INI
     systemctl enable nvidia-acpi-off.service
 
+    cat <<'EOF' > /usr/lib/systemd/system-sleep/nvidia-acpi-off
+#!/bin/sh
+case "$1" in
+    pre)
+        echo '\_SB.PCI0.PEG0.PEGP._ON' > /proc/acpi/call
+        ;;
+    post)
+        echo '\_SB.PCI0.PEG0.PEGP._OFF' > /proc/acpi/call
+        ;;
+esac
+EOF
+    chmod +x /usr/lib/systemd/system-sleep/nvidia-acpi-off
+
     print -P "\n%F{cyan}ℹ Configuring Battery Charge Protection...%f\n"
     print 'ACTION=="add", SUBSYSTEM=="power_supply", KERNEL=="BAT0", ATTR{charge_control_start_threshold}="75", ATTR{charge_control_end_threshold}="90"' > /etc/udev/rules.d/99-battery-threshold.rules
 
     print -P "\n%F{cyan}ℹ Enabling TLP Power Management...%f\n"
     systemctl mask systemd-rfkill.service systemd-rfkill.socket
     sed -i 's/^#*WIFI_PWR_ON_BAT=.*/WIFI_PWR_ON_BAT=off/' /etc/tlp.conf
+    sed -i 's/^#*PCIE_ASPM_ON_BAT=.*/PCIE_ASPM_ON_BAT=default/' /etc/tlp.conf
+    sed -i 's/^#*NVM_ENERGY_PERF_POLICY_ON_BAT=.*/NVM_ENERGY_PERF_POLICY_ON_BAT=default/' /etc/tlp.conf
     systemctl enable tlp
 fi
 # endregion
@@ -447,13 +458,14 @@ mkinitcpio -P; grub-mkconfig -o /boot/grub/grub.cfg
 print -P "\n%K{yellow}%F{black} FIRST BOOT SETUP %k%f\n"
 print -P "%F{cyan}ℹ Scheduling First Boot Setup...%f\n"
 mkdir -p "/home/$TARGET_USER/.config/autostart"
+chown "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/.config/autostart"
 
 if [[ -f /setup_boot.zsh ]]; then
     cp /setup_boot.zsh "/home/$TARGET_USER/.local/bin/setup_boot.zsh"
     sed -i "s/\$DEVICE_PROFILE/$DEVICE_PROFILE/g" "/home/$TARGET_USER/.local/bin/setup_boot.zsh"
     chmod +x "/home/$TARGET_USER/.local/bin/setup_boot.zsh"
     chown "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/.local/bin/setup_boot.zsh"
-    print -l "[Desktop Entry]" "Type=Application" "Exec=konsole --separate --hide-tabbar -e /home/$TARGET_USER/.local/bin/setup_boot.zsh" "Hidden=false" "NoDisplay=false" "Name=First Boot Setup" "X-GNOME-Autostart-enabled=true" > "/home/$TARGET_USER/.config/autostart/setup_boot.desktop"
+    print -l "[Desktop Entry]" "Type=Application" "Exec=konsole --separate --hide-tabbar -e /home/$TARGET_USER/.local/bin/setup_boot.zsh" "Hidden=false" "NoDisplay=false" "Name=First Boot Setup" "X-GNOME-Autostart-enabled=true" | sudo -u "$TARGET_USER" tee "/home/$TARGET_USER/.config/autostart/setup_boot.desktop" > /dev/null
     rm -f /setup_boot.zsh
 fi
 

@@ -59,7 +59,15 @@ fi
 # endregion
 
 # ------------------------------------------------------------------------------
-# 3. Cleanup & Completion
+# 3. Git Credential Migration
+# ------------------------------------------------------------------------------
+
+# region
+# GIT_INJECTION_MARKER
+# endregion
+
+# ------------------------------------------------------------------------------
+# 4. Cleanup & Completion
 # ------------------------------------------------------------------------------
 
 # Purpose: Removes the temporary first-boot autostart entry and completes the installation process.
